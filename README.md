@@ -1,5 +1,7 @@
 # Digit-AI SaaS Forge
 
+**English** · [Français](README.fr.md) · [Español](README.es.md) · [Deutsch](README.de.md) · [Italiano](README.it.md) · [Português](README.pt.md)
+
 > **From idea to a production-ready SaaS, in one command — under a dual code & design gate.**
 
 Digit-AI SaaS Forge is an agentic SaaS accelerator. A **thin orchestration layer**
