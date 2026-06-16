@@ -1,0 +1,49 @@
+name: double-gate
+# Definition of done (décision canonique 03) : aucun merge si l'un des deux jobs échoue.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  # --- Gate code (FR-G1) : harness du conductor lui-même (dogfooding) ---------
+  code:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+      - run: uv sync --dev
+        working-directory: digitai-saas-forge
+      - name: Ruff (lint)
+        run: uv run ruff check .
+        working-directory: digitai-saas-forge
+      - name: Mypy (strict)
+        run: uv run mypy
+        working-directory: digitai-saas-forge
+      - name: Pytest
+        run: uv run pytest
+        working-directory: digitai-saas-forge
+
+  # --- Gate design (FR-G2/G3) : design.md lint + politique de sévérité forge ---
+  # Epic 0 : informational (continue-on-error). Devient BLOQUANT en Epic 2 (story 2.1).
+  design:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+      - run: uv sync --dev
+        working-directory: digitai-saas-forge
+      # ⚠ NE PAS se fier à l'exit code du linter (warnings → exit 0, cf. S-2.3).
+      # On capture le JSON, puis NOTRE politique décide du blocage.
+      - name: design.md lint (JSON)
+        run: npx @google/design.md@0.3.0 lint --format json design/DESIGN.md > findings.json
+        working-directory: digitai-saas-forge
+      - name: Politique de sévérité (gate bloquant)
+        run: uv run python -m conductor.gates.design_gate findings.json
+        working-directory: digitai-saas-forge

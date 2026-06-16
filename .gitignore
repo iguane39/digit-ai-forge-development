@@ -1,0 +1,17 @@
+# Environnements & caches (couvre aussi les sous-dossiers)
+.venv/
+__pycache__/
+*.py[cod]
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+node_modules/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Sorties transitoires
+findings.json
+.worktrees/

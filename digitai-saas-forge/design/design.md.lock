@@ -1,0 +1,6 @@
+# Verrou de version de l'outil de gate design (décision 06 / risque 7 — alpha).
+# Le CLI est ADOPTÉ tel quel, jamais forké (propriété Google + CLA). Usage stateless.
+package: "@google/design.md"
+version: "0.3.0"
+invocation: "npx @google/design.md@0.3.0 lint --format json design/DESIGN.md"
+license: "Apache-2.0"

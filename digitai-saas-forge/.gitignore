@@ -1,0 +1,23 @@
+# Python / uv
+__pycache__/
+*.py[cod]
+.venv/
+.uv/
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# Secrets & env (décision sécurité — jamais commités)
+.env
+.env.*
+!.env.example
+
+# Worktrees BAD (1 par story)
+.worktrees/
+
+# Gate design — sortie transitoire du linter
+findings.json
+
+# Node (utilisé seulement via npx pour design.md)
+node_modules/

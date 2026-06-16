@@ -1,0 +1,58 @@
+# Cible paramétrable « fastapi-saas » (décision 08).
+# Le scaffold (étape B) génère full-stack-fastapi-template puis greffe les briques
+# selon ces réponses. Briques de t0 forcées (décision 05) : multi-tenancy, rbac, auth-sso.
+# Décisions build/buy par défaut issues du Toolkit SaaS (spike S-3).
+
+_envops:
+  keep_trailing_newline: true
+
+project_name:
+  type: str
+  help: Nom du projet SaaS à générer
+
+# --- Briques de t0 (décision canonique 05 — non désactivables) ---------------
+multi_tenancy:
+  type: bool
+  default: true
+  help: "Multi-tenancy (tenant_id row-level — Organization + organization_id). Requis t0."
+
+rbac:
+  type: bool
+  default: true
+  help: "RBAC fin via Casbin (build). Requis t0."
+
+auth_sso:
+  type: bool
+  default: true
+  help: "Auth/SSO via Authlib (build ; WorkOS si SSO entreprise). Requis t0."
+
+# --- Briques à la demande (build-vs-buy, défauts Toolkit) --------------------
+billing:
+  type: str
+  choices: ["none", "stripe", "polar"]
+  default: "none"
+  help: "Billing (buy Stripe ; Polar/Lemon Squeezy si TVA UE portée par le fournisseur)"
+
+jobs_async:
+  type: str
+  choices: ["none", "arq", "inngest"]
+  default: "none"
+  help: "Jobs asynchrones (build ARQ+Redis ; buy Inngest si orchestration)"
+
+analytics:
+  type: str
+  choices: ["none", "posthog"]
+  default: "none"
+  help: "Analytics produit (buy/self-host PostHog)"
+
+feature_flags:
+  type: str
+  choices: ["none", "openfeature-unleash"]
+  default: "none"
+  help: "Feature flags (OpenFeature SDK + Unleash self-host)"
+
+emailing:
+  type: str
+  choices: ["smtp", "resend"]
+  default: "smtp"
+  help: "Emailing transactionnel (natif SMTP+MJML ; buy Resend + react-email)"
