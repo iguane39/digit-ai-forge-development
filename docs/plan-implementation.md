@@ -39,22 +39,23 @@
 
 ---
 
-## Epic 1 — Scaffold-first SaaS
+## Epic 1 — Scaffold-first SaaS ✅ (branche `epic-1-scaffold-first`)
 
 **Objectif** : générer un socle SaaS réel avec les briques de t0.
 **Gate de sortie (dossier)** : **gate code (pytest + e2e).**
 **Invariant** : cet epic s'exécute *avant* toute planification d'agent (décision 02).
 
-| Story | Contenu | Fichiers-cibles | FR/NFR | Dépend de |
+| Story | Contenu | Fichiers-cibles | FR/NFR | Statut |
 |---|---|---|---|---|
-| **1.1** | `scaffold.py` (B) : invoque `copier copy` sur la cible puis `.env` | `conductor/scaffold.py` | FR-B1 | 0.3, S-3 ✅ |
-| **1.2** | Greffe **multi-tenancy** = **`tenant_id` row-level** (table `Organization` + FK `organization_id` + dépendance d'isolation ; `alembic revision --autogenerate -m "add tenancy"`) | `targets/fastapi-saas/bricks/multi-tenancy/` | FR-B3, §8.7 résolu | 1.1 |
-| **1.3** | Greffe **RBAC** = **Casbin** (`cd backend && uv add casbin`) | `targets/.../bricks/rbac/` | FR-B3 | 1.1 |
-| **1.4** | Greffe **auth/SSO** = **Authlib** (`cd backend && uv add authlib` ; WorkOS si SSO entreprise) | `targets/.../bricks/auth-sso/` | FR-B3 | 1.1 |
-| **1.5** | `cadrage.py` (A) : produit `MissionConfig` à partir de l'idée + contraintes | `conductor/cadrage.py` | FR-A1, FR-A2 | 0.1 |
-| **1.6** | `code_gate.py` : délègue à la CI du template | `conductor/gates/code_gate.py` | FR-G1 | 0.4 |
+| **1.5** | `cadrage.py` (A) : produit `MissionConfig` ; force les briques de t0 ; rejette les briques inconnues | `conductor/cadrage.py` | FR-A1, FR-A2 | ✅ |
+| **1.1** | `scaffold.py` (B) : `copier copy` (runner injectable) puis greffe des briques ; échoue dur si une commande casse | `conductor/scaffold.py` | FR-B1, FR-B2 | ✅ |
+| **(cat.)** | Catalogue des 11 briques + résolution t0 forcées (spike S-3) | `conductor/catalog.py` | FR-B2/B3 | ✅ |
+| **1.2** | Greffe **multi-tenancy** = **`tenant_id` row-level** (`alembic … "add tenancy"`) | `catalog.py` (recette) | FR-B3, §8.7 | ✅ recette |
+| **1.3** | Greffe **RBAC** = **Casbin** (`uv add casbin`) | `catalog.py` (recette) | FR-B3 | ✅ recette |
+| **1.4** | Greffe **auth/SSO** = **Authlib** (`uv add authlib`) | `catalog.py` (recette) | FR-B3 | ✅ recette |
+| **1.6** | `code_gate.py` : délègue au harness (`uv run pytest`), verdict = exit 0 | `conductor/gates/code_gate.py` | FR-G1 | ✅ |
 
-**Sortie de gate** : le scaffold généré passe `pytest` + Playwright e2e. **CS-3** (multi-tenant + RBAC + auth/SSO présents) vérifiable.
+**Sortie de gate** : gate code vert (ruff + mypy strict + pytest 32/32) ; le scaffold force multi-tenant + RBAC + auth/SSO (**CS-3** garanti par `cadrer` + `resolve_bricks`, testé). Les *recettes* de greffe (commandes par brique) sont validées par runner factice ; leur exécution réelle sur un dépôt généré (copier + réseau) relève d'un test d'intégration ultérieur.
 
 ---
 

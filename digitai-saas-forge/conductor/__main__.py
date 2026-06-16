@@ -8,6 +8,8 @@ La logique de chaque étape arrive aux Epics 1 et 3 ; ici on câble la séquence
 from __future__ import annotations
 
 import argparse
+import re
+from pathlib import Path
 
 from conductor import __version__
 from conductor.bmad_bridge import lancer_planification
@@ -17,10 +19,16 @@ from conductor.sprint_config import preparer_sprint
 from conductor.supervisor import superviser
 
 
-def run(idea: str) -> None:
+def _slug(idea: str) -> str:
+    s = re.sub(r"[^a-z0-9]+", "-", idea.lower()).strip("-")
+    return (s or "saas")[:40]
+
+
+def run(idea: str, *, workdir: Path = Path("generated")) -> None:
     """Orchestration de bout en bout : A → B → C (HITL 1) → D → E (HITL 2)."""
     mission = cadrer(idea)  # A
-    built = scaffold(mission)  # B — scaffold-first (avant tout agent)
+    dest = workdir / _slug(idea)
+    built = scaffold(mission, dest)  # B — scaffold-first (avant tout agent)
     plan = lancer_planification(built)  # C — pose HITL 1
     layout = preparer_sprint(plan)  # D — placement & config (pas de graphe, S-1)
     superviser(layout)  # E — /bad + double gate, pose HITL 2

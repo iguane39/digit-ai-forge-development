@@ -43,9 +43,9 @@ def test_pipeline_order_is_wired_scaffold_first(monkeypatch: pytest.MonkeyPatch)
     assert calls.index("B") < calls.index("C")  # scaffold-first
 
 
-def test_stub_steps_not_yet_implemented() -> None:
-    """Les étapes sont des stubs en Epic 0 : elles signalent explicitement le TODO."""
-    from conductor.cadrage import cadrer
+def test_downstream_steps_not_yet_implemented() -> None:
+    """A/B implémentés (Epic 1) ; C/D/E restent des stubs jusqu'à l'Epic 3."""
+    from conductor.bmad_bridge import lancer_planification
 
     with pytest.raises(NotImplementedError):
-        cadrer("idée")
+        lancer_planification(object())  # type: ignore[arg-type]
