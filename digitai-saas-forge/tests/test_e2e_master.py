@@ -24,6 +24,8 @@ def test_cli_version_exits_zero() -> None:
 
 def test_pipeline_order_is_wired_scaffold_first(monkeypatch: pytest.MonkeyPatch) -> None:
     """run() câble A → onramp(B) → C → D → E ; l'onramp (scaffold-first) précède C."""
+    import types
+
     from conductor.onramp.base import Substrate
     from conductor.profiles import FASTAPI_SAAS
 
@@ -36,12 +38,17 @@ def test_pipeline_order_is_wired_scaffold_first(monkeypatch: pytest.MonkeyPatch)
 
         return _f
 
+    def fake_cadrer(*_a: object, **_k: object) -> object:
+        calls.append("A")
+        m = types.SimpleNamespace(mode="greenfield", brownfield_intent="remediation")
+        return m
+
     class RecOnramp:
         def prepare(self, config: object, dest: Path) -> Substrate:
             calls.append("B")
             return Substrate(repo_path=dest, profile=FASTAPI_SAAS, design_md_path=dest / "d.md")
 
-    monkeypatch.setattr(cli, "cadrer", rec("A"))
+    monkeypatch.setattr(cli, "cadrer", fake_cadrer)
     monkeypatch.setattr(cli, "select_onramp", lambda _mission: RecOnramp())
     monkeypatch.setattr(cli, "lancer_planification", rec("C"))
     monkeypatch.setattr(cli, "preparer_sprint", rec("D"))
@@ -68,3 +75,18 @@ def test_run_pauses_at_hitl1_by_default(tmp_path: Path, monkeypatch: pytest.Monk
 
     with pytest.raises(HitlPending):
         cli.run("un CRM pour artisans", workdir=tmp_path)
+
+
+def test_select_planner_maps_intent() -> None:
+    from conductor.__main__ import _select_planner
+    from conductor.cadrage import cadrer
+    from conductor.planners import ComplementPlanner, CompositePlanner, RemediationPlanner
+
+    repo = Path(".")
+    assert _select_planner(cadrer("i")) is None  # greenfield → DefaultBmadPlanner (None)
+    rem = cadrer("i", mode="brownfield", existing_repo=repo, intent="remediation")
+    comp = cadrer("i", mode="brownfield", existing_repo=repo, intent="complement")
+    both = cadrer("i", mode="brownfield", existing_repo=repo, intent="both")
+    assert isinstance(_select_planner(rem), RemediationPlanner)
+    assert isinstance(_select_planner(comp), ComplementPlanner)
+    assert isinstance(_select_planner(both), CompositePlanner)

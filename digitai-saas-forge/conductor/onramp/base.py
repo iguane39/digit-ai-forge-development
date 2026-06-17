@@ -21,7 +21,7 @@ class Substrate(BaseModel):
     repo_path: Path
     profile: TargetProfile
     design_md_path: Path  # chemin CONCRET du DESIGN.md dans le repo (≠ convention du profil)
-    baseline: dict[str, Any] | None = None  # statut des checks existants (capturé en BA)
+    baseline: dict[str, bool] | None = None  # statut vert/rouge des gates existants (capturé en BA)
     arch_map: dict[str, Any] | None = None  # carte d'architecture (remplie en BC/BB)
     declared_degradation: list[str] = Field(default_factory=list)  # dégradation explicite (B)
 
