@@ -22,6 +22,7 @@ from conductor.contracts import (
     StoryResult,
 )
 from conductor.gates.design_gate import run_design_gate
+from conductor.gates.regression_gate import evaluate_regression
 from conductor.governance import HumanGate, ManualGate
 
 GATE_MAX_RETRIES = 3  # DE-3 : 3 retries d'agent avant escalade HITL
@@ -72,16 +73,22 @@ def superviser(
     design_md = layout.project_root / "design" / "DESIGN.md"
     check: DesignCheck = design_check or (lambda _outcome: run_design_gate(design_md))
 
+    def _passes(o: StoryOutcome) -> bool:
+        design_ok = check(o).passed
+        current = {"code": o.code_ok, "design": design_ok}
+        no_regression = evaluate_regression(layout.baseline or {}, current).passed
+        return o.code_ok and design_ok and no_regression
+
     results: list[StoryResult] = []
     all_ready = True
 
     for outcome in runner.run_sprint(layout):
         attempts = 1
-        passed = outcome.code_ok and check(outcome).passed
+        passed = _passes(outcome)
         while not passed and attempts <= max_retries:
             outcome = runner.remediate(outcome.story_id, layout)  # noqa: PLW2901
             attempts += 1
-            passed = outcome.code_ok and check(outcome).passed
+            passed = _passes(outcome)
 
         if passed:
             results.append(
