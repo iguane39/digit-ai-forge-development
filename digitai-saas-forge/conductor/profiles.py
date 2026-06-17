@@ -6,7 +6,7 @@ Le profil `fastapi-saas` réifie le comportement actuel de la forge (cf. spec br
 
 from __future__ import annotations
 
-from pydantic import BaseModel, PrivateAttr
+from pydantic import BaseModel, Field
 
 from conductor.catalog import CATALOG, BrickSpec
 
@@ -17,20 +17,7 @@ class TargetProfile(BaseModel):
     has_ui: bool  # le gate design s'applique-t-il ?
     design_md_path: str = "design/DESIGN.md"
     conventions: str = ""
-
-    # Stocké comme attribut privé pour préserver l'identité de la référence passée.
-    _brick_catalog: dict[str, BrickSpec] = PrivateAttr(default_factory=dict)
-
-    def __init__(
-        self, *, brick_catalog: dict[str, BrickSpec] | None = None, **data: object
-    ) -> None:
-        super().__init__(**data)
-        self._brick_catalog = brick_catalog if brick_catalog is not None else {}
-
-    @property
-    def brick_catalog(self) -> dict[str, BrickSpec]:
-        """Catalogue de briques — référence identité préservée."""
-        return self._brick_catalog
+    brick_catalog: dict[str, BrickSpec] = Field(default_factory=dict)
 
     @property
     def enforceable(self) -> dict[str, bool]:

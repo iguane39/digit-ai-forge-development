@@ -11,7 +11,7 @@ def test_fastapi_profile_reifies_current_behavior() -> None:
     assert FASTAPI_SAAS.code_check == "uv run pytest"
     assert FASTAPI_SAAS.has_ui is True
     assert FASTAPI_SAAS.design_md_path == "design/DESIGN.md"
-    assert FASTAPI_SAAS.brick_catalog is CATALOG  # le catalogue actuel devient le brick_catalog
+    assert FASTAPI_SAAS.brick_catalog == CATALOG  # le catalogue actuel devient le brick_catalog
 
 
 def test_enforceable_reflects_gates() -> None:
