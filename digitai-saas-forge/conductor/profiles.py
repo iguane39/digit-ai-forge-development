@@ -15,7 +15,7 @@ class TargetProfile(BaseModel):
     name: str
     code_check: str | None  # commande du gate code ; None → gate code non applicable
     has_ui: bool  # le gate design s'applique-t-il ?
-    design_md_path: str = "design/DESIGN.md"
+    design_md_path: str = "design/DESIGN.md"  # convention RELATIVE (≠ chemin concret du Substrate)
     conventions: str = ""
     brick_catalog: dict[str, BrickSpec] = Field(default_factory=dict)
 
