@@ -82,7 +82,7 @@ perimetro dai vincoli, poi percorre la catena:
 6. **Config di sprint (D)** — layout del backlog + sezione `bad:` (`auto_pr_merge=false`).
 7. **Sprint supervisionato (E) → HITL 2** — `/bad` per story, doppio gate, 3 retry; nessun merge senza revisione umana.
 
-Prompt operatore completo: **[`docs/conductor-run-playbook.md`](docs/conductor-run-playbook.md)**.
+Prompt operatore completo: **[`docs/conductor-run-playbook.it.md`](docs/conductor-run-playbook.it.md)**.
 
 ## Licenza
 

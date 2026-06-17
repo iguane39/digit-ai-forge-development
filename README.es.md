@@ -82,7 +82,7 @@ el operador separa el alcance de las restricciones y luego recorre la cadena:
 6. **Config de sprint (D)** — layout del backlog + sección `bad:` (`auto_pr_merge=false`).
 7. **Sprint supervisado (E) → HITL 2** — `/bad` por historia, doble compuerta, 3 reintentos; ningún merge sin revisión humana.
 
-Prompt de operador completo: **[`docs/conductor-run-playbook.md`](docs/conductor-run-playbook.md)**.
+Prompt de operador completo: **[`docs/conductor-run-playbook.es.md`](docs/conductor-run-playbook.es.md)**.
 
 ## Licencia
 
