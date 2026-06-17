@@ -118,3 +118,31 @@ class GateVerdict(BaseModel):
     passed: bool
     findings: list[dict[str, str]] = Field(default_factory=list)
     log_ref: str = ""
+
+
+# --- E : superviseur / sprint -----------------------------------------------
+
+
+class StoryOutcome(BaseModel):
+    """Résultat d'un développement de story par BAD (code via son pipeline interne)."""
+
+    story_id: str
+    code_ok: bool
+    pr_url: str | None = None
+
+
+class StoryResult(BaseModel):
+    """Verdict final d'une story après double gate + remédiation (DE-3)."""
+
+    story_id: str
+    status: Literal["ready-for-review", "blocked"]
+    attempts: int
+    pr_url: str | None = None
+
+
+class SprintReport(BaseModel):
+    """Bilan du sprint supervisé. `merged` est verrouillé à False (HITL 2, décision 07)."""
+
+    results: list[StoryResult] = Field(default_factory=list)
+    hitl2_approved: bool = False
+    merged: Literal[False] = False

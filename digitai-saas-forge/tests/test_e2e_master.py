@@ -9,6 +9,7 @@ breaking change d'un upstream** (NFR-3, risque 8 — décision 06).
 from __future__ import annotations
 
 from collections.abc import Callable
+from pathlib import Path
 
 import pytest
 
@@ -43,9 +44,22 @@ def test_pipeline_order_is_wired_scaffold_first(monkeypatch: pytest.MonkeyPatch)
     assert calls.index("B") < calls.index("C")  # scaffold-first
 
 
-def test_downstream_steps_not_yet_implemented() -> None:
-    """A/B implémentés (Epic 1) ; C/D/E restent des stubs jusqu'à l'Epic 3."""
-    from conductor.bmad_bridge import lancer_planification
+def test_run_pauses_at_hitl1_by_default(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Avec les défauts (ManualGate), la chaîne s'arrête à HITL 1 : gouvernance, pas échec.
 
-    with pytest.raises(NotImplementedError):
-        lancer_planification(object())  # type: ignore[arg-type]
+    On neutralise le scaffold (B, pas de copier réseau) et l'install BMAD (pas de npx),
+    puis on laisse la logique réelle de C atteindre le point HITL non approuvé.
+    """
+    import conductor.__main__ as cli
+    from conductor.contracts import ScaffoldResult
+    from conductor.governance import HitlPending
+
+    def fake_scaffold(_config: object, dest: Path, **_kw: object) -> ScaffoldResult:
+        return ScaffoldResult(repo_path=dest, ci_harness_ready=True, design_md_path=dest / "d.md")
+
+    monkeypatch.setattr(cli, "scaffold", fake_scaffold)
+    # pas de réseau : on neutralise l'install BMAD (npx)
+    monkeypatch.setattr("conductor.bmad_bridge.subprocess.run", lambda *a, **k: None)
+
+    with pytest.raises(HitlPending):
+        cli.run("un CRM pour artisans", workdir=tmp_path)

@@ -29,8 +29,8 @@ def run(idea: str, *, workdir: Path = Path("generated")) -> None:
     mission = cadrer(idea)  # A
     dest = workdir / _slug(idea)
     built = scaffold(mission, dest)  # B — scaffold-first (avant tout agent)
-    plan = lancer_planification(built)  # C — pose HITL 1
-    layout = preparer_sprint(plan)  # D — placement & config (pas de graphe, S-1)
+    plan = lancer_planification(built)  # C — pose HITL 1 (pause si non approuvé)
+    layout = preparer_sprint(plan, dest)  # D — placement & config (pas de graphe, S-1)
     superviser(layout)  # E — /bad + double gate, pose HITL 2
 
 
