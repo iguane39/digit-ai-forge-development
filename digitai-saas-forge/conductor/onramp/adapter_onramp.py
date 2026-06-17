@@ -14,24 +14,10 @@ from conductor.gates.code_gate import CommandRunner
 from conductor.gates.design_gate import DesignLinter
 from conductor.onramp.analyzer import Analyzer, HeuristicAnalyzer
 from conductor.onramp.base import Substrate
+from conductor.onramp.defaults import DEFAULT_DESIGN_MD
 from conductor.onramp.detect import has_ci
 from conductor.onramp.no_onramp import capture_baseline
 from conductor.profiles import FASTAPI_SAAS
-
-_DEFAULT_DESIGN_MD = """---
-name: Imported Project
-colors:
-  primary: "#2563eb"
-  ink: "#0f172a"
-typography:
-  heading: "Roboto"
-  body: "DM Sans"
----
-
-# Design System (importé)
-
-Charte minimale créée par AdapterOnramp (branche C). À compléter par la charte réelle.
-"""
 
 
 class AdapterOnramp:
@@ -60,7 +46,7 @@ class AdapterOnramp:
         design_md = repo / FASTAPI_SAAS.design_md_path
         if not design_md.exists():
             design_md.parent.mkdir(parents=True, exist_ok=True)
-            design_md.write_text(_DEFAULT_DESIGN_MD, encoding="utf-8")
+            design_md.write_text(DEFAULT_DESIGN_MD, encoding="utf-8")
             notes.append("DESIGN.md créé par normalisation (à compléter).")
 
         if not has_ci(repo):
