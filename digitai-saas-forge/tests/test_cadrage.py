@@ -41,3 +41,11 @@ def test_cadrer_default_target_and_charter() -> None:
     cfg = cadrer("idée")
     assert cfg.target == "fastapi-saas"
     assert cfg.style_slug == "digitai"
+
+
+def test_cadrer_default_mode_is_greenfield() -> None:
+    assert cadrer("idée").mode == "greenfield"
+
+
+def test_cadrer_accepts_brownfield_mode() -> None:
+    assert cadrer("idée", mode="brownfield").mode == "brownfield"
