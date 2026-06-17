@@ -15,6 +15,7 @@ from conductor import __version__
 from conductor.bmad_bridge import BmadPlanner, lancer_planification
 from conductor.cadrage import cadrer
 from conductor.contracts import MissionConfig
+from conductor.governance import require_hitl0
 from conductor.onramp import select_onramp
 from conductor.planners import ComplementPlanner, CompositePlanner, RemediationPlanner
 from conductor.sprint_config import preparer_sprint
@@ -61,6 +62,10 @@ def run(
     else:
         target = workdir / _slug(idea)
     substrate = select_onramp(mission).prepare(mission, target)  # B
+    # HITL-0 seulement s'il y a quelque chose à valider (normalisation/dégradation déclarée) :
+    # actif en C/B, sauté en A (repo déjà conforme) — conforme à la spec.
+    if mission.mode == "brownfield" and substrate.declared_degradation:
+        require_hitl0("normalisation & carte d'archi", substrate)
     plan = lancer_planification(substrate, planner=_select_planner(mission))  # C — HITL 1
     layout = preparer_sprint(plan, target, baseline=substrate.baseline)  # D
     superviser(layout)  # E — HITL 2
