@@ -53,8 +53,13 @@ def run(
         existing_repo=existing_repo,
         intent=intent,  # type: ignore[arg-type]
     )
-    target = existing_repo if mission.mode == "brownfield" else workdir / _slug(idea)
-    assert target is not None
+    if mission.mode == "brownfield":
+        # Invariant déjà garanti par cadrer() ; défense en profondeur (≠ assert, non silencé par -O).
+        if mission.existing_repo is None:
+            raise ValueError("Le mode brownfield exige un existing_repo.")
+        target = mission.existing_repo
+    else:
+        target = workdir / _slug(idea)
     substrate = select_onramp(mission).prepare(mission, target)  # B
     plan = lancer_planification(substrate, planner=_select_planner(mission))  # C — HITL 1
     layout = preparer_sprint(plan, target, baseline=substrate.baseline)  # D
