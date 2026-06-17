@@ -15,9 +15,15 @@ typography:
   body: "DM Sans"
   mono: "JetBrains Mono"
 spacing:
-  unit: 4
-radius:
+  xs: 4
+  sm: 8
+  md: 16
+  lg: 24
+  xl: 40
+rounded:
+  sm: 6
   card: 12
+  pill: 999
 ---
 
 # Digit-AI SaaS Forge — Design System
@@ -50,3 +56,13 @@ Fond `primary`, texte `surface` : ratio de contraste conforme WCAG AA pour le te
 ### card
 
 Fond `surface`, rayon `card` (12px), bordure discrète. Conteneur de base du tableau de bord.
+
+## Spacing
+
+Échelle d'espacement (en px) : `xs` 4, `sm` 8, `md` 16, `lg` 24, `xl` 40. Toutes les marges
+et paddings dérivent de cette échelle — pas de valeurs arbitraires.
+
+## Rounded
+
+Rayons de coin : `sm` 6, `card` 12, `pill` 999. Les cartes utilisent `card`, les boutons
+pleins `sm`, les badges `pill`.

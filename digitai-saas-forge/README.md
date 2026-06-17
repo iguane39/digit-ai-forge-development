@@ -36,9 +36,11 @@ et la charte via [`design/DESIGN.md`](design/DESIGN.md) (lintable → tokens Tai
 2. Revue & merge final (après le double gate). `auto_pr_merge` est forcé à `false`.
 
 ## Double gate en CI
-[`.github/workflows/double-gate.yml`](.github/workflows/double-gate.yml) — le merge est
+[`../.github/workflows/double-gate.yml`](../.github/workflows/double-gate.yml) — le merge est
 bloqué si le job `code` (ruff/mypy/pytest) ou `design` (design.md lint + politique de
-sévérité) échoue. ⚠ Le gate design ne se fie pas à l'exit code du linter (cf. piège S-2.3).
+sévérité) échoue. Les **deux gates sont bloquants** depuis l'Epic 2. ⚠ Le gate design ne se
+fie pas à l'exit code du linter (cf. piège S-2.3) : il parse le JSON et applique sa propre
+politique de sévérité.
 
 ## Documentation de conception
 [`../docs/`](../docs/) — analyse, PRD, architecture, plan d'implémentation, notes de spike,
