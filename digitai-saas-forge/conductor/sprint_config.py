@@ -31,6 +31,7 @@ def preparer_sprint(
     project_root: Path,
     *,
     config: BadConfig | None = None,
+    baseline: dict[str, bool] | None = None,
 ) -> BadSprintLayout:
     """D · place le backlog + écrit la config `bad:` pour que /bad démarre.
 
@@ -54,4 +55,5 @@ def preparer_sprint(
         sprint_status_yaml=project_root / SPRINT_STATUS_FILE,
         bmad_config_yaml=project_root / CONFIG_FILE,
         config=cfg,
+        baseline=baseline,
     )

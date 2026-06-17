@@ -43,3 +43,14 @@ def test_layout_points_to_bad_expected_paths(tmp_path: Path) -> None:
     assert layout.bmad_config_yaml == tmp_path / "_bmad/config.yaml"
     tail = layout.sprint_status_yaml.parts[-2:]
     assert tail == ("implementation-artifacts", "sprint-status.yaml")
+
+
+def test_baseline_is_carried_into_layout(tmp_path: Path) -> None:
+    plan = _plan(approved=True)
+    layout = preparer_sprint(plan, tmp_path, baseline={"code": True, "design": False})
+    assert layout.baseline == {"code": True, "design": False}
+
+
+def test_baseline_defaults_to_none(tmp_path: Path) -> None:
+    layout = preparer_sprint(_plan(approved=True), tmp_path)
+    assert layout.baseline is None
