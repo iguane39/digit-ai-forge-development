@@ -15,7 +15,7 @@ from conductor.gates.design_gate import DesignLinter
 from conductor.onramp.analyzer import Analyzer, HeuristicAnalyzer
 from conductor.onramp.base import Substrate
 from conductor.onramp.defaults import DEFAULT_DESIGN_MD
-from conductor.onramp.detect import has_ci
+from conductor.onramp.detect import has_ci, has_pyproject
 from conductor.onramp.no_onramp import capture_baseline
 from conductor.profiles import FASTAPI_SAAS
 
@@ -36,7 +36,7 @@ class AdapterOnramp:
 
     def prepare(self, config: MissionConfig, dest: Path) -> Substrate:
         repo = dest
-        if not (repo / "pyproject.toml").exists():
+        if not has_pyproject(repo):
             raise ValueError(
                 f"AdapterOnramp (C) attend un repo FastAPI (pyproject.toml absent) dans {repo} : "
                 "stack arbitraire → relève de l'epic BB."

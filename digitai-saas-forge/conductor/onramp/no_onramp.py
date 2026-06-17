@@ -13,6 +13,7 @@ from conductor.contracts import MissionConfig
 from conductor.gates.code_gate import CommandRunner, run_code_gate
 from conductor.gates.design_gate import DesignLinter, run_design_gate
 from conductor.onramp.base import Substrate
+from conductor.onramp.detect import has_pyproject
 from conductor.profiles import FASTAPI_SAAS, TargetProfile
 
 
@@ -47,7 +48,7 @@ class NoOnramp:
 
     def prepare(self, config: MissionConfig, dest: Path) -> Substrate:
         repo = dest  # en brownfield, `dest` EST le repo existant
-        if not (repo / "pyproject.toml").exists():
+        if not has_pyproject(repo):
             raise ValueError(
                 f"NoOnramp (branche A) attend un repo cible : marqueurs absents dans {repo} "
                 "(pyproject.toml introuvable). Un repo non conforme relève de BC/BB."
