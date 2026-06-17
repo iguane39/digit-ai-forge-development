@@ -38,7 +38,9 @@ def test_builder_resolves_node_profile_and_declares_degradation(tmp_path: Path) 
     repo = _node_repo(tmp_path)
     substrate = _onramp().prepare(cadrer("i", mode="brownfield", existing_repo=repo), repo)
     assert substrate.profile is NODE_TS
-    assert substrate.declared_degradation
+    # Les 2 notes inconditionnelles garantissent que HITL-0 se déclenche toujours en B.
+    assert any("synthétisé" in n for n in substrate.declared_degradation)
+    assert any("briques" in n for n in substrate.declared_degradation)
 
 
 def test_builder_creates_missing_design_md(tmp_path: Path) -> None:
