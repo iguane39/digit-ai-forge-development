@@ -62,9 +62,9 @@ conductor --version
 - **Epic 0 — Bootstrap** ✅ merged. Typed `conductor/` skeleton, `A→E` contracts, dual-gate CI, BAD vendoring `@v1.2.0`, dogfooding seed.
 - **Epic 1 — Scaffold-first** ✅ merged. Scoping (A) + scaffold (B) + 11-brick catalog + code gate.
 - **Epic 2 — Design axis** ✅ merged. Blocking design gate (`@google/design.md@0.3.0` + severity policy), reference `DESIGN.md`, vendored style, token export.
-- **Epic 3 — Full loop** 🚧 in review. BMAD bridge (C) + HITL 1, sprint adapter (D), supervisor (E) invoking `/bad` with per-story design gate, 3-retry remediation, and HITL 2 — autonomous merge locked off.
+- **Epic 3 — Full loop** ✅ merged. BMAD bridge (C) + HITL 1, sprint adapter (D), supervisor (E) invoking `/bad` with per-story design gate, 3-retry remediation, and HITL 2 — autonomous merge locked off.
 
-Both gates are green on GitHub Actions. The full `A→E` chain is wired and tested; running real BMAD/`/bad` requires a Claude Code harness. See [`docs/plan-implementation.md`](docs/plan-implementation.md).
+All four epics are integrated; both gates are green on GitHub Actions. The full `A→E` chain is wired and tested; running real BMAD/`/bad` requires a Claude Code harness. See [`docs/plan-implementation.md`](docs/plan-implementation.md).
 
 ## License
 

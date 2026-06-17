@@ -61,10 +61,12 @@ conductor --version
 
 ## Stato
 
-**Epic 0 (Bootstrap) — consegnato e verificato.** Scheletro `conductor/` tipizzato, contratti
-della pipeline `A→E`, CI a doppio gate, vendoring di BAD `@v1.2.0`, seed di dogfooding. Il gate
-di codice è verde su GitHub Actions. Prossimo: Epic 1 (scaffold-first), Epic 2 (asse design),
-Epic 3 (ciclo completo) — vedi [`docs/plan-implementation.md`](docs/plan-implementation.md).
+- **Epic 0 — Bootstrap** ✅ integrato. Scheletro `conductor/` tipizzato, contratti `A→E`, CI a doppio gate, vendoring di BAD `@v1.2.0`, seed di dogfooding.
+- **Epic 1 — Scaffold-first** ✅ integrato. Inquadramento (A) + scaffold (B) + catalogo 11 brick + gate di codice.
+- **Epic 2 — Asse design** ✅ integrato. Gate di design bloccante (`@google/design.md@0.3.0` + politica di severità), `DESIGN.md`, stile vendorizzato, export di token.
+- **Epic 3 — Ciclo completo** ✅ integrato. Ponte BMAD (C) + HITL 1, adattatore di sprint (D), supervisore (E) che invoca `/bad` con gate di design per story, remediation a 3 retry e HITL 2 — merge automatico bloccato.
+
+I quattro epic sono integrati; entrambi i gate sono verdi su GitHub Actions. La catena `A→E` è cablata e testata; l'esecuzione reale di BMAD/`/bad` richiede un harness Claude Code. Vedi [`docs/plan-implementation.md`](docs/plan-implementation.md).
 
 ## Licenza
 
