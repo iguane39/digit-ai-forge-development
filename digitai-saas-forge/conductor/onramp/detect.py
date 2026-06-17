@@ -35,7 +35,10 @@ def detect_distance(repo: Path) -> Literal["A", "C"]:
 
 
 def detect_stack(repo: Path) -> Literal["fastapi", "node-ts", "unknown"]:
-    """Détecte la stack par marqueurs : pyproject.toml → fastapi ; package.json → node-ts."""
+    """Détecte la stack par marqueurs : pyproject.toml → fastapi ; package.json → node-ts.
+
+    Priorité à pyproject.toml si les deux marqueurs coexistent (cas full-stack rare).
+    """
     if (repo / "pyproject.toml").exists():
         return "fastapi"
     if (repo / "package.json").exists():
