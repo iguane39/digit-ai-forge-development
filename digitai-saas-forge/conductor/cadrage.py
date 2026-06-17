@@ -8,6 +8,7 @@ imposées en `build`, quoi que demande l'appelant (décision canonique 05).
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Literal
 
 from conductor.catalog import CATALOG, T0_BRICKS
 from conductor.contracts import BrickChoice, MissionConfig
@@ -29,6 +30,7 @@ def _merge_t0(scope: list[BrickChoice]) -> list[BrickChoice]:
 def cadrer(
     idea: str,
     *,
+    mode: Literal["greenfield", "brownfield"] = "greenfield",
     target: str = "fastapi-saas",
     brand_charter: Path = DEFAULT_CHARTER,
     style_slug: str = DEFAULT_STYLE,
@@ -52,6 +54,7 @@ def cadrer(
 
     return MissionConfig(
         idea=idea.strip(),
+        mode=mode,
         target=target,
         budget=budget,
         deadline=deadline,

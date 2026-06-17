@@ -14,7 +14,7 @@ from pathlib import Path
 from conductor import __version__
 from conductor.bmad_bridge import lancer_planification
 from conductor.cadrage import cadrer
-from conductor.scaffold import scaffold
+from conductor.onramp import select_onramp
 from conductor.sprint_config import preparer_sprint
 from conductor.supervisor import superviser
 
@@ -25,11 +25,11 @@ def _slug(idea: str) -> str:
 
 
 def run(idea: str, *, workdir: Path = Path("generated")) -> None:
-    """Orchestration de bout en bout : A → B → C (HITL 1) → D → E (HITL 2)."""
+    """Orchestration de bout en bout : A → B (onramp) → C (HITL 1) → D → E (HITL 2)."""
     mission = cadrer(idea)  # A
     dest = workdir / _slug(idea)
-    built = scaffold(mission, dest)  # B — scaffold-first (avant tout agent)
-    plan = lancer_planification(built)  # C — pose HITL 1 (pause si non approuvé)
+    substrate = select_onramp(mission).prepare(mission, dest)  # B — scaffold-first (greenfield)
+    plan = lancer_planification(substrate)  # C — pose HITL 1 (pause si non approuvé)
     layout = preparer_sprint(plan, dest)  # D — placement & config (pas de graphe, S-1)
     superviser(layout)  # E — /bad + double gate, pose HITL 2
 
