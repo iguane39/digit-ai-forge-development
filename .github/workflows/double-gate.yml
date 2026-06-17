@@ -26,10 +26,9 @@ jobs:
         working-directory: digitai-saas-forge
 
   # --- Gate design (FR-G2/G3) : design.md lint + politique de sévérité forge ---
-  # Epic 0 : informational (continue-on-error). Devient BLOQUANT en Epic 2 (story 2.1).
+  # BLOQUANT depuis l'Epic 2 (story 2.1).
   design:
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -40,9 +39,12 @@ jobs:
       - run: uv sync --dev
         working-directory: digitai-saas-forge
       # ⚠ NE PAS se fier à l'exit code du linter (warnings → exit 0, cf. S-2.3).
-      # On capture le JSON, puis NOTRE politique décide du blocage.
+      # On capture le JSON via l'alias de bin `designmd` (robuste cross-plateforme),
+      # puis NOTRE politique décide du blocage.
       - name: design.md lint (JSON)
-        run: npx @google/design.md@0.3.0 lint --format json design/DESIGN.md > findings.json
+        run: >-
+          npx --yes -p @google/design.md@0.3.0 designmd lint
+          --format json design/DESIGN.md > findings.json
         working-directory: digitai-saas-forge
       - name: Politique de sévérité (gate bloquant)
         run: uv run python -m conductor.gates.design_gate findings.json

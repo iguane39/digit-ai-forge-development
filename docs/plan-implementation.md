@@ -64,15 +64,16 @@
 **Objectif** : brancher le gate design et rendre l'UI *on-system*.
 **Gate de sortie (dossier)** : **gate design (WCAG · refs).**
 
-| Story | Contenu | Fichiers-cibles | FR/NFR | Dépend de |
+| Story | Contenu | Fichiers-cibles | FR/NFR | Statut |
 |---|---|---|---|---|
-| **2.1** | Brancher `lint --format json` en CI (job `design`, `@0.3.0` épinglé dans `design.md.lock`) | `.github/workflows/double-gate.yml`, `design.md.lock` | FR-G2, risque 7 | S-2 ✅ |
-| **2.2** | `design_gate.py` : parse le JSON + **politique de sévérité** (⚠ l'exit code seul ne bloque pas — S-2.3) | `conductor/gates/design_gate.py` | FR-G2, FR-G3 | 2.1 |
-| **2.3** | Écrire un `DESIGN.md` de référence (charte Digit-AI, lintable) | `design/DESIGN.md` | FR-G2, NFR-5 | 2.1 |
-| **2.4** | Vendoriser 1 style (copie locale, sans CLI — arbitrage §8.4) | `design/styles/<slug>/` | NFR-2, risque 6 | — |
-| **2.5** | Export tokens (css-tailwind / dtcg) : charte → code sans ressaisie | pipeline d'export | décision 08 | 2.3 |
+| **2.1** | Job `design` **BLOQUANT** (`continue-on-error` retiré) ; invocation robuste `npx -p … designmd lint --format json` | `.github/workflows/double-gate.yml` | FR-G2/G3, risque 7 | ✅ |
+| **2.2** | `run_design_gate` : linter injectable + politique de sévérité sur le JSON (⚠ l'exit code seul ne bloque pas — S-2.3) | `conductor/gates/design_gate.py` | FR-G2, FR-G3 | ✅ |
+| **2.3** | `DESIGN.md` de référence (charte Digit-AI) — lint réel `errors:0, warnings:0` (3 notices `info`) | `design/DESIGN.md` | FR-G2, NFR-5 | ✅ |
+| **2.4** | Style vendorisé **par copie locale** (SKILL.md + provenance, DE-2, sans CLI) | `design/styles/digitai-minimal/` | NFR-2, risque 6 | ✅ |
+| **2.5** | `export_tokens` (css-tailwind / dtcg) via runner injectable | `conductor/tokens.py` | décision 08 | ✅ |
 
-**Sortie de gate** : `design.md lint` vert sur `design/DESIGN.md` (contraste WCAG 2.2 AA, refs non cassées, on-system). **CS-5** partiellement vérifiable.
+**Sortie de gate** : `design.md lint` réel vert sur `design/DESIGN.md` (errors:0, warnings:0) ; le gate est **bloquant** en CI et la politique de sévérité est testée (linter factice). **CS-5** vérifiable.
+**Note risque 7** : `designmd spec` est cassé dans le bundle 0.3.0 (`spec.md` manquant) — manifestation concrète de l'« alpha, schéma mouvant ». Usage limité à `lint`/`export` (stables), version épinglée `@0.3.0`.
 
 ---
 
