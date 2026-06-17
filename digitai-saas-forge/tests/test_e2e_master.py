@@ -23,7 +23,10 @@ def test_cli_version_exits_zero() -> None:
 
 
 def test_pipeline_order_is_wired_scaffold_first(monkeypatch: pytest.MonkeyPatch) -> None:
-    """run() doit câbler A→B→C→D→E ; B (scaffold) appelé avant C (BMAD) — décision 02."""
+    """run() câble A → onramp(B) → C → D → E ; l'onramp (scaffold-first) précède C."""
+    from conductor.onramp.base import Substrate
+    from conductor.profiles import FASTAPI_SAAS
+
     calls: list[str] = []
 
     def rec(name: str) -> Callable[..., object]:
@@ -33,32 +36,34 @@ def test_pipeline_order_is_wired_scaffold_first(monkeypatch: pytest.MonkeyPatch)
 
         return _f
 
+    class RecOnramp:
+        def prepare(self, config: object, dest: Path) -> Substrate:
+            calls.append("B")
+            return Substrate(repo_path=dest, profile=FASTAPI_SAAS, design_md_path=dest / "d.md")
+
     monkeypatch.setattr(cli, "cadrer", rec("A"))
-    monkeypatch.setattr(cli, "scaffold", rec("B"))
+    monkeypatch.setattr(cli, "select_onramp", lambda _mode: RecOnramp())
     monkeypatch.setattr(cli, "lancer_planification", rec("C"))
     monkeypatch.setattr(cli, "preparer_sprint", rec("D"))
     monkeypatch.setattr(cli, "superviser", rec("E"))
 
     cli.run("idée de test")
     assert calls == ["A", "B", "C", "D", "E"]
-    assert calls.index("B") < calls.index("C")  # scaffold-first
 
 
 def test_run_pauses_at_hitl1_by_default(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Avec les défauts (ManualGate), la chaîne s'arrête à HITL 1 : gouvernance, pas échec.
-
-    On neutralise le scaffold (B, pas de copier réseau) et l'install BMAD (pas de npx),
-    puis on laisse la logique réelle de C atteindre le point HITL non approuvé.
-    """
-    import conductor.__main__ as cli
-    from conductor.contracts import ScaffoldResult
+    """Défaut greenfield : on neutralise l'onramp (pas de copier) et l'install BMAD (pas de npx) ;
+    la logique réelle de C atteint le point HITL non approuvé → HitlPending."""
+    from conductor.contracts import MissionConfig
     from conductor.governance import HitlPending
+    from conductor.onramp.base import Substrate
+    from conductor.profiles import FASTAPI_SAAS
 
-    def fake_scaffold(_config: object, dest: Path, **_kw: object) -> ScaffoldResult:
-        return ScaffoldResult(repo_path=dest, ci_harness_ready=True, design_md_path=dest / "d.md")
+    class FakeOnramp:
+        def prepare(self, config: MissionConfig, dest: Path) -> Substrate:
+            return Substrate(repo_path=dest, profile=FASTAPI_SAAS, design_md_path=dest / "d.md")
 
-    monkeypatch.setattr(cli, "scaffold", fake_scaffold)
-    # pas de réseau : on neutralise l'install BMAD (npx)
+    monkeypatch.setattr(cli, "select_onramp", lambda _mode: FakeOnramp())
     monkeypatch.setattr("conductor.bmad_bridge.subprocess.run", lambda *a, **k: None)
 
     with pytest.raises(HitlPending):

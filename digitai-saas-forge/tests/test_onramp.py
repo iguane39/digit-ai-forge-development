@@ -54,9 +54,13 @@ def test_scaffold_onramp_generates_and_returns_substrate(tmp_path: Path) -> None
 
 
 def test_select_onramp_greenfield_is_scaffold() -> None:
-    assert isinstance(select_onramp("greenfield"), ScaffoldOnramp)
+    mission = MissionConfig(idea="test", brand_charter=Path("d.md"), style_slug="minimal")
+    assert isinstance(select_onramp(mission), ScaffoldOnramp)
 
 
 def test_select_onramp_brownfield_not_yet_implemented() -> None:
+    mission = MissionConfig(
+        idea="test", mode="brownfield", brand_charter=Path("d.md"), style_slug="minimal"
+    )
     with pytest.raises(NotImplementedError, match="BA"):
-        select_onramp("brownfield")
+        select_onramp(mission)
