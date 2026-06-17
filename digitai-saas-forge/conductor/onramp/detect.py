@@ -12,8 +12,11 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Literal
 
+from conductor.profiles import FASTAPI_SAAS
 
-def _has_ci(repo: Path) -> bool:
+
+def has_ci(repo: Path) -> bool:
+    """Présence d'un workflow CI (.github/workflows/*.yml|*.yaml)."""
     wf = repo / ".github" / "workflows"
     if not wf.is_dir():
         return False
@@ -27,6 +30,5 @@ def detect_distance(repo: Path) -> Literal["A", "C"]:
             f"Repo non reconnu comme cible FastAPI (pyproject.toml absent) dans {repo} : "
             "stack arbitraire → relève de l'epic BB (BuilderOnramp)."
         )
-    has_design = (repo / "design" / "DESIGN.md").exists()
-    has_ci = _has_ci(repo)
-    return "A" if (has_design and has_ci) else "C"
+    has_design = (repo / FASTAPI_SAAS.design_md_path).exists()
+    return "A" if (has_design and has_ci(repo)) else "C"

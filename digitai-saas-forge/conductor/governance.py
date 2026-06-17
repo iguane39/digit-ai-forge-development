@@ -31,5 +31,6 @@ def require_hitl0(subject: str, payload: object, *, gate: HumanGate | None = Non
     Lève HitlPending si non approuvé (défaut ManualGate → pause). Optionnel/léger en C,
     fortement recommandé en B (dégradation déclarée à valider).
     """
-    if not (gate or ManualGate()).approve(f"HITL-0 — {subject}", payload):
+    resolved = gate if gate is not None else ManualGate()
+    if not resolved.approve(f"HITL-0 — {subject}", payload):
         raise HitlPending(f"HITL-0 — validation requise : {subject}")
