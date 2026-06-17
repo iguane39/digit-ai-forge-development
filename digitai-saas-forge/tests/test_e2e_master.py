@@ -86,12 +86,37 @@ def test_brownfield_run_pauses_at_hitl0(tmp_path: Path, monkeypatch: pytest.Monk
 
     class _FakeOnramp:
         def prepare(self, config: MissionConfig, dest: Path) -> Substrate:
-            return Substrate(repo_path=dest, profile=FASTAPI_SAAS, design_md_path=dest / "d.md")
+            # dégradation déclarée non vide → HITL-0 doit se déclencher (cas C/B).
+            return Substrate(
+                repo_path=dest,
+                profile=FASTAPI_SAAS,
+                design_md_path=dest / "d.md",
+                declared_degradation=["DESIGN.md créé par normalisation"],
+            )
 
     monkeypatch.setattr(cli, "select_onramp", lambda _m: _FakeOnramp())
 
     with pytest.raises(HitlPending, match="HITL-0"):
         cli.run("assainir", mode="brownfield", existing_repo=tmp_path)
+
+
+def test_brownfield_distance_a_skips_hitl0(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Distance A (aucune dégradation déclarée) : HITL-0 sauté → la chaîne pause à HITL 1."""
+    from conductor.contracts import MissionConfig
+    from conductor.governance import HitlPending
+    from conductor.onramp.base import Substrate
+    from conductor.profiles import FASTAPI_SAAS
+
+    class _FakeOnrampA:
+        def prepare(self, config: MissionConfig, dest: Path) -> Substrate:
+            # pas de declared_degradation (repo déjà conforme) → HITL-0 sauté
+            return Substrate(repo_path=dest, profile=FASTAPI_SAAS, design_md_path=dest / "d.md")
+
+    monkeypatch.setattr(cli, "select_onramp", lambda _m: _FakeOnrampA())
+
+    with pytest.raises(HitlPending) as exc:
+        cli.run("assainir", mode="brownfield", existing_repo=tmp_path)
+    assert "HITL-0" not in str(exc.value)  # ce n'est pas HITL-0 : c'est HITL 1 (planification)
 
 
 def test_select_planner_maps_intent() -> None:
