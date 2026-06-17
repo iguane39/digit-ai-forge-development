@@ -54,7 +54,7 @@ def run(
         intent=intent,  # type: ignore[arg-type]
     )
     if mission.mode == "brownfield":
-        # Invariant déjà garanti par cadrer() ; défense en profondeur (≠ assert, non silencé par -O).
+        # garde explicite (≠ assert, non silencé par -O) ; cadrer() garantit déjà l'invariant
         if mission.existing_repo is None:
             raise ValueError("Le mode brownfield exige un existing_repo.")
         target = mission.existing_repo
