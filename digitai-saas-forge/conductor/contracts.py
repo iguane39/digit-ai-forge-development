@@ -107,6 +107,7 @@ class BadSprintLayout(BaseModel):
     sprint_status_yaml: Path  # _bmad-output/implementation-artifacts/sprint-status.yaml
     bmad_config_yaml: Path  # _bmad/config.yaml AVEC section bad:
     config: BadConfig = Field(default_factory=BadConfig)
+    baseline: dict[str, bool] | None = None  # statut des gates avant intervention (brownfield)
 
 
 # --- Gates ------------------------------------------------------------------
