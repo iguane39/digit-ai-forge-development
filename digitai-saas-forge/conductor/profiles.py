@@ -34,3 +34,20 @@ FASTAPI_SAAS = TargetProfile(
     conventions="ruff + mypy strict; FastAPI + React; scaffold-first; double gate",
     brick_catalog=CATALOG,
 )
+
+# Profil non-FastAPI (1ᵉʳ profil BB). B-standard : on hisse au contrat dans la stack d'origine.
+NODE_TS = TargetProfile(
+    name="node-ts",
+    code_check="npm test",
+    has_ui=True,
+    design_md_path="design/DESIGN.md",
+    conventions="Node/TypeScript ; npm test ; UI présente",
+    brick_catalog={},
+)
+
+_PROFILES: dict[str, TargetProfile] = {"fastapi": FASTAPI_SAAS, "node-ts": NODE_TS}
+
+
+def profile_for_stack(stack: str) -> TargetProfile | None:
+    """Mappe une stack détectée à son TargetProfile (None si non supportée)."""
+    return _PROFILES.get(stack)
