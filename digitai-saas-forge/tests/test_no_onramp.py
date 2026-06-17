@@ -57,6 +57,12 @@ def test_no_onramp_returns_substrate_with_baseline(tmp_path: Path) -> None:
     assert substrate.baseline == {"code": True, "design": True}
 
 
-def test_select_onramp_brownfield_is_no_onramp() -> None:
-    mission = cadrer("idée", mode="brownfield", existing_repo=Path("."))
+def test_select_onramp_brownfield_is_no_onramp(tmp_path: Path) -> None:
+    """Un repo distance A (pyproject + DESIGN.md + CI) → NoOnramp."""
+    (tmp_path / "pyproject.toml").write_text("[project]\nname='x'\n", encoding="utf-8")
+    (tmp_path / "design").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "design" / "DESIGN.md").write_text("# DESIGN\n", encoding="utf-8")
+    (tmp_path / ".github" / "workflows").mkdir(parents=True, exist_ok=True)
+    (tmp_path / ".github" / "workflows" / "ci.yml").write_text("name: ci\n", encoding="utf-8")
+    mission = cadrer("idée", mode="brownfield", existing_repo=tmp_path)
     assert isinstance(select_onramp(mission), NoOnramp)
