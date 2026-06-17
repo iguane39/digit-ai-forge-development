@@ -62,8 +62,10 @@ def run(
     else:
         target = workdir / _slug(idea)
     substrate = select_onramp(mission).prepare(mission, target)  # B
-    if mission.mode == "brownfield":
-        require_hitl0("normalisation & carte d'archi", substrate)  # HITL-0 (pause par défaut)
+    # HITL-0 seulement s'il y a quelque chose à valider (normalisation/dégradation déclarée) :
+    # actif en C/B, sauté en A (repo déjà conforme) — conforme à la spec.
+    if mission.mode == "brownfield" and substrate.declared_degradation:
+        require_hitl0("normalisation & carte d'archi", substrate)
     plan = lancer_planification(substrate, planner=_select_planner(mission))  # C — HITL 1
     layout = preparer_sprint(plan, target, baseline=substrate.baseline)  # D
     superviser(layout)  # E — HITL 2

@@ -14,7 +14,7 @@ from conductor.gates.code_gate import CommandRunner
 from conductor.gates.design_gate import DesignLinter
 from conductor.onramp.analyzer import Analyzer, HeuristicAnalyzer
 from conductor.onramp.base import Substrate
-from conductor.onramp.detect import _has_ci
+from conductor.onramp.detect import has_ci
 from conductor.onramp.no_onramp import capture_baseline
 from conductor.profiles import FASTAPI_SAAS
 
@@ -63,7 +63,7 @@ class AdapterOnramp:
             design_md.write_text(_DEFAULT_DESIGN_MD, encoding="utf-8")
             notes.append("DESIGN.md créé par normalisation (à compléter).")
 
-        if not _has_ci(repo):
+        if not has_ci(repo):
             notes.append("Harness CI absent : le gate code s'appuiera sur un harness à fournir.")
 
         arch_map = self._analyzer.analyze(repo)
