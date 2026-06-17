@@ -11,7 +11,10 @@ from __future__ import annotations
 
 import subprocess
 from pathlib import Path
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
+
+if TYPE_CHECKING:
+    from conductor.profiles import TargetProfile
 
 from conductor.contracts import GateVerdict
 
@@ -31,14 +34,19 @@ class SubprocessRunner:
 def run_code_gate(
     repo_path: Path,
     *,
+    profile: TargetProfile | None = None,
     command: str = DEFAULT_CODE_CHECK,
     runner: CommandRunner | None = None,
 ) -> GateVerdict:
-    """Lit le verdict de la CI du template pour le dépôt de story (passed = exit 0)."""
-    rc = (runner or SubprocessRunner()).run(command, repo_path)
+    """Lit le verdict de la CI pour le dépôt de story (passed = exit 0).
+
+    La commande vient du `TargetProfile` si fourni (sinon `command`/défaut).
+    """
+    cmd = profile.code_check if (profile and profile.code_check) else command
+    rc = (runner or SubprocessRunner()).run(cmd, repo_path)
     return GateVerdict(
         gate="code",
         passed=rc == 0,
-        findings=[] if rc == 0 else [{"command": command, "returncode": str(rc)}],
+        findings=[] if rc == 0 else [{"command": cmd, "returncode": str(rc)}],
         log_ref=str(repo_path),
     )
