@@ -23,9 +23,14 @@ def has_ci(repo: Path) -> bool:
     return any(wf.glob("*.yml")) or any(wf.glob("*.yaml"))
 
 
+def has_pyproject(repo: Path) -> bool:
+    """Marqueur de projet Python/FastAPI : présence de pyproject.toml."""
+    return (repo / "pyproject.toml").exists()
+
+
 def detect_distance(repo: Path) -> Literal["A", "C"]:
     """Classe le repo : 'A' (déjà cible) ou 'C' (à normaliser). Lève si non-FastAPI (→ BB)."""
-    if not (repo / "pyproject.toml").exists():
+    if not has_pyproject(repo):
         raise ValueError(
             f"Repo non reconnu comme cible FastAPI (pyproject.toml absent) dans {repo} : "
             "stack arbitraire → relève de l'epic BB (BuilderOnramp)."

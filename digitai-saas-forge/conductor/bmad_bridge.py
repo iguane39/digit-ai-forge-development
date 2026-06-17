@@ -65,6 +65,7 @@ def lancer_planification(
     Lève HitlPending si la planification n'est pas approuvée par un humain (décision 07).
     """
     plan = (planner or DefaultBmadPlanner()).plan(substrate)
-    if not (gate or ManualGate()).approve("PRD & architecture (HITL 1)", plan):
+    resolved_gate = gate if gate is not None else ManualGate()
+    if not resolved_gate.approve("PRD & architecture (HITL 1)", plan):
         raise HitlPending("HITL 1 — validation du PRD & de l'architecture requise avant le dev.")
     return plan.model_copy(update={"hitl1_approved": True})

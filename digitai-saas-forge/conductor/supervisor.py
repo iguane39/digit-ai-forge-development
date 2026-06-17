@@ -69,7 +69,7 @@ def superviser(
     Ne merge jamais : `SprintReport.merged` reste False (décision 07).
     """
     runner = bad or DefaultBadRunner()
-    gate = hitl or ManualGate()
+    gate = hitl if hitl is not None else ManualGate()
     design_md = layout.project_root / "design" / "DESIGN.md"
     check: DesignCheck = design_check or (lambda _outcome: run_design_gate(design_md))
 
