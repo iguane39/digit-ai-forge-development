@@ -42,7 +42,7 @@ def test_pipeline_order_is_wired_scaffold_first(monkeypatch: pytest.MonkeyPatch)
             return Substrate(repo_path=dest, profile=FASTAPI_SAAS, design_md_path=dest / "d.md")
 
     monkeypatch.setattr(cli, "cadrer", rec("A"))
-    monkeypatch.setattr(cli, "select_onramp", lambda _mode: RecOnramp())
+    monkeypatch.setattr(cli, "select_onramp", lambda _mission: RecOnramp())
     monkeypatch.setattr(cli, "lancer_planification", rec("C"))
     monkeypatch.setattr(cli, "preparer_sprint", rec("D"))
     monkeypatch.setattr(cli, "superviser", rec("E"))
@@ -63,7 +63,7 @@ def test_run_pauses_at_hitl1_by_default(tmp_path: Path, monkeypatch: pytest.Monk
         def prepare(self, config: MissionConfig, dest: Path) -> Substrate:
             return Substrate(repo_path=dest, profile=FASTAPI_SAAS, design_md_path=dest / "d.md")
 
-    monkeypatch.setattr(cli, "select_onramp", lambda _mode: FakeOnramp())
+    monkeypatch.setattr(cli, "select_onramp", lambda _mission: FakeOnramp())
     monkeypatch.setattr("conductor.bmad_bridge.subprocess.run", lambda *a, **k: None)
 
     with pytest.raises(HitlPending):
