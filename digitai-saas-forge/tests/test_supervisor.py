@@ -75,3 +75,21 @@ def test_default_hitl2_pauses_without_human(tmp_path: Path) -> None:
     bad = FakeBad([StoryOutcome(story_id="4.1", code_ok=True, pr_url="pr/4.1")])
     report = superviser(_layout(tmp_path), bad=bad, design_check=_design_pass)
     assert report.hitl2_approved is False  # ManualGate par défaut → pas de merge
+
+
+def test_regression_blocks_when_baseline_green_turns_red(tmp_path: Path) -> None:
+    """Baseline code verte ; une story qui casse le code (code_ok=False) est bloquée par
+    le gate de non-régression, même après retries."""
+    layout = _layout(tmp_path)
+    layout.baseline = {"code": True}
+    bad = FakeBad([StoryOutcome(story_id="9.1", code_ok=False)])  # code rouge → régression
+    report = superviser(layout, bad=bad, design_check=_design_pass, hitl=ApproveGate())
+    assert report.results[0].status == "blocked"
+    assert report.results[0].attempts == 4  # 1 + 3 retries
+
+
+def test_no_regression_when_baseline_absent(tmp_path: Path) -> None:
+    layout = _layout(tmp_path)  # baseline None
+    bad = FakeBad([StoryOutcome(story_id="9.2", code_ok=True, pr_url="pr/9.2")])
+    report = superviser(layout, bad=bad, design_check=_design_pass, hitl=ApproveGate())
+    assert report.results[0].status == "ready-for-review"
