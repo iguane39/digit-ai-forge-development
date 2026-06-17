@@ -68,6 +68,22 @@ conductor --version
 
 Los cuatro epics están integrados; ambas compuertas están verdes en GitHub Actions. La cadena `A→E` está cableada y probada; la ejecución real de BMAD/`/bad` requiere un harness de Claude Code. Ver [`docs/plan-implementation.md`](docs/plan-implementation.md).
 
+## Lanzar un build — metodología
+
+La ejecución está orquestada pero **gobernada**: se detiene en dos puntos de validación humana
+por diseño y nunca fusiona automáticamente. Se adjunta un dosier de especificaciones/restricciones;
+el operador separa el alcance de las restricciones y luego recorre la cadena:
+
+1. **Clasificar** los adjuntos — alcance (el *qué*) vs restricciones (el *cómo*).
+2. **Preflight** — `gh` auth + token, `uv`/`node`, red, clonar la forge.
+3. **Encuadre (A)** — derivar un `MissionConfig` (11 bricks build/buy, t0 forzadas), luego validar.
+4. **Scaffold-first (B)** — generar el esqueleto antes de cualquier agente.
+5. **Planificación BMAD (C) → HITL 1** — PRD/arquitectura/épicas; aprobación humana requerida.
+6. **Config de sprint (D)** — layout del backlog + sección `bad:` (`auto_pr_merge=false`).
+7. **Sprint supervisado (E) → HITL 2** — `/bad` por historia, doble compuerta, 3 reintentos; ningún merge sin revisión humana.
+
+Prompt de operador completo: **[`docs/conductor-run-playbook.md`](docs/conductor-run-playbook.md)**.
+
 ## Licencia
 
 [MIT](LICENSE) © 2026 Digit-AI.
