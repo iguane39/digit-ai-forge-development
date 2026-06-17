@@ -1,6 +1,6 @@
 # Conductor Run — Playbook opérateur
 
-> 🌍 [English](conductor-run-playbook.md) · [Français](conductor-run-playbook.fr.md)
+> 🌍 [English](conductor-run-playbook.md) · [Français](conductor-run-playbook.fr.md) · [Español](conductor-run-playbook.es.md) · [Deutsch](conductor-run-playbook.de.md) · [Italiano](conductor-run-playbook.it.md) · [Português](conductor-run-playbook.pt.md)
 
 Ce playbook est le prompt opérateur pour piloter un `conductor run` de bout en bout de la
 Digit-AI SaaS Forge **depuis un autre projet Claude Code**, en joignant un dossier de
