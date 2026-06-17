@@ -52,6 +52,10 @@ class _ApproveGate:
 
 def test_brownfield_remediation_end_to_end(tmp_path: Path) -> None:
     (tmp_path / "pyproject.toml").write_text("[project]\nname='x'\n", encoding="utf-8")
+    (tmp_path / "design").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "design" / "DESIGN.md").write_text("# DESIGN\n", encoding="utf-8")
+    (tmp_path / ".github" / "workflows").mkdir(parents=True, exist_ok=True)
+    (tmp_path / ".github" / "workflows" / "ci.yml").write_text("name: ci\n", encoding="utf-8")
     mission = cadrer(
         "assainir le CRM", mode="brownfield", existing_repo=tmp_path, intent="remediation"
     )
