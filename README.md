@@ -66,6 +66,22 @@ conductor --version
 
 All four epics are integrated; both gates are green on GitHub Actions. The full `A→E` chain is wired and tested; running real BMAD/`/bad` requires a Claude Code harness. See [`docs/plan-implementation.md`](docs/plan-implementation.md).
 
+## Running a build — methodology
+
+The run is orchestrated but **governed**: it stops at two human checkpoints by design and never
+auto-merges. Attach a specs/constraints dossier; the operator splits scope from constraints,
+then drives the chain:
+
+1. **Classify** the attachments — scope (the *what*) vs constraints (the *how*).
+2. **Preflight** — `gh` auth + token, `uv`/`node`, network, clone the forge.
+3. **Scoping (A)** — derive a `MissionConfig` (11-brick build/buy, t0 forced), then confirm.
+4. **Scaffold-first (B)** — generate the skeleton before any agent.
+5. **BMAD planning (C) → HITL 1** — PRD/architecture/epics; human approval required.
+6. **Sprint config (D)** — backlog layout + `bad:` config (`auto_pr_merge=false`).
+7. **Supervised sprint (E) → HITL 2** — `/bad` per story, dual gate, 3-retry remediation; no merge without human review.
+
+Full operator prompt: **[`docs/conductor-run-playbook.md`](docs/conductor-run-playbook.md)**.
+
 ## License
 
 [MIT](LICENSE) © 2026 Digit-AI.
