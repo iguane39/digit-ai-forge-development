@@ -14,8 +14,9 @@ import subprocess
 from pathlib import Path
 from typing import Protocol
 
-from conductor.contracts import BmadPlan, ScaffoldResult
+from conductor.contracts import BmadPlan
 from conductor.governance import HitlPending, HumanGate, ManualGate
+from conductor.onramp.base import Substrate
 
 # Modules BMAD requis par BAD (spike S-1b) : bmm = méthode, tea = test architecture (ATDD).
 BMAD_INSTALL = "npx bmad-method install --modules bmm,tea"
@@ -26,9 +27,9 @@ EPICS_FILE = PLANNING_DIR / "epics.md"
 
 
 class BmadPlanner(Protocol):
-    """Produit un BmadPlan (PRD, architecture, epics) à partir d'un scaffold."""
+    """Produit un BmadPlan (PRD, architecture, epics) à partir d'un Substrate."""
 
-    def plan(self, scaffold: ScaffoldResult) -> BmadPlan: ...
+    def plan(self, substrate: Substrate) -> BmadPlan: ...
 
 
 class DefaultBmadPlanner:
@@ -38,23 +39,23 @@ class DefaultBmadPlanner:
     ne parse pas le backlog, il garantit seulement sa présence.
     """
 
-    def plan(self, scaffold: ScaffoldResult) -> BmadPlan:
-        subprocess.run(BMAD_INSTALL, cwd=scaffold.repo_path, shell=True, check=False)
-        epics = scaffold.repo_path / EPICS_FILE
+    def plan(self, substrate: Substrate) -> BmadPlan:
+        subprocess.run(BMAD_INSTALL, cwd=substrate.repo_path, shell=True, check=False)
+        epics = substrate.repo_path / EPICS_FILE
         if not epics.exists():
             raise HitlPending(
                 "Planification BMAD à réaliser : produire "
-                f"{EPICS_FILE} dans {scaffold.repo_path}, puis approuver (HITL 1)."
+                f"{EPICS_FILE} dans {substrate.repo_path}, puis approuver (HITL 1)."
             )
         return BmadPlan(
-            prd_path=scaffold.repo_path / PLANNING_DIR / "PRD.md",
-            architecture_path=scaffold.repo_path / PLANNING_DIR / "architecture.md",
+            prd_path=substrate.repo_path / PLANNING_DIR / "PRD.md",
+            architecture_path=substrate.repo_path / PLANNING_DIR / "architecture.md",
             epics_md=epics,
         )
 
 
 def lancer_planification(
-    scaffold: ScaffoldResult,
+    substrate: Substrate,
     *,
     planner: BmadPlanner | None = None,
     gate: HumanGate | None = None,
@@ -63,7 +64,7 @@ def lancer_planification(
 
     Lève HitlPending si la planification n'est pas approuvée par un humain (décision 07).
     """
-    plan = (planner or DefaultBmadPlanner()).plan(scaffold)
+    plan = (planner or DefaultBmadPlanner()).plan(substrate)
     if not (gate or ManualGate()).approve("PRD & architecture (HITL 1)", plan):
         raise HitlPending("HITL 1 — validation du PRD & de l'architecture requise avant le dev.")
     return plan.model_copy(update={"hitl1_approved": True})

@@ -28,6 +28,7 @@ class MissionConfig(BaseModel):
     """Sortie de l'étape A (cadrage). Paramétrable — aucune valeur figée (décision 08)."""
 
     idea: str
+    mode: Literal["greenfield", "brownfield"] = "greenfield"
     target: str = "fastapi-saas"
     budget: str | None = None
     deadline: str | None = None
