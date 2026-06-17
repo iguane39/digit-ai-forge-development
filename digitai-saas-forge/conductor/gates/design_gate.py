@@ -12,11 +12,15 @@ testable hors-ligne ; l'invocation du CLI (`run_design_gate`) arrive en Epic 2 (
 from __future__ import annotations
 
 import json
+import subprocess
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 
 from conductor.contracts import GateVerdict
+
+# Outil de gate design, épinglé (décision 06 / risque 7 — alpha). Adopté, jamais forké.
+DESIGN_MD_PKG = "@google/design.md@0.3.0"
 
 # Règles design.md (parmi les 9) qui DOIVENT bloquer le merge, quelle que soit la
 # sévérité native renvoyée par le linter. Aligné sur le dossier : refs, contraste,
@@ -69,9 +73,36 @@ def evaluate_findings(report: dict[str, Any]) -> GateVerdict:
     )
 
 
-def run_design_gate(design_md: Path) -> GateVerdict:
-    """Lance `npx @google/design.md@0.3.0 lint --format json` puis evaluate_findings."""
-    raise NotImplementedError("Invocation CLI — implémentée en Epic 2 (story 2.2).")
+class DesignLinter(Protocol):
+    """Produit le rapport JSON de design.md lint pour un fichier DESIGN.md."""
+
+    def lint_json(self, design_md: Path) -> dict[str, Any]: ...
+
+
+class NpxDesignLinter:
+    """Linter de production : invoque le CLI épinglé via l'alias de bin `designmd`.
+
+    On utilise l'alias sans point (`designmd`) plutôt que `@google/design.md` : la
+    résolution npx du nom contenant un point est fragile selon les plateformes.
+    """
+
+    def lint_json(self, design_md: Path) -> dict[str, Any]:
+        cmd = [
+            "npx", "--yes", "-p", DESIGN_MD_PKG,
+            "designmd", "lint", "--format", "json", str(design_md),
+        ]
+        proc = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        report: dict[str, Any] = json.loads(proc.stdout) if proc.stdout.strip() else {}
+        return report
+
+
+def run_design_gate(design_md: Path, *, linter: DesignLinter | None = None) -> GateVerdict:
+    """Lint le DESIGN.md puis applique la politique de sévérité de la forge (S-2.3).
+
+    Le verdict dépend du CONTENU du rapport, jamais de l'exit code du CLI.
+    """
+    report = (linter or NpxDesignLinter()).lint_json(design_md)
+    return evaluate_findings(report)
 
 
 def main(argv: list[str] | None = None) -> int:

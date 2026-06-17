@@ -3,7 +3,10 @@ du JSON, jamais sur l'exit code natif du linter (qui laisse passer les warnings)
 
 from __future__ import annotations
 
-from conductor.gates.design_gate import evaluate_findings
+from pathlib import Path
+from typing import Any
+
+from conductor.gates.design_gate import evaluate_findings, run_design_gate
 
 
 def test_clean_report_passes() -> None:
@@ -53,3 +56,34 @@ def test_blocking_rule_field_blocks_regardless_of_severity() -> None:
 def test_empty_report_passes() -> None:
     assert evaluate_findings({}).passed is True
     assert evaluate_findings({"findings": []}).passed is True
+
+
+class FakeLinter:
+    def __init__(self, report: dict[str, Any]) -> None:
+        self.report = report
+        self.seen: list[Path] = []
+
+    def lint_json(self, design_md: Path) -> dict[str, Any]:
+        self.seen.append(design_md)
+        return self.report
+
+
+def test_run_design_gate_passes_with_info_only() -> None:
+    """Reproduit le rapport réel de notre DESIGN.md (3 findings info → PASS)."""
+    report = {
+        "findings": [
+            {"severity": "info", "message": "Design system defines 8 colors, 3 typography scales."},
+            {"severity": "info", "path": "spacing", "message": "No 'spacing' section defined."},
+        ],
+        "summary": {"errors": 0, "warnings": 0, "infos": 2},
+    }
+    linter = FakeLinter(report)
+    verdict = run_design_gate(Path("design/DESIGN.md"), linter=linter)
+    assert verdict.passed is True
+    assert linter.seen == [Path("design/DESIGN.md")]
+
+
+def test_run_design_gate_blocks_on_wcag_warning() -> None:
+    report = {"findings": [{"severity": "warning", "message": "contrast 2.1:1 - fails WCAG AA."}]}
+    verdict = run_design_gate(Path("design/DESIGN.md"), linter=FakeLinter(report))
+    assert verdict.passed is False

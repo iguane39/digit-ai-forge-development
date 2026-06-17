@@ -59,10 +59,12 @@ conductor --version
 
 ## Status
 
-**Epic 0 (Bootstrap) — delivered & verified.** Typed `conductor/` skeleton, `A→E`
-pipeline contracts, dual-gate CI, BAD vendoring `@v1.2.0`, dogfooding seed. Code gate is
-green on GitHub Actions. Next: Epic 1 (scaffold-first), Epic 2 (design axis), Epic 3
-(full loop) — see [`docs/plan-implementation.md`](docs/plan-implementation.md).
+- **Epic 0 — Bootstrap** ✅ merged. Typed `conductor/` skeleton, `A→E` contracts, dual-gate CI, BAD vendoring `@v1.2.0`, dogfooding seed.
+- **Epic 1 — Scaffold-first** ✅ merged. Scoping (A) + scaffold (B) + 11-brick catalog + code gate.
+- **Epic 2 — Design axis** 🚧 in review. Blocking design gate (`@google/design.md@0.3.0` + severity policy), reference `DESIGN.md`, vendored style, token export.
+- **Epic 3 — Full loop** ⏳ next (BMAD bridge, sprint adapter, supervisor, the 2 HITL).
+
+Both gates are green on GitHub Actions. See [`docs/plan-implementation.md`](docs/plan-implementation.md).
 
 ## License
 
