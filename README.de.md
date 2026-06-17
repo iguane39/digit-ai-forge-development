@@ -68,6 +68,22 @@ conductor --version
 
 Alle vier Epics sind integriert; beide Gates sind grün auf GitHub Actions. Die `A→E`-Kette ist verdrahtet und getestet; die reale Ausführung von BMAD/`/bad` erfordert einen Claude-Code-Harness. Siehe [`docs/plan-implementation.md`](docs/plan-implementation.md).
 
+## Einen Build starten — Methodik
+
+Der Lauf ist orchestriert, aber **gesteuert**: Er hält per Design an zwei menschlichen
+Kontrollpunkten und mergt nie automatisch. Man hängt ein Specs-/Constraints-Dossier an; der
+Operator trennt Umfang von Constraints und durchläuft dann die Kette:
+
+1. **Klassifizieren** der Anhänge — Umfang (das *Was*) vs. Constraints (das *Wie*).
+2. **Preflight** — `gh` Auth + Token, `uv`/`node`, Netzwerk, Forge klonen.
+3. **Scoping (A)** — `MissionConfig` ableiten (11 Bricks build/buy, t0 erzwungen), dann bestätigen.
+4. **Scaffold-first (B)** — das Gerüst vor jedem Agenten erzeugen.
+5. **BMAD-Planung (C) → HITL 1** — PRD/Architektur/Epics; menschliche Freigabe erforderlich.
+6. **Sprint-Konfig (D)** — Backlog-Layout + `bad:`-Sektion (`auto_pr_merge=false`).
+7. **Überwachter Sprint (E) → HITL 2** — `/bad` pro Story, Doppel-Gate, 3 Retries; kein Merge ohne menschliche Prüfung.
+
+Vollständiger Operator-Prompt: **[`docs/conductor-run-playbook.md`](docs/conductor-run-playbook.md)**.
+
 ## Lizenz
 
 [MIT](LICENSE) © 2026 Digit-AI.
