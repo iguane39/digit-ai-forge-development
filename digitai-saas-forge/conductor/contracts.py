@@ -111,7 +111,7 @@ class BadSprintLayout(BaseModel):
 
 # --- Gates ------------------------------------------------------------------
 
-GateName = Literal["code", "design"]
+GateName = Literal["code", "design", "regression"]
 
 
 class GateVerdict(BaseModel):
