@@ -29,6 +29,8 @@ class MissionConfig(BaseModel):
 
     idea: str
     mode: Literal["greenfield", "brownfield"] = "greenfield"
+    existing_repo: Path | None = None  # brownfield : repo cible existant (None en greenfield)
+    brownfield_intent: Literal["remediation", "complement", "both"] = "remediation"
     target: str = "fastapi-saas"
     budget: str | None = None
     deadline: str | None = None
@@ -105,11 +107,12 @@ class BadSprintLayout(BaseModel):
     sprint_status_yaml: Path  # _bmad-output/implementation-artifacts/sprint-status.yaml
     bmad_config_yaml: Path  # _bmad/config.yaml AVEC section bad:
     config: BadConfig = Field(default_factory=BadConfig)
+    baseline: dict[str, bool] | None = None  # statut des gates avant intervention (brownfield)
 
 
 # --- Gates ------------------------------------------------------------------
 
-GateName = Literal["code", "design"]
+GateName = Literal["code", "design", "regression"]
 
 
 class GateVerdict(BaseModel):
