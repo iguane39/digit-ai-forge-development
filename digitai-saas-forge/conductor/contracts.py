@@ -29,6 +29,8 @@ class MissionConfig(BaseModel):
 
     idea: str
     mode: Literal["greenfield", "brownfield"] = "greenfield"
+    existing_repo: Path | None = None  # brownfield : repo cible existant (None en greenfield)
+    brownfield_intent: Literal["remediation", "complement", "both"] = "remediation"
     target: str = "fastapi-saas"
     budget: str | None = None
     deadline: str | None = None

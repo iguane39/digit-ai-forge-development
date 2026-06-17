@@ -31,6 +31,8 @@ def cadrer(
     idea: str,
     *,
     mode: Literal["greenfield", "brownfield"] = "greenfield",
+    existing_repo: Path | None = None,
+    intent: Literal["remediation", "complement", "both"] = "remediation",
     target: str = "fastapi-saas",
     brand_charter: Path = DEFAULT_CHARTER,
     style_slug: str = DEFAULT_STYLE,
@@ -46,6 +48,10 @@ def cadrer(
     """
     if not idea.strip():
         raise ValueError("L'idée produit ne peut pas être vide.")
+    if mode == "brownfield" and existing_repo is None:
+        raise ValueError("Le mode brownfield exige un existing_repo (repo cible existant).")
+    if mode == "greenfield" and existing_repo is not None:
+        raise ValueError("Le mode greenfield n'accepte pas d'existing_repo (on génère le repo).")
 
     requested = bricks or []
     for choice in requested:
@@ -55,6 +61,8 @@ def cadrer(
     return MissionConfig(
         idea=idea.strip(),
         mode=mode,
+        existing_repo=existing_repo,
+        brownfield_intent=intent,
         target=target,
         budget=budget,
         deadline=deadline,
