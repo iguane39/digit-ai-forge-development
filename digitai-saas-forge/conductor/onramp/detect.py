@@ -32,3 +32,12 @@ def detect_distance(repo: Path) -> Literal["A", "C"]:
         )
     has_design = (repo / FASTAPI_SAAS.design_md_path).exists()
     return "A" if (has_design and has_ci(repo)) else "C"
+
+
+def detect_stack(repo: Path) -> Literal["fastapi", "node-ts", "unknown"]:
+    """Détecte la stack par marqueurs : pyproject.toml → fastapi ; package.json → node-ts."""
+    if (repo / "pyproject.toml").exists():
+        return "fastapi"
+    if (repo / "package.json").exists():
+        return "node-ts"
+    return "unknown"
