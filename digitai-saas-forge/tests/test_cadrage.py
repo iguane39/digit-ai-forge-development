@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from conductor.cadrage import cadrer
@@ -48,4 +50,25 @@ def test_cadrer_default_mode_is_greenfield() -> None:
 
 
 def test_cadrer_accepts_brownfield_mode() -> None:
-    assert cadrer("idée", mode="brownfield").mode == "brownfield"
+    assert cadrer("idée", mode="brownfield", existing_repo=Path("/tmp/app")).mode == "brownfield"
+
+
+def test_brownfield_requires_existing_repo() -> None:
+    with pytest.raises(ValueError, match="existing_repo"):
+        cadrer("idée", mode="brownfield")
+
+
+def test_brownfield_with_repo_sets_fields() -> None:
+    cfg = cadrer("idée", mode="brownfield", existing_repo=Path("/tmp/app"), intent="complement")
+    assert cfg.existing_repo == Path("/tmp/app")
+    assert cfg.brownfield_intent == "complement"
+
+
+def test_greenfield_rejects_existing_repo() -> None:
+    with pytest.raises(ValueError, match="greenfield"):
+        cadrer("idée", existing_repo=Path("/tmp/app"))
+
+
+def test_default_intent_is_remediation() -> None:
+    cfg = cadrer("idée", mode="brownfield", existing_repo=Path("/tmp/app"))
+    assert cfg.brownfield_intent == "remediation"
