@@ -77,22 +77,23 @@
 
 ---
 
-## Epic 3 — Boucle complète
+## Epic 3 — Boucle complète ✅ (branche `epic-3-boucle-complete`)
 
 **Objectif** : `conductor run` de bout en bout, avec les 2 HITL câblés.
 **Gate de sortie (dossier)** : **double gate + revue humaine.**
 
-| Story | Contenu | Fichiers-cibles | FR/NFR | Dépend de |
+| Story | Contenu | Fichiers-cibles | FR/NFR | Statut |
 |---|---|---|---|---|
-| **3.1** | `bmad_bridge.py` (C) : installe BMAD (`bmm,tea`), lance la planif, écrit `_bmad-output/planning-artifacts/epics.md` (stories en sections, champ `**GH Issue:**`), pose **HITL 1**. *(Effort accru post-S-1 : c'est ici que se concentre le travail.)* | `conductor/bmad_bridge.py`, `_bmad-output/planning-artifacts/` | FR-C1, FR-C2 | 1.1 |
-| **3.2** | `sprint_config.py` (D) : initialise `_bmad-output/implementation-artifacts/sprint-status.yaml` (statuts `backlog`…), écrit la section `bad:` de `_bmad/config.yaml` (dont `auto_pr_merge: false`, `model_*`, `max_parallel_stories`), mappe la mission. *(Allégé post-S-1/S-1b : pas de compilateur de graphe.)* | `conductor/sprint_config.py`, `_bmad/config.yaml` | FR-D1/D2/D3 | S-1b ✅, 3.1 |
-| **3.3** | `supervisor.py` (E) : **invoque le skill `/bad`**, injecte le design, orchestre le **gate design** (gate code couvert par BAD) | `conductor/supervisor.py` | FR-E1/E2/E3 | 3.2, 1.6, 2.2 |
-| **3.4** | Remédiation de gate : **3 retries** (`gate_max_retries=3`) → story `blocked` + escalade HITL (DE-3) | `conductor/supervisor.py` | FR-E5 | 3.3 |
-| **3.5** | **HITL 2** (revue & merge final) + branch protection | `supervisor.py`, repo settings | FR-E4, NFR-6 | 3.3 |
-| **3.6** | CLI `conductor run "<idée>"` (entrée unique A→E) | `conductor/__main__.py` | FR-CLI1 | 1.5, 3.3 |
-| **3.7** | README (promesse, quickstart, schéma, décisions, gouvernance) | `README.md` | doc | 3.6 |
+| **3.1** | `bmad_bridge.py` (C) : `BmadPlanner` injectable (`DefaultBmadPlanner` installe `bmm,tea`, recense les artefacts) ; pose **HITL 1** → `HitlPending` si non approuvé | `conductor/bmad_bridge.py` | FR-C1, FR-C2 | ✅ |
+| **(gouv.)** | `governance.py` : `HitlPending` + `HumanGate`/`ManualGate` (les 2 points HITL, décision 07) | `conductor/governance.py` | NFR-6 | ✅ |
+| **3.2** | `sprint_config.py` (D) : écrit `_bmad-output/.../sprint-status.yaml` + section `bad:` de `_bmad/config.yaml` (`auto_pr_merge=False` verrouillé) ; exige HITL 1 | `conductor/sprint_config.py` | FR-D1/D2/D3 | ✅ |
+| **3.3** | `supervisor.py` (E) : `BadRunner` injectable (invoque `/bad`), gate design par story | `conductor/supervisor.py` | FR-E1/E2/E3 | ✅ |
+| **3.4** | Remédiation : **3 retries** (`GATE_MAX_RETRIES=3`) → story `blocked` + escalade (DE-3) | `conductor/supervisor.py` | FR-E5 | ✅ |
+| **3.5** | **HITL 2** : `SprintReport.merged` verrouillé `False` ; merge seulement si gate humain approuve | `conductor/supervisor.py` | FR-E4, NFR-6 | ✅ |
+| **3.6** | CLI `conductor run "<idée>"` câble A→E (pause à HITL 1 par défaut) | `conductor/__main__.py` | FR-CLI1 | ✅ |
+| **3.7** | README (promesse, quickstart, décisions, gouvernance) | `README.md` (+ 5 trad.) | doc | ✅ |
 
-**Sortie de gate** : une feature traverse A→E ; la **checklist « PR-ready » 6 items (DE-4)** est vraie pour la story, 2 pauses HITL effectives. **CS-1, CS-2, CS-4** vérifiables.
+**Sortie de gate** : la chaîne A→E est câblée et testée bout-en-bout par fakes ; **les 2 HITL sont effectifs** (pause `HitlPending` à HITL 1, `merged=False` sans HITL 2) ; la remédiation **3 retries** et le double gate par story sont testés. **CS-2/CS-4** vérifiés en logique. L'exécution réelle de BMAD/`/bad` requiert le harness Claude Code (interfaces `DefaultBmadPlanner`/`DefaultBadRunner` en place).
 
 ---
 

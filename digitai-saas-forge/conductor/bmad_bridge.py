@@ -1,16 +1,69 @@
 """Étape C — Pont BMAD.
 
-Installe/lance BMAD-METHOD (modules bmm,tea) sur le scaffold et collecte ses
-artefacts dans _bmad-output/planning-artifacts/epics.md. Pose HITL 1 (validation
-humaine du PRD & de l'architecture, décision 07). C'est ici que se concentre le
-travail réel post-spike S-1. Implémentée en Epic 3 (story 3.1).
+Installe/lance BMAD-METHOD (modules bmm,tea) sur le scaffold et collecte ses artefacts
+dans `_bmad-output/planning-artifacts/epics.md`. Pose **HITL 1** (validation humaine du
+PRD & de l'architecture, décision 07) : sans approbation, la chaîne se met en pause.
+
+C'est ici que se concentre le travail réel post-spike S-1 (produire un backlog BMAD
+valide) ; BAD construira ensuite lui-même le graphe de dépendances.
 """
 
 from __future__ import annotations
 
+import subprocess
+from pathlib import Path
+from typing import Protocol
+
 from conductor.contracts import BmadPlan, ScaffoldResult
+from conductor.governance import HitlPending, HumanGate, ManualGate
+
+# Modules BMAD requis par BAD (spike S-1b) : bmm = méthode, tea = test architecture (ATDD).
+BMAD_INSTALL = "npx bmad-method install --modules bmm,tea"
+
+# Emplacements normalisés attendus par /bad (spike S-1b).
+PLANNING_DIR = Path("_bmad-output/planning-artifacts")
+EPICS_FILE = PLANNING_DIR / "epics.md"
 
 
-def lancer_planification(scaffold: ScaffoldResult) -> BmadPlan:
-    """C · brief → PRD → architecture → epics → stories ; suspend sur HITL 1."""
-    raise NotImplementedError("Étape C — implémentée en Epic 3 (story 3.1).")
+class BmadPlanner(Protocol):
+    """Produit un BmadPlan (PRD, architecture, epics) à partir d'un scaffold."""
+
+    def plan(self, scaffold: ScaffoldResult) -> BmadPlan: ...
+
+
+class DefaultBmadPlanner:
+    """Planner de production : installe BMAD puis recense les artefacts de planification.
+
+    L'extraction des stories est volontairement laissée à BAD (spike S-1) : le conductor
+    ne parse pas le backlog, il garantit seulement sa présence.
+    """
+
+    def plan(self, scaffold: ScaffoldResult) -> BmadPlan:
+        subprocess.run(BMAD_INSTALL, cwd=scaffold.repo_path, shell=True, check=False)
+        epics = scaffold.repo_path / EPICS_FILE
+        if not epics.exists():
+            raise HitlPending(
+                "Planification BMAD à réaliser : produire "
+                f"{EPICS_FILE} dans {scaffold.repo_path}, puis approuver (HITL 1)."
+            )
+        return BmadPlan(
+            prd_path=scaffold.repo_path / PLANNING_DIR / "PRD.md",
+            architecture_path=scaffold.repo_path / PLANNING_DIR / "architecture.md",
+            epics_md=epics,
+        )
+
+
+def lancer_planification(
+    scaffold: ScaffoldResult,
+    *,
+    planner: BmadPlanner | None = None,
+    gate: HumanGate | None = None,
+) -> BmadPlan:
+    """C · brief → PRD → architecture → epics → stories ; suspend sur HITL 1.
+
+    Lève HitlPending si la planification n'est pas approuvée par un humain (décision 07).
+    """
+    plan = (planner or DefaultBmadPlanner()).plan(scaffold)
+    if not (gate or ManualGate()).approve("PRD & architecture (HITL 1)", plan):
+        raise HitlPending("HITL 1 — validation du PRD & de l'architecture requise avant le dev.")
+    return plan.model_copy(update={"hitl1_approved": True})
