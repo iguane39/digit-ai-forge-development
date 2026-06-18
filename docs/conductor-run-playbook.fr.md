@@ -89,6 +89,17 @@ et ATTENDS ma validation de ce tri avant le préflight. C'est la base de tout le
 Génère le squelette via `copier` + greffe les briques retenues (t0 incluses). Vérifie que
 le harness CI (gate code) est en place. N'invoque AUCUN agent avant la fin de B.
 
+**Configuration de départ (routage onramp).** Le « scaffold-first » se généralise en un *onramp*
+choisi par `select_onramp` selon la provenance du projet — tous produisent le même substrate, donc
+les phases C→E sont identiques pour les trois :
+- **From scratch** (`--mode greenfield`) → `ScaffoldOnramp` : génère le squelette (cette section).
+- **Continuation** d'un projet généré par la forge (`--mode brownfield`, repo déjà conforme) →
+  `NoOnramp` : PAS de scaffold ; capture une baseline qui alimente le gate de non-régression ;
+  ne planifie que les EPICs nouvelles.
+- **Projet externe** (`--mode brownfield`, repo à normaliser) → `AdapterOnramp` (FastAPI incomplet)
+  ou `BuilderOnramp` (stack non-FastAPI) + HITL-0 si dégradation déclarée ; puis
+  `--intent remediation|complement|both`.
+
 ## Phase C — Pont BMAD → HITL 1
 `npx bmad-method install --modules bmm,tea`, puis produis la planification dans
 `_bmad-output/planning-artifacts/epics.md` (PRD, architecture, epics, stories).

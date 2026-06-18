@@ -46,6 +46,13 @@ le playbook** — pas un 4ᵉ template à maintenir.
 
 ## 4. Cycle de vie d'un run — 2 gates humains
 
+**Phase −1 — Configuration de départ (reflet de `select_onramp`, automatique).** Les 3
+configurations de travail sont déjà routées par `conductor/onramp/select_onramp` : (1) from-scratch
+→ `greenfield`/`ScaffoldOnramp` ; (2) continuation méthodo → `brownfield` repo conforme/`NoOnramp`
+(pas de scaffold, baseline → non-régression, EPICs nouvelles seulement, tags repris à `epic-<n+1>`) ;
+(3) externe → `brownfield`/`AdapterOnramp`|`BuilderOnramp` + HITL-0 + `intent`. Toutes produisent le
+même `Substrate` → les phases 0-2 ci-dessous sont **identiques pour les 3**.
+
 ```
 ┌─ Phase 0 — PLAN & PRÉ-VOL ──────────────── ⛔ GATE 1 (humain, unique)
 │   • macro-brainstorm → liste des EPICs → PLAN.md (tous "todo", déps, ordre)
