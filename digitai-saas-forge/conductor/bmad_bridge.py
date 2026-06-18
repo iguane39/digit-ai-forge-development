@@ -64,7 +64,11 @@ def lancer_planification(
 
     Lève HitlPending si la planification n'est pas approuvée par un humain (décision 07).
     """
-    plan = (planner or DefaultBmadPlanner()).plan(substrate)
+    if planner is None:
+        from conductor.harness.resolve import resolve_bmad_planner
+
+        planner = resolve_bmad_planner()
+    plan = planner.plan(substrate)
     resolved_gate = gate if gate is not None else ManualGate()
     if not resolved_gate.approve("PRD & architecture (HITL 1)", plan):
         raise HitlPending("HITL 1 — validation du PRD & de l'architecture requise avant le dev.")
