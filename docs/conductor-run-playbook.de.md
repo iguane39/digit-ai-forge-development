@@ -87,6 +87,17 @@ Aus dem in Phase −1 bestätigten UMFANG + CONSTRAINTS, SCHLAGE eine explizite 
 Erzeuge das Gerüst via `copier` + pflanze die gewählten Bricks (t0 inklusive) ein. Prüfe, dass
 das CI-Harness (Code-Gate) vorhanden ist. Rufe KEINEN Agenten vor Abschluss von B auf.
 
+**Startkonfiguration (Onramp-Routing).** „Scaffold-first" verallgemeinert sich zu einem *Onramp*,
+das `select_onramp` nach der Herkunft des Projekts wählt — alle erzeugen dasselbe Substrate, daher
+sind die Phasen C→E für alle drei identisch:
+- **From scratch** (`--mode greenfield`) → `ScaffoldOnramp`: erzeugt das Gerüst (dieser Abschnitt).
+- **Fortsetzung** eines von der Forge erzeugten Projekts (`--mode brownfield`, Repo bereits konform)
+  → `NoOnramp`: KEIN Scaffold; erfasst eine Baseline, die das Nicht-Regressions-Gate speist; plant
+  nur die neuen Epics.
+- **Externes** Projekt (`--mode brownfield`, zu normalisierendes Repo) → `AdapterOnramp`
+  (unvollständiges FastAPI) oder `BuilderOnramp` (Nicht-FastAPI-Stack) + HITL-0 bei deklarierter
+  Degradierung; dann `--intent remediation|complement|both`.
+
 ## Phase C — BMAD-Brücke → HITL 1
 `npx bmad-method install --modules bmm,tea`, dann erzeuge die Planung in
 `_bmad-output/planning-artifacts/epics.md` (PRD, Architektur, Epics, Stories).

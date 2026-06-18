@@ -23,6 +23,23 @@ non-régression) = mécanisme d'enchaînement réversible → **autonome**. Merg
 
 ## Cycle de vie — 2 gates humains
 
+### Phase −1 — Configuration de départ (reflet de `select_onramp`, automatique)
+Avant le macro-brainstorm, déterminer la **configuration de travail**. Le routage est déjà
+implémenté par `conductor/onramp/select_onramp` (détection stack + distance) — ne rien concevoir,
+juste choisir `--mode` (+ `--repo`/`--intent` en brownfield) :
+
+1. **From scratch** → `greenfield` (`ScaffoldOnramp`) : génère le squelette, `PLAN.md` de zéro.
+2. **Continuation méthodo** → `brownfield`, repo déjà conforme (`NoOnramp`, distance A : pyproject
+   + DESIGN.md + CI présents) : **pas de scaffold** ; la **baseline** est capturée et alimente la
+   non-régression ; ne (re)brainstormer que les **EPICs nouvelles** ; reprendre la numérotation des
+   tags à `run/<slug>/epic-<n+1>`.
+3. **Externe** → `brownfield`, repo à normaliser (`AdapterOnramp` distance C / `BuilderOnramp`
+   stack non-FastAPI) + **HITL-0** si dégradation déclarée, puis `intent` remediation / complement
+   / both.
+
+Toutes les bretelles produisent le même `Substrate` → **le reste du lifecycle (Phases 0-2, 2 gates,
+GATE 2 A/B/C, politiques) est identique pour les 3 configurations.**
+
 ### Phase 0 — Plan & pré-vol  ⛔ GATE 1 (humain, unique)
 1. Macro-brainstorm → liste des EPICs → instancier `PLAN.md` (tous `todo`, déps, ordre, budget,
    `max_parallel`, branche `run/<slug>`).
@@ -101,6 +118,12 @@ Avant la 1ʳᵉ EPIC, poser UNE question (recommandation en tête) et expliquer 
 ## Prompt orchestrateur (copier-coller pour lancer un run unattended)
 ```
 Tu pilotes un RUN UNATTENDED GOUVERNÉ du workflow EPIC. Suis ce playbook à la lettre.
+
+PHASE -1 (config de départ, automatique via select_onramp) : déterminer la configuration —
+1 from-scratch (greenfield/ScaffoldOnramp) ; 2 continuation méthodo (brownfield repo conforme/
+NoOnramp : pas de scaffold, baseline→non-régression, brainstorm des EPICs nouvelles seulement,
+tags repris à epic-<n+1>) ; 3 externe (brownfield Adapter/BuilderOnramp + HITL-0 + intent). Le
+reste du lifecycle est identique pour les 3.
 
 PHASE 0 (GATE 1) : macro-brainstorm → PLAN.md (EPICs, déps, budget, max_parallel, branche
 run/<slug>). Scanne TOUTES les EPICs, extrais les décisions anticipables, pose-les en UN
