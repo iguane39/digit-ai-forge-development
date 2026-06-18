@@ -128,3 +128,13 @@ Ingestion is heuristic by default (deterministic, no network). To enable the **r
 sub-agent analyzer** (`claude -p`), set `CONDUCTOR_USE_CLAUDE_ANALYZER=1` (requires the
 `claude` CLI authenticated). The gated integration test documents the path:
 `RUN_CLAUDE_INTEGRATION=1 uv run pytest tests/test_claude_integration.py`.
+
+## Real autonomous sprint (`/bad`, pilot)
+
+The autonomous BAD sprint is **off by default**. To enable it, set
+`CONDUCTOR_ENABLE_REAL_BAD=1` (requires `claude` and `gh` authenticated). Safety posture:
+the run relies on BAD's native isolation (one git worktree per story), `AUTO_PR_MERGE=false`
+is type-locked (it never auto-merges), and HITL 2 still gates every merge. `/bad` runs with
+`--dangerously-skip-permissions` and relaxed network isolation — **only run it on a repo whose
+`main` is branch-protected; never on sensitive client code without review.** Results are
+observed via `gh pr list` (the source of truth) and mapped to per-story outcomes.
