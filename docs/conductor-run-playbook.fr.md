@@ -124,3 +124,32 @@ ARRÊTE-toi. NE merge rien.
   `auto_pr_merge=true`. Ne t'auto-approuve aucun HITL. N'ignore aucune contrainte sans la
   signaler en zone grise. Ne forke pas BMAD/BAD/le template/design.md.
 ```
+
+## Ingestion réelle (pilote)
+
+L'ingestion est heuristique par défaut (déterministe, sans réseau). Pour activer le
+**sous-agent analyseur réel** (`claude -p`), définissez `CONDUCTOR_USE_CLAUDE_ANALYZER=1`
+(requiert le CLI `claude` authentifié). Le test d'intégration conditionnel documente le
+chemin : `RUN_CLAUDE_INTEGRATION=1 uv run pytest tests/test_claude_integration.py`.
+
+## Sprint autonome réel (`/bad`, pilote)
+
+Le sprint BAD autonome est **désactivé par défaut**. Pour l'activer, définissez
+`CONDUCTOR_ENABLE_REAL_BAD=1` (requiert `claude` et `gh` authentifiés). Posture de sécurité :
+le run s'appuie sur l'isolation native de BAD (un worktree git par story),
+`AUTO_PR_MERGE=false` est verrouillé par type (il ne merge jamais automatiquement), et HITL 2
+contrôle encore chaque merge. `/bad` s'exécute avec `--dangerously-skip-permissions` et une
+isolation réseau assouplie — **ne l'exécutez que sur un dépôt dont la branche `main` est
+protégée ; jamais sur du code client sensible sans revue.** Les résultats sont observés via
+`gh pr list` (la source de vérité) et mappés aux résultats par story.
+
+## Planification BMAD réelle (pilote)
+
+La planification BMAD est collectée par défaut (`DefaultBmadPlanner` installe BMAD et lit les
+artefacts ; HITL 1 se met en pause si absent). Pour activer la **planification BMAD autonome**
+via `claude -p`, définissez `CONDUCTOR_ENABLE_REAL_BMAD=1` (requiert `claude` authentifié).
+Elle ne produit que des documents de planification sous `_bmad-output/planning-artifacts/` et
+est toujours contrôlée par **HITL 1** avant tout développement — aucun code n'est modifié et
+rien n'est mergé à ce stade. Avec les trois options activées
+(`CONDUCTOR_USE_CLAUDE_ANALYZER`, `CONDUCTOR_ENABLE_REAL_BMAD`, `CONDUCTOR_ENABLE_REAL_BAD`),
+la chaîne `A→E` complète s'exécute pour de vrai, en s'arrêtant toujours aux deux HITL.

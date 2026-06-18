@@ -123,3 +123,34 @@ FERMATI. NON MERGIARE NULLA.
   auto-approvarti alcun HITL. Non ignorare alcun vincolo senza segnalarlo in zona grigia. Non
   forkare BMAD/BAD/il template/design.md.
 ```
+
+## Ingestione reale (pilota)
+
+L'ingestione è euristica per impostazione predefinita (deterministica, senza rete). Per
+attivare il **sub-agente analizzatore reale** (`claude -p`), imposta
+`CONDUCTOR_USE_CLAUDE_ANALYZER=1` (richiede il CLI `claude` autenticato). Il test di
+integrazione condizionale documenta il percorso:
+`RUN_CLAUDE_INTEGRATION=1 uv run pytest tests/test_claude_integration.py`.
+
+## Sprint autonomo reale (`/bad`, pilota)
+
+Lo sprint BAD autonomo è **disattivato per impostazione predefinita**. Per attivarlo, imposta
+`CONDUCTOR_ENABLE_REAL_BAD=1` (richiede `claude` e `gh` autenticati). Postura di sicurezza:
+l'esecuzione si affida all'isolamento nativo di BAD (un worktree git per story),
+`AUTO_PR_MERGE=false` è bloccato per tipo (non fa mai auto-merge), e HITL 2 controlla ancora
+ogni merge. `/bad` viene eseguito con `--dangerously-skip-permissions` e isolamento di rete
+allentato — **eseguilo solo su un repo la cui branch `main` sia protetta; mai su codice
+cliente sensibile senza revisione.** I risultati vengono osservati tramite `gh pr list`
+(la fonte di verità) e mappati agli esiti per story.
+
+## Pianificazione BMAD reale (pilota)
+
+La pianificazione BMAD viene raccolta per impostazione predefinita (`DefaultBmadPlanner`
+installa BMAD e legge gli artefatti; HITL 1 mette in pausa se assente). Per attivare la
+**pianificazione BMAD autonoma** tramite `claude -p`, imposta `CONDUCTOR_ENABLE_REAL_BMAD=1`
+(richiede `claude` autenticato). Produce solo documenti di pianificazione sotto
+`_bmad-output/planning-artifacts/` ed è sempre controllata da **HITL 1** prima di qualsiasi
+sviluppo — nessun codice viene modificato e nulla viene mergiato in questa fase. Con tutti e
+tre gli opt-in attivi (`CONDUCTOR_USE_CLAUDE_ANALYZER`, `CONDUCTOR_ENABLE_REAL_BMAD`,
+`CONDUCTOR_ENABLE_REAL_BAD`), la catena `A→E` completa viene eseguita sul serio, facendo
+comunque pausa a entrambi i gate HITL.

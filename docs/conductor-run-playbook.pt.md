@@ -123,3 +123,32 @@ PARE. NÃO MESCLE NADA.
   HITL. Não ignore nenhuma restrição sem sinalizá-la na zona cinzenta. Não faça fork de
   BMAD/BAD/o template/design.md.
 ```
+
+## Ingestão real (piloto)
+
+A ingestão é heurística por padrão (determinística, sem rede). Para ativar o **sub-agente
+analisador real** (`claude -p`), defina `CONDUCTOR_USE_CLAUDE_ANALYZER=1` (requer o CLI
+`claude` autenticado). O teste de integração condicional documenta o caminho:
+`RUN_CLAUDE_INTEGRATION=1 uv run pytest tests/test_claude_integration.py`.
+
+## Sprint autônomo real (`/bad`, piloto)
+
+O sprint BAD autônomo está **desativado por padrão**. Para ativá-lo, defina
+`CONDUCTOR_ENABLE_REAL_BAD=1` (requer `claude` e `gh` autenticados). Postura de segurança:
+a execução depende do isolamento nativo do BAD (um worktree git por história),
+`AUTO_PR_MERGE=false` está bloqueado por tipo (nunca faz auto-merge), e HITL 2 ainda controla
+cada merge. `/bad` é executado com `--dangerously-skip-permissions` e isolamento de rede
+relaxado — **execute-o apenas em um repositório cuja branch `main` seja protegida; nunca em
+código cliente sensível sem revisão.** Os resultados são observados via `gh pr list` (a fonte
+da verdade) e mapeados para os resultados por história.
+
+## Planejamento BMAD real (piloto)
+
+O planejamento BMAD é coletado por padrão (`DefaultBmadPlanner` instala o BMAD e lê os
+artefatos; HITL 1 pausa se ausente). Para ativar o **planejamento BMAD autônomo** via
+`claude -p`, defina `CONDUCTOR_ENABLE_REAL_BMAD=1` (requer `claude` autenticado). Ele produz
+apenas documentos de planejamento sob `_bmad-output/planning-artifacts/` e é sempre controlado
+por **HITL 1** antes de qualquer desenvolvimento — nenhum código é alterado e nada é mesclado
+nesta fase. Com os três opt-ins ativos (`CONDUCTOR_USE_CLAUDE_ANALYZER`,
+`CONDUCTOR_ENABLE_REAL_BMAD`, `CONDUCTOR_ENABLE_REAL_BAD`), a cadeia `A→E` completa é
+executada de verdade, ainda pausando em ambos os gates HITL.
