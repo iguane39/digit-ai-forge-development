@@ -138,3 +138,13 @@ is type-locked (it never auto-merges), and HITL 2 still gates every merge. `/bad
 `--dangerously-skip-permissions` and relaxed network isolation — **only run it on a repo whose
 `main` is branch-protected; never on sensitive client code without review.** Results are
 observed via `gh pr list` (the source of truth) and mapped to per-story outcomes.
+
+## Real BMAD planning (pilot)
+
+BMAD planning is collected by default (`DefaultBmadPlanner` installs BMAD and reads the
+artifacts; HITL 1 pauses if absent). To enable **autonomous BMAD planning** via `claude -p`,
+set `CONDUCTOR_ENABLE_REAL_BMAD=1` (requires `claude` authenticated). It only produces planning
+documents under `_bmad-output/planning-artifacts/` and is always gated by **HITL 1** before any
+development — no code is changed and nothing is merged at this stage. With all three opt-ins on
+(`CONDUCTOR_USE_CLAUDE_ANALYZER`, `CONDUCTOR_ENABLE_REAL_BMAD`, `CONDUCTOR_ENABLE_REAL_BAD`), the
+full `A→E` chain runs for real, still pausing at both HITL gates.
