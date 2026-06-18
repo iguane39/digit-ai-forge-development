@@ -12,7 +12,7 @@ from pathlib import Path
 from conductor.contracts import MissionConfig
 from conductor.gates.code_gate import CommandRunner
 from conductor.gates.design_gate import DesignLinter
-from conductor.onramp.analyzer import Analyzer, HeuristicAnalyzer
+from conductor.onramp.analyzer import Analyzer
 from conductor.onramp.base import Substrate
 from conductor.onramp.defaults import DEFAULT_DESIGN_MD
 from conductor.onramp.detect import has_ci, has_pyproject
@@ -32,7 +32,7 @@ class AdapterOnramp:
     ) -> None:
         self._code_runner = code_runner
         self._design_linter = design_linter
-        self._analyzer: Analyzer = analyzer or HeuristicAnalyzer()
+        self._analyzer: Analyzer | None = analyzer
 
     def prepare(self, config: MissionConfig, dest: Path) -> Substrate:
         repo = dest
@@ -52,7 +52,11 @@ class AdapterOnramp:
         if not has_ci(repo):
             notes.append("Harness CI absent : le gate code s'appuiera sur un harness à fournir.")
 
-        arch_map = self._analyzer.analyze(repo)
+        # lazy : évite un cycle d'import (harness.analyzer → onramp.analyzer ← onramp.__init__).
+        from conductor.harness.resolve import resolve_analyzer
+
+        analyzer: Analyzer = self._analyzer or resolve_analyzer()
+        arch_map = analyzer.analyze(repo)
         baseline = capture_baseline(
             repo, FASTAPI_SAAS, code_runner=self._code_runner, design_linter=self._design_linter
         )
