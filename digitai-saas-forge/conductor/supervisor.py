@@ -68,7 +68,12 @@ def superviser(
 
     Ne merge jamais : `SprintReport.merged` reste False (décision 07).
     """
-    runner = bad or DefaultBadRunner()
+    if bad is not None:
+        runner = bad
+    else:
+        from conductor.harness.resolve import resolve_bad_runner
+
+        runner = resolve_bad_runner()
     gate = hitl if hitl is not None else ManualGate()
     design_md = layout.project_root / "design" / "DESIGN.md"
     check: DesignCheck = design_check or (lambda _outcome: run_design_gate(design_md))

@@ -16,15 +16,25 @@ class CliRunner(Protocol):
 
 
 class SubprocessClaudeCli:
-    """Lance `claude -p <prompt> --output-format json` et renvoie le texte final (`result`)."""
+    """Lance `claude -p <prompt> --output-format json` et renvoie le texte final (`result`).
 
-    def __init__(self, *, timeout_s: int = 300) -> None:
+    Args:
+        timeout_s: Délai maximal d'attente du processus claude (secondes).
+        skip_permissions: Si ``True``, ajoute ``--dangerously-skip-permissions`` à la commande
+            (nécessaire pour le mode autonome BAD).
+    """
+
+    def __init__(self, *, timeout_s: int = 300, skip_permissions: bool = False) -> None:
         self._timeout_s = timeout_s
+        self._skip_permissions = skip_permissions
 
     def run(self, prompt: str, cwd: Path) -> str:
+        cmd = ["claude", "-p", prompt, "--output-format", "json"]
+        if self._skip_permissions:
+            cmd.append("--dangerously-skip-permissions")
         try:
             proc = subprocess.run(
-                ["claude", "-p", prompt, "--output-format", "json"],
+                cmd,
                 cwd=cwd,
                 capture_output=True,
                 text=True,
