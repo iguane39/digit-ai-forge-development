@@ -36,5 +36,9 @@ class CompositePlanner:
 
     def plan(self, substrate: Substrate) -> BmadPlan:
         a = self._first.plan(substrate)
-        b = self._second.plan(substrate)
+        a_text = a.epics_md.read_text(encoding="utf-8") if a.epics_md.exists() else ""
+        b = self._second.plan(substrate)  # peut écrire sur le même chemin que a
+        b_text = b.epics_md.read_text(encoding="utf-8") if b.epics_md.exists() else ""
+        a.epics_md.parent.mkdir(parents=True, exist_ok=True)
+        a.epics_md.write_text(f"{a_text}\n{b_text}".strip() + "\n", encoding="utf-8")
         return a.model_copy(update={"stories": [*a.stories, *b.stories]})
