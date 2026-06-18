@@ -61,6 +61,7 @@ validación del orden antes del preflight. Es la base de todo lo demás.
   DETIENES, presentas un resumen de decisión y ESPERAS mi aprobación explícita. Estas paradas
   son intencionadas — no son fallos.
 - **`auto_pr_merge=false`**: NUNCA auto-fusionas. No te auto-apruebas ningún HITL.
+- **Regla de merge**: la integración por EPIC es **automática y local** (solo si el doble gate está en verde); el único merge **humano** es hacia GitHub/`main`, **una vez, al final** (HITL 2). Una EPIC bloqueada no se fusiona.
 - **Dependencias fijadas/vendorizadas**: BAD `@v1.2.0`, `@google/design.md@0.3.0`.
 - "De extremo a extremo" = orquestado sin paso manual FUERA de los 2 HITL previstos.
 

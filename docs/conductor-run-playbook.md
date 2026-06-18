@@ -60,6 +60,7 @@ validation of the sort before preflight. It is the foundation of everything else
 - **2 HITL**: (1) after BMAD planning, (2) before any merge. At EACH HITL you STOP, present
   a decision summary, and WAIT for my explicit approval. These stops are intended — not bugs.
 - **`auto_pr_merge=false`**: you NEVER auto-merge. You never self-approve a HITL.
+- **Merge rule**: per-EPIC integration is **automatic & local** (only if the dual gate is green); the only **human** merge is to GitHub/`main`, **once, at the end** (HITL 2). A blocked EPIC is not merged.
 - **Pinned/vendored deps**: BAD `@v1.2.0`, `@google/design.md@0.3.0`.
 - "End-to-end" = orchestrated with no manual step OUTSIDE the 2 planned HITL.
 
