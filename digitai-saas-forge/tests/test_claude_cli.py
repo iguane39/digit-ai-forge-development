@@ -57,3 +57,27 @@ def test_timeout_raises(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None
     monkeypatch.setattr("conductor.harness.claude_cli.subprocess.run", _boom)
     with pytest.raises(RuntimeError, match="timeout"):
         SubprocessClaudeCli(timeout_s=1).run("p", tmp_path)
+
+
+def test_skip_permissions_adds_flag(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    captured: dict[str, list[str]] = {}
+
+    def _run(cmd: list[str], **k: object) -> subprocess.CompletedProcess[str]:
+        captured["cmd"] = cmd
+        return _completed(json.dumps({"result": "ok"}))
+
+    monkeypatch.setattr("conductor.harness.claude_cli.subprocess.run", _run)
+    SubprocessClaudeCli(skip_permissions=True).run("p", tmp_path)
+    assert "--dangerously-skip-permissions" in captured["cmd"]
+
+
+def test_default_has_no_skip_flag(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    captured: dict[str, list[str]] = {}
+
+    def _run(cmd: list[str], **k: object) -> subprocess.CompletedProcess[str]:
+        captured["cmd"] = cmd
+        return _completed(json.dumps({"result": "ok"}))
+
+    monkeypatch.setattr("conductor.harness.claude_cli.subprocess.run", _run)
+    SubprocessClaudeCli().run("p", tmp_path)
+    assert "--dangerously-skip-permissions" not in captured["cmd"]
