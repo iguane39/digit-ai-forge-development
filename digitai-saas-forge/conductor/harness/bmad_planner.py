@@ -17,8 +17,8 @@ from conductor.onramp.base import Substrate
 _PLANNING_DIR = Path("_bmad-output/planning-artifacts")
 _TRIGGER = (
     "Installe BMAD-METHOD (npx bmad-method install --modules bmm,tea) puis lance la planification "
-    "BMAD : produis PRD, architecture, epics et stories dans "
-    "_bmad-output/planning-artifacts/epics.md."
+    "BMAD dans le dossier _bmad-output/planning-artifacts/ : produis PRD.md, architecture.md, et "
+    "epics.md (epics + stories priorisées)."
 )
 
 
