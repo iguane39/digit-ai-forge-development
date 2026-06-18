@@ -13,7 +13,7 @@ from pathlib import Path
 from conductor.contracts import MissionConfig
 from conductor.gates.code_gate import CommandRunner
 from conductor.gates.design_gate import DesignLinter
-from conductor.onramp.analyzer import Analyzer, HeuristicAnalyzer
+from conductor.onramp.analyzer import Analyzer
 from conductor.onramp.base import Substrate
 from conductor.onramp.defaults import DEFAULT_DESIGN_MD
 from conductor.onramp.detect import detect_stack, has_ci
@@ -33,7 +33,7 @@ class BuilderOnramp:
     ) -> None:
         self._code_runner = code_runner
         self._design_linter = design_linter
-        self._analyzer = analyzer or HeuristicAnalyzer()
+        self._analyzer: Analyzer | None = analyzer
 
     def prepare(self, config: MissionConfig, dest: Path) -> Substrate:
         repo = dest
@@ -59,7 +59,10 @@ class BuilderOnramp:
         if not has_ci(repo):
             notes.append("Harness CI absent : gate code à fournir pour cette stack.")
 
-        arch_map = self._analyzer.analyze(repo)
+        from conductor.harness.resolve import resolve_analyzer
+
+        analyzer: Analyzer = self._analyzer or resolve_analyzer()
+        arch_map = analyzer.analyze(repo)
         baseline = capture_baseline(
             repo, profile, code_runner=self._code_runner, design_linter=self._design_linter
         )
