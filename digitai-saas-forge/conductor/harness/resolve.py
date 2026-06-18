@@ -10,6 +10,7 @@ from conductor.harness.analyzer import ClaudeSubagentAnalyzer
 from conductor.onramp.analyzer import Analyzer, HeuristicAnalyzer
 
 if TYPE_CHECKING:
+    from conductor.bmad_bridge import BmadPlanner
     from conductor.supervisor import BadRunner
 
 
@@ -19,6 +20,16 @@ def resolve_analyzer() -> Analyzer:
     if use_claude and shutil.which("claude") is not None:
         return ClaudeSubagentAnalyzer()
     return HeuristicAnalyzer()
+
+
+def resolve_bmad_planner() -> BmadPlanner:
+    """ClaudeCliBmadPlanner si CONDUCTOR_ENABLE_REAL_BMAD=1 ET `claude` présent ; sinon défaut."""
+    from conductor.bmad_bridge import DefaultBmadPlanner
+    from conductor.harness.bmad_planner import ClaudeCliBmadPlanner
+
+    if os.environ.get("CONDUCTOR_ENABLE_REAL_BMAD") == "1" and shutil.which("claude") is not None:
+        return ClaudeCliBmadPlanner()
+    return DefaultBmadPlanner()
 
 
 def resolve_bad_runner() -> BadRunner:
