@@ -123,3 +123,32 @@ verde, cuerpo generado, issue vinculada, mergeable=clean, asignada a revisión) 
   HITL. No ignores ninguna restricción sin marcarla en zona gris. No bifurques
   BMAD/BAD/el template/design.md.
 ```
+
+## Ingesta real (piloto)
+
+La ingesta es heurística por defecto (determinista, sin red). Para activar el **sub-agente
+analizador real** (`claude -p`), establece `CONDUCTOR_USE_CLAUDE_ANALYZER=1` (requiere el
+CLI `claude` autenticado). El test de integración condicional documenta el camino:
+`RUN_CLAUDE_INTEGRATION=1 uv run pytest tests/test_claude_integration.py`.
+
+## Sprint autónomo real (`/bad`, piloto)
+
+El sprint BAD autónomo está **desactivado por defecto**. Para activarlo, establece
+`CONDUCTOR_ENABLE_REAL_BAD=1` (requiere `claude` y `gh` autenticados). Postura de seguridad:
+la ejecución se apoya en el aislamiento nativo de BAD (un worktree de git por historia),
+`AUTO_PR_MERGE=false` está bloqueado por tipo (nunca fusiona automáticamente), y HITL 2 sigue
+controlando cada merge. `/bad` se ejecuta con `--dangerously-skip-permissions` y aislamiento
+de red relajado — **ejecútalo solo en un repositorio cuya rama `main` esté protegida; nunca
+en código cliente sensible sin revisión.** Los resultados se observan mediante `gh pr list`
+(la fuente de verdad) y se mapean a los resultados por historia.
+
+## Planificación BMAD real (piloto)
+
+La planificación BMAD se recopila por defecto (`DefaultBmadPlanner` instala BMAD y lee los
+artefactos; HITL 1 pausa si está ausente). Para activar la **planificación BMAD autónoma**
+mediante `claude -p`, establece `CONDUCTOR_ENABLE_REAL_BMAD=1` (requiere `claude`
+autenticado). Solo produce documentos de planificación bajo `_bmad-output/planning-artifacts/`
+y siempre está controlada por **HITL 1** antes de cualquier desarrollo — no se cambia código
+ni se fusiona nada en esta etapa. Con las tres opciones activadas
+(`CONDUCTOR_USE_CLAUDE_ANALYZER`, `CONDUCTOR_ENABLE_REAL_BMAD`, `CONDUCTOR_ENABLE_REAL_BAD`),
+la cadena `A→E` completa se ejecuta de verdad, deteniéndose siempre en ambas compuertas HITL.

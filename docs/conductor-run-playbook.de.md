@@ -123,3 +123,32 @@ Stories. HALTE an. MERGE NICHTS.
   `auto_pr_merge=true`. Gib dir kein HITL selbst frei. Ignoriere keinen Constraint, ohne ihn im
   Graubereich zu markieren. Forke nicht BMAD/BAD/das Template/design.md.
 ```
+
+## Reale Ingestion (Pilot)
+
+Die Ingestion ist standardmäßig heuristisch (deterministisch, kein Netzwerk). Um den **echten
+Sub-Agenten-Analyzer** (`claude -p`) zu aktivieren, setze `CONDUCTOR_USE_CLAUDE_ANALYZER=1`
+(erfordert das authentifizierte `claude`-CLI). Der bedingte Integrationstest dokumentiert den
+Pfad: `RUN_CLAUDE_INTEGRATION=1 uv run pytest tests/test_claude_integration.py`.
+
+## Realer autonomer Sprint (`/bad`, Pilot)
+
+Der autonome BAD-Sprint ist **standardmäßig deaktiviert**. Um ihn zu aktivieren, setze
+`CONDUCTOR_ENABLE_REAL_BAD=1` (erfordert authentifiziertes `claude` und `gh`).
+Sicherheitshaltung: Der Lauf stützt sich auf BADs native Isolation (ein Git-Worktree pro
+Story), `AUTO_PR_MERGE=false` ist typgesperrt (mergt nie automatisch), und HITL 2 steuert
+weiterhin jeden Merge. `/bad` läuft mit `--dangerously-skip-permissions` und entspannter
+Netzwerkisolation — **führe es nur auf einem Repo aus, dessen `main`-Branch geschützt ist;
+niemals auf sensiblem Client-Code ohne Review.** Ergebnisse werden über `gh pr list`
+(die Quelle der Wahrheit) beobachtet und auf Story-Ergebnisse gemappt.
+
+## Reale BMAD-Planung (Pilot)
+
+Die BMAD-Planung wird standardmäßig erfasst (`DefaultBmadPlanner` installiert BMAD und liest
+die Artefakte; HITL 1 pausiert, wenn nicht vorhanden). Um die **autonome BMAD-Planung** über
+`claude -p` zu aktivieren, setze `CONDUCTOR_ENABLE_REAL_BMAD=1` (erfordert authentifiziertes
+`claude`). Sie erzeugt nur Planungsdokumente unter `_bmad-output/planning-artifacts/` und wird
+immer durch **HITL 1** vor jeder Entwicklung gesteuert — kein Code wird geändert und nichts
+wird in dieser Phase gemergt. Mit allen drei Opt-ins aktiviert
+(`CONDUCTOR_USE_CLAUDE_ANALYZER`, `CONDUCTOR_ENABLE_REAL_BMAD`, `CONDUCTOR_ENABLE_REAL_BAD`),
+läuft die vollständige `A→E`-Kette echt durch und hält trotzdem an beiden HITL-Gates an.
