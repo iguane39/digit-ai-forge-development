@@ -87,6 +87,17 @@ Dal PERIMETRO + VINCOLI validati in Fase −1, PROPONI un `MissionConfig` esplic
 Genera lo scheletro via `copier` + innesta i brick scelti (t0 inclusi). Verifica che l'harness CI
 (gate codice) sia in posizione. NON invocare alcun agente prima della fine di B.
 
+**Configurazione di partenza (instradamento onramp).** Lo «scaffold-first» si generalizza in un
+*onramp* scelto da `select_onramp` in base alla provenienza del progetto — tutti producono lo stesso
+substrate, quindi le Fasi C→E sono identiche per le tre:
+- **From scratch** (`--mode greenfield`) → `ScaffoldOnramp`: genera lo scheletro (questa sezione).
+- **Continuazione** di un progetto generato dalla forge (`--mode brownfield`, repo già conforme) →
+  `NoOnramp`: NESSUNO scaffold; cattura una baseline che alimenta il gate di non regressione;
+  pianifica solo gli epic nuovi.
+- **Progetto esterno** (`--mode brownfield`, repo da normalizzare) → `AdapterOnramp` (FastAPI
+  incompleto) o `BuilderOnramp` (stack non-FastAPI) + HITL-0 se viene dichiarato un degrado; poi
+  `--intent remediation|complement|both`.
+
 ## Fase C — Ponte BMAD → HITL 1
 `npx bmad-method install --modules bmm,tea`, poi produci la pianificazione in
 `_bmad-output/planning-artifacts/epics.md` (PRD, architettura, epic, story).

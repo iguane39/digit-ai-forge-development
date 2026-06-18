@@ -86,6 +86,16 @@ From the validated SCOPE + CONSTRAINTS, PROPOSE an explicit `MissionConfig`:
 Generate the skeleton via `copier` + graft the chosen bricks (t0 included). Verify the CI
 harness (code gate) is in place. Invoke NO agent before B is done.
 
+**Starting configuration (onramp routing).** "Scaffold-first" generalizes to an *onramp* chosen by
+`select_onramp` from the project's provenance — all produce the same substrate, so Phases C→E are
+identical for the three:
+- **From scratch** (`--mode greenfield`) → `ScaffoldOnramp`: generate the skeleton (this section).
+- **Continuation** of a forge-built project (`--mode brownfield`, repo already conformant) →
+  `NoOnramp`: NO scaffold; capture a baseline that feeds the non-regression gate; plan only the new epics.
+- **External** project (`--mode brownfield`, repo to normalize) → `AdapterOnramp` (incomplete FastAPI)
+  or `BuilderOnramp` (non-FastAPI stack) + HITL-0 if degradation is declared; then
+  `--intent remediation|complement|both`.
+
 ## Phase C — BMAD bridge → HITL 1
 `npx bmad-method install --modules bmm,tea`, then produce the planning in
 `_bmad-output/planning-artifacts/epics.md` (PRD, architecture, epics, stories).

@@ -87,6 +87,17 @@ Desde el ALCANCE + RESTRICCIONES validados en la Fase −1, PROPÓN un `MissionC
 Genera el esqueleto vía `copier` + injerta los bricks elegidos (t0 incluidos). Verifica que el
 harness CI (compuerta de código) esté en su sitio. NO invoques ningún agente antes de terminar B.
 
+**Configuración de partida (enrutamiento onramp).** El «scaffold-first» se generaliza en un *onramp*
+elegido por `select_onramp` según la procedencia del proyecto — todos producen el mismo substrate,
+por lo que las Fases C→E son idénticas para las tres:
+- **From scratch** (`--mode greenfield`) → `ScaffoldOnramp`: genera el esqueleto (esta sección).
+- **Continuación** de un proyecto generado por la forge (`--mode brownfield`, repo ya conforme) →
+  `NoOnramp`: SIN scaffold; captura una baseline que alimenta la compuerta de no regresión;
+  planifica solo los epics nuevos.
+- **Proyecto externo** (`--mode brownfield`, repo a normalizar) → `AdapterOnramp` (FastAPI incompleto)
+  o `BuilderOnramp` (stack no FastAPI) + HITL-0 si se declara degradación; luego
+  `--intent remediation|complement|both`.
+
 ## Fase C — Puente BMAD → HITL 1
 `npx bmad-method install --modules bmm,tea`, luego produce la planificación en
 `_bmad-output/planning-artifacts/epics.md` (PRD, arquitectura, épicas, historias).
