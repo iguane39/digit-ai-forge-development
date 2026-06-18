@@ -7,19 +7,24 @@ planners (remédiation puis complément) et fusionne leurs stories en un seul ba
 
 from __future__ import annotations
 
-from conductor.bmad_bridge import BmadPlanner, DefaultBmadPlanner
+from conductor.bmad_bridge import BmadPlanner
 from conductor.contracts import BmadPlan
 from conductor.onramp.base import Substrate
 
 
 class ComplementPlanner:
-    """Délègue à un planner BMAD (DefaultBmadPlanner par défaut) sur le substrat existant."""
+    """Délègue à un planner BMAD (résolu via resolve_bmad_planner() par défaut) sur le substrat."""
 
     def __init__(self, inner: BmadPlanner | None = None) -> None:
-        self._inner = inner or DefaultBmadPlanner()
+        self._inner = inner  # résolu à l'appel via resolve_bmad_planner() si None
 
     def plan(self, substrate: Substrate) -> BmadPlan:
-        return self._inner.plan(substrate)
+        inner = self._inner
+        if inner is None:
+            from conductor.harness.resolve import resolve_bmad_planner
+
+            inner = resolve_bmad_planner()
+        return inner.plan(substrate)
 
 
 class CompositePlanner:
