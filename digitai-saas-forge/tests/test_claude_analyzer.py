@@ -1,11 +1,11 @@
-"""ClaudeSubagentAnalyzer : fusionne faits heuristiques + interprétation agent ; fallback gracieux."""  # noqa: E501
+"""ClaudeSubagentAnalyzer : faits heuristiques + interprétation agent ; fallback gracieux."""
 
 from __future__ import annotations
 
 import json
 from pathlib import Path
 
-from conductor.harness.analyzer import ClaudeSubagentAnalyzer
+from conductor.harness.analyzer import _PROMPT, ClaudeSubagentAnalyzer
 
 
 class _FakeRunner:
@@ -46,3 +46,17 @@ def test_fallback_on_runner_error(tmp_path: Path) -> None:
     arch = ClaudeSubagentAnalyzer(runner=_FakeRunner("", boom=True)).analyze(repo)
     assert arch["interpretation"] == "indisponible"
     assert "top_level" in arch
+
+
+def test_fallback_on_non_dict_json(tmp_path: Path) -> None:
+    # JSON valide mais non-objet (tableau) → fallback gracieux sur les faits.
+    repo = _repo(tmp_path)
+    arch = ClaudeSubagentAnalyzer(runner=_FakeRunner(json.dumps([1, 2, 3]))).analyze(repo)
+    assert arch["interpretation"] == "indisponible"
+    assert arch["has_pyproject"] is True
+
+
+def test_prompt_requests_expected_keys() -> None:
+    # Verrouille les clés attendues : un drift du prompt casserait la fusion sans ce test.
+    for key in ("summary", "conventions", "debt"):
+        assert key in _PROMPT
