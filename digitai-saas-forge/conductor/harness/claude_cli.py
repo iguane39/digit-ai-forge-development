@@ -10,6 +10,8 @@ import subprocess
 from pathlib import Path
 from typing import Protocol
 
+from conductor.harness._text import clip
+
 
 class CliRunner(Protocol):
     def run(self, prompt: str, cwd: Path) -> str: ...
@@ -44,7 +46,7 @@ class SubprocessClaudeCli:
         except subprocess.TimeoutExpired as exc:
             raise RuntimeError(f"claude CLI : timeout après {self._timeout_s}s") from exc
         if proc.returncode != 0:
-            msg = f"claude CLI a échoué (code {proc.returncode}) : {proc.stderr[:500]}"
+            msg = f"claude CLI a échoué (code {proc.returncode}) : {clip(proc.stderr, 500)}"
             raise RuntimeError(msg)
         try:
             envelope = json.loads(proc.stdout)

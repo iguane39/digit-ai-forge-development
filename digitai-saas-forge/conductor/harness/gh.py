@@ -7,6 +7,8 @@ import subprocess
 from pathlib import Path
 from typing import Any, Protocol
 
+from conductor.harness._text import clip
+
 _FIELDS = "number,title,headRefName,statusCheckRollup,url"
 
 
@@ -33,7 +35,7 @@ class SubprocessGh:
         except subprocess.TimeoutExpired as exc:
             raise RuntimeError(f"gh : timeout après {self._timeout_s}s") from exc
         if proc.returncode != 0:
-            raise RuntimeError(f"gh a échoué (code {proc.returncode}) : {proc.stderr[:500]}")
+            raise RuntimeError(f"gh a échoué (code {proc.returncode}) : {clip(proc.stderr, 500)}")
         out = proc.stdout.strip()
         if not out:
             return []
