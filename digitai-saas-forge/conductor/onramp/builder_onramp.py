@@ -59,6 +59,7 @@ class BuilderOnramp:
         if not has_ci(repo):
             notes.append("Harness CI absent : gate code à fournir pour cette stack.")
 
+        # lazy : évite un cycle d'import (harness.analyzer → onramp.analyzer ← onramp.__init__).
         from conductor.harness.resolve import resolve_analyzer
 
         analyzer: Analyzer = self._analyzer or resolve_analyzer()
