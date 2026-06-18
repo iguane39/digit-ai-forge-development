@@ -121,3 +121,10 @@ MERGE NOTHING.
   any HITL. Don't ignore a constraint without flagging it in the grey zone. Don't fork
   BMAD/BAD/the template/design.md.
 ```
+
+## Real ingestion (pilot)
+
+Ingestion is heuristic by default (deterministic, no network). To enable the **real
+sub-agent analyzer** (`claude -p`), set `CONDUCTOR_USE_CLAUDE_ANALYZER=1` (requires the
+`claude` CLI authenticated). The gated integration test documents the path:
+`RUN_CLAUDE_INTEGRATION=1 uv run pytest tests/test_claude_integration.py`.
