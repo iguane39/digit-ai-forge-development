@@ -61,6 +61,7 @@ Bestätigung der Sortierung vor dem Preflight. Sie ist die Grundlage von allem.
   eine Entscheidungszusammenfassung vor und WARTEST auf meine ausdrückliche Freigabe. Diese
   Stopps sind beabsichtigt — keine Fehler.
 - **`auto_pr_merge=false`**: du mergest NIE automatisch. Du gibst dir kein HITL selbst frei.
+- **Merge-Regel**: die Integration pro EPIC ist **automatisch & lokal** (nur wenn das Dual-Gate grün ist); der einzige **menschliche** Merge erfolgt nach GitHub/`main`, **einmal, am Ende** (HITL 2). Eine blockierte EPIC wird nicht gemergt.
 - **Gepinnte/vendored Abhängigkeiten**: BAD `@v1.2.0`, `@google/design.md@0.3.0`.
 - "End-to-End" = orchestriert ohne manuellen Schritt AUSSERHALB der 2 geplanten HITL.
 

@@ -62,6 +62,7 @@ et ATTENDS ma validation de ce tri avant le préflight. C'est la base de tout le
   HITL tu t'ARRÊTES, tu présentes un résumé décisionnel, et tu ATTENDS ma validation
   explicite. Ces arrêts sont voulus — ce ne sont pas des pannes.
 - **`auto_pr_merge=false`** : tu n'auto-mergeras JAMAIS. Tu ne t'auto-approuves pas les HITL.
+- **Règle de merge** : l'intégration par EPIC est **automatique & locale** (seulement si le double gate est vert) ; le seul merge **humain** est vers GitHub/`main`, **une fois, à la fin** (HITL 2). Une EPIC bloquée n'est pas mergée.
 - **Dépendances épinglées/vendorisées** : BAD `@v1.2.0`, `@google/design.md@0.3.0`.
 - "Bout en bout" = orchestré sans intervention manuelle HORS des 2 HITL prévus.
 
