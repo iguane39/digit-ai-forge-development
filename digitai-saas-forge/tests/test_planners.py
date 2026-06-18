@@ -73,7 +73,9 @@ def test_complement_default_inner_resolves_lazily(
     from conductor.harness import resolve as resolve_mod
 
     sentinel = BmadPlan(
-        prd_path=tmp_path / "PRD.md", architecture_path=tmp_path / "a.md", epics_md=tmp_path / "e.md"
+        prd_path=tmp_path / "PRD.md",
+        architecture_path=tmp_path / "a.md",
+        epics_md=tmp_path / "e.md",
     )
     monkeypatch.setattr(resolve_mod, "resolve_bmad_planner", lambda: _StubPlanner(sentinel))
     assert ComplementPlanner().plan(_substrate(tmp_path, {})) is sentinel
