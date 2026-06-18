@@ -50,3 +50,21 @@ def test_default_gate_pauses_without_human(tmp_path: Path) -> None:
     """Défaut ManualGate : pas d'approbation auto → pause (gouvernance, décision 07)."""
     with pytest.raises(HitlPending):
         lancer_planification(_substrate(tmp_path), planner=FakePlanner())
+
+
+def test_lancer_planification_uses_resolver_by_default(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from conductor.harness import resolve as resolve_mod
+
+    sentinel = BmadPlan(
+        prd_path=Path("PRD.md"), architecture_path=Path("a.md"), epics_md=Path("e.md")
+    )
+
+    class _Resolved:
+        def plan(self, substrate: Substrate) -> BmadPlan:
+            return sentinel
+
+    monkeypatch.setattr(resolve_mod, "resolve_bmad_planner", lambda: _Resolved())
+    plan = lancer_planification(_substrate(tmp_path), gate=ApproveGate())
+    assert plan.hitl1_approved is True  # est passé par _Resolved + HITL 1 approuvé
