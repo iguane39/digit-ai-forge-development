@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from conductor.contracts import BmadPlan
 from conductor.onramp.base import Substrate
 from conductor.planners import ComplementPlanner, CompositePlanner
@@ -62,6 +64,19 @@ def test_complement_delegates_to_inner(tmp_path: Path) -> None:
     )
     planner = ComplementPlanner(inner=_StubPlanner(inner_plan))
     assert planner.plan(_substrate(tmp_path, {})) is inner_plan
+
+
+def test_complement_default_inner_resolves_lazily(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # inner=None → résolu à l'appel via resolve_bmad_planner (chemin par défaut).
+    from conductor.harness import resolve as resolve_mod
+
+    sentinel = BmadPlan(
+        prd_path=tmp_path / "PRD.md", architecture_path=tmp_path / "a.md", epics_md=tmp_path / "e.md"
+    )
+    monkeypatch.setattr(resolve_mod, "resolve_bmad_planner", lambda: _StubPlanner(sentinel))
+    assert ComplementPlanner().plan(_substrate(tmp_path, {})) is sentinel
 
 
 def test_composite_concatenates_stories(tmp_path: Path) -> None:
