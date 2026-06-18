@@ -62,6 +62,13 @@ def test_code_ok_false_on_failed_check(tmp_path: Path) -> None:
     assert outcomes[0].code_ok is False
 
 
+def test_code_ok_false_on_pending_check(tmp_path: Path) -> None:
+    # CI encore en cours juste après le trigger → NON ok (anti faux-positif).
+    pr = {"headRefName": "story-4-1-x", "url": "u", "statusCheckRollup": [{"state": "PENDING"}]}
+    outcomes = ClaudeCliBadRunner(cli=_FakeCli(), gh=_FakeGh([pr])).run_sprint(_layout(tmp_path))
+    assert outcomes[0].code_ok is False
+
+
 def test_remediate_reobserves_target_story(tmp_path: Path) -> None:
     gh = _FakeGh([_pr("story-3-1-x", ok=True, url="http://pr/3")])
     out = ClaudeCliBadRunner(cli=_FakeCli(), gh=gh).remediate("story-3-1-x", _layout(tmp_path))
