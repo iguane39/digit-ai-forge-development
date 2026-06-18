@@ -20,6 +20,9 @@ ligne à ligne).
 **Distinction de merge.** Merge LOCAL par EPIC (branche de run, gardé par double gate +
 non-régression) = mécanisme d'enchaînement réversible → **autonome**. Merge FINAL vers `main`
 (push/PR, irréversible) → **humain (revue finale)**. « Merge automatique » signifie TOUJOURS local.
+Cette règle vaut **à l'identique pour la forge ET pour une app client** : merges locaux par EPIC
+automatiques (si gate vert) ; merge GitHub/`main` **humain, une seule fois, à la fin** (= HITL 2 /
+revue finale). Une EPIC `blocked` n'est pas mergée.
 
 ## Cycle de vie — 2 gates humains
 

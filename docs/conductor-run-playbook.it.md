@@ -61,6 +61,7 @@ validazione dell'ordinamento prima del preflight. È la base di tutto il resto.
   FERMI, presenti un riepilogo decisionale e ATTENDI la mia approvazione esplicita. Queste soste
   sono volute — non sono guasti.
 - **`auto_pr_merge=false`**: non fai MAI auto-merge. Non ti auto-approvi alcun HITL.
+- **Regola di merge**: l'integrazione per EPIC è **automatica e locale** (solo se il doppio gate è verde); l'unico merge **umano** è verso GitHub/`main`, **una volta, alla fine** (HITL 2). Una EPIC bloccata non viene mergiata.
 - **Dipendenze fissate/vendorizzate**: BAD `@v1.2.0`, `@google/design.md@0.3.0`.
 - "End-to-end" = orchestrato senza passo manuale FUORI dai 2 HITL previsti.
 
