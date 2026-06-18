@@ -100,3 +100,15 @@ def test_composite_concatenates_stories(tmp_path: Path) -> None:
     out = composite.plan(_substrate(tmp_path, {}))
     assert [s.id for s in out.stories] == ["R1", "C1"]
     assert out.epics_md == p1.epics_md
+
+
+def test_composite_writes_merged_epics_on_disk(tmp_path: Path) -> None:
+    a_file = tmp_path / "a_epics.md"
+    a_file.write_text("# Remediation\n- R1\n", encoding="utf-8")
+    b_file = tmp_path / "b_epics.md"
+    b_file.write_text("# Complement\n- C1\n", encoding="utf-8")
+    pa = BmadPlan(prd_path=tmp_path / "p", architecture_path=tmp_path / "ar", epics_md=a_file)
+    pb = BmadPlan(prd_path=tmp_path / "p", architecture_path=tmp_path / "ar", epics_md=b_file)
+    out = CompositePlanner(_StubPlanner(pa), _StubPlanner(pb)).plan(_substrate(tmp_path, {}))
+    merged = out.epics_md.read_text(encoding="utf-8")
+    assert "Remediation" in merged and "Complement" in merged
