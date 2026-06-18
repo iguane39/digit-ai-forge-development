@@ -19,16 +19,19 @@ _TRIGGER = (
 )
 _REMEDIATE = "BAD : reprends la story {story_id} pour corriger les gates en échec, sans merger."
 
-_FAIL = {"FAILURE", "ERROR", "CANCELLED", "TIMED_OUT", "ACTION_REQUIRED", "FAILING", "FAILED"}
+# Statuts de check considérés comme "vert terminé". Tout le reste — échec, mais AUSSI
+# en cours / en attente (PENDING, IN_PROGRESS, QUEUED) — est traité comme NON ok : on observe
+# juste après le trigger /bad, donc la CI est souvent encore en cours (anti faux-positif).
+_PASS = {"SUCCESS", "NEUTRAL", "SKIPPED"}
 
 
 def _code_ok(rollup: list[dict[str, Any]]) -> bool:
-    """Vrai si au moins un check et aucun en échec (état CI consolidé de la PR)."""
+    """Vrai seulement si ≥1 check ET tous terminés ET réussis (pending/échec → False)."""
     if not rollup:
         return False
     for check in rollup:
         status = str(check.get("conclusion") or check.get("state") or "").upper()
-        if status in _FAIL:
+        if status not in _PASS:
             return False
     return True
 
