@@ -159,3 +159,13 @@ documents under `_bmad-output/planning-artifacts/` and is always gated by **HITL
 development — no code is changed and nothing is merged at this stage. With all three opt-ins on
 (`CONDUCTOR_USE_CLAUDE_ANALYZER`, `CONDUCTOR_ENABLE_REAL_BMAD`, `CONDUCTOR_ENABLE_REAL_BAD`), the
 full `A→E` chain runs for real, still pausing at both HITL gates.
+
+## Real spec-compliance gate (pilot)
+
+The spec-compliance gate is **off by default** (the supervisor runs the dual gate + non-regression
+only). To enable a per-story **spec-conformance review** via `claude -p`, set
+`CONDUCTOR_ENABLE_SPEC_REVIEW=1` (requires `claude` authenticated). It compares each story's
+acceptance criteria to its PR diff: an **under-build** (unmet criterion) blocks the story (it joins
+the bounded 3-retry remediation, then `blocked`); an **over-build** (behavior beyond spec) is
+advisory. All findings are persisted to `SPEC_FINDINGS.md` with a `traité`/`non-traité` status for
+later manual pickup. No merge is affected; HITL 2 is unchanged.

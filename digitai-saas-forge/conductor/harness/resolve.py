@@ -11,7 +11,7 @@ from conductor.onramp.analyzer import Analyzer, HeuristicAnalyzer
 
 if TYPE_CHECKING:
     from conductor.bmad_bridge import BmadPlanner
-    from conductor.supervisor import BadRunner
+    from conductor.supervisor import BadRunner, SpecComplianceReviewer
 
 
 def resolve_analyzer() -> Analyzer:
@@ -42,3 +42,13 @@ def resolve_bad_runner() -> BadRunner:
     if enabled and tools:
         return ClaudeCliBadRunner()
     return DefaultBadRunner()
+
+
+def resolve_spec_reviewer() -> SpecComplianceReviewer:
+    """Réel si CONDUCTOR_ENABLE_SPEC_REVIEW=1 ET `claude` présent ; sinon DefaultSpecReviewer."""
+    from conductor.harness.spec_reviewer import ClaudeCliSpecReviewer
+    from conductor.supervisor import DefaultSpecReviewer
+
+    if os.environ.get("CONDUCTOR_ENABLE_SPEC_REVIEW") == "1" and shutil.which("claude") is not None:
+        return ClaudeCliSpecReviewer()
+    return DefaultSpecReviewer()
