@@ -165,3 +165,14 @@ est toujours contrôlée par **HITL 1** avant tout développement — aucun code
 rien n'est mergé à ce stade. Avec les trois options activées
 (`CONDUCTOR_USE_CLAUDE_ANALYZER`, `CONDUCTOR_ENABLE_REAL_BMAD`, `CONDUCTOR_ENABLE_REAL_BAD`),
 la chaîne `A→E` complète s'exécute pour de vrai, en s'arrêtant toujours aux deux HITL.
+
+## Gate de conformité au spec réel (pilote)
+
+Le gate de conformité au spec est **désactivé par défaut** (le superviseur n'applique que le double
+gate + la non-régression). Pour activer une **revue de conformité par story** via `claude -p`,
+définir `CONDUCTOR_ENABLE_SPEC_REVIEW=1` (nécessite `claude` authentifié). Il confronte les critères
+d'acceptation de chaque story au diff de sa PR : un **under-build** (critère non tenu) bloque la
+story (elle rejoint la remédiation bornée à 3 retries, puis `blocked`) ; un **over-build**
+(comportement au-delà du spec) est consultatif. Tous les findings sont persistés dans
+`SPEC_FINDINGS.md` avec un statut `traité`/`non-traité` pour reprise manuelle ultérieure. Aucun
+merge n'est affecté ; HITL 2 est inchangé.
