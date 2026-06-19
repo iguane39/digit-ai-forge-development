@@ -110,6 +110,11 @@ def superviser(
     def _passes(o: StoryOutcome) -> bool:
         design_ok = check(o).passed
         current = {"code": o.code_ok, "design": design_ok}
+        # Non-régression : garde-fou do-no-harm. Actuellement SUBSUMÉ par les gates absolus de la
+        # ligne de retour (current ne porte que code/design, déjà exigés verts) → pas de pouvoir de
+        # blocage indépendant ICI ; sa logique propre est testée isolément (test_regression_gate).
+        # Valeur indépendante = sémantique non-régression en brownfield (baseline rouge tolérée si
+        # non aggravée) — décision différée, hors périmètre.
         no_regression = evaluate_regression(layout.baseline or {}, current).passed
         spec_ok = reviewer.review(_story_for(o), o, layout.project_root).passed
         return o.code_ok and design_ok and no_regression and spec_ok

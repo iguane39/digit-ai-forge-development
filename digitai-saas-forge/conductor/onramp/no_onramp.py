@@ -17,6 +17,15 @@ from conductor.onramp.detect import has_pyproject
 from conductor.profiles import FASTAPI_SAAS, TargetProfile
 
 
+def baseline_notes(baseline: dict[str, bool]) -> list[str]:
+    """Signale chaque gate rouge à l'entrée (do-no-harm : ne pas avancer en silence)."""
+    return [
+        f"Gate '{name}' rouge à l'entrée (baseline) : à examiner avant remédiation."
+        for name, ok in sorted(baseline.items())
+        if not ok
+    ]
+
+
 def capture_baseline(
     repo_path: Path,
     profile: TargetProfile,
@@ -61,4 +70,5 @@ class NoOnramp:
             profile=FASTAPI_SAAS,
             design_md_path=repo / FASTAPI_SAAS.design_md_path,
             baseline=baseline,
+            declared_degradation=baseline_notes(baseline),
         )

@@ -24,7 +24,11 @@
   - `run_sprint(layout)` : déclenche `/bad` via `CliRunner.run(trigger, layout.project_root)`
     (trigger en langage naturel, plus robuste que la commande slash) ; puis observe via
     `GhRunner.list_prs` → mappe chaque PR en `StoryOutcome` (`story_id` ← `headRefName`,
-    `code_ok` ← `statusCheckRollup` sans échec, `pr_url` ← `url`).
+    `code_ok` ← `statusCheckRollup`, `pr_url` ← `url`).
+  - **`code_ok` strict (décision actée)** : vrai uniquement si ≥1 check ET **tous terminés ET
+    verts** (`SUCCESS`/`NEUTRAL`/`SKIPPED`). `PENDING`/`IN_PROGRESS`/`QUEUED` comptent comme
+    **non-ok** (anti faux-positif : on observe juste après le trigger `/bad`, la CI tourne souvent
+    encore — on ne marque pas une story verte tant que sa CI n'est pas finie).
   - `remediate(story_id, layout)` : re-déclenche `/bad` ciblé puis ré-observe la PR de la story.
   - Le runner construit par défaut un `SubprocessClaudeCli(skip_permissions=True)` + `SubprocessGh()`.
 - **`resolve_bad_runner()`** (`harness/resolve.py`) — `ClaudeCliBadRunner` **seulement si**
@@ -56,7 +60,7 @@ superviser(layout, bad=resolve_bad_runner())
 
 - **Unitaires (CI, déterministes)** : faux `CliRunner` (enregistre les prompts) + faux `GhRunner`
   (PR canned) → `run_sprint` mappe correctement ; `remediate` ré-observe ; logique `code_ok`
-  (échec CI → False) ; `resolve_bad_runner` (env on/off, claude/gh présents/absents) ;
+  (échec CI → False ; `PENDING` → False, cf. §2) ; `resolve_bad_runner` (env on/off, claude/gh) ;
   `skip_permissions` ajoute bien le flag.
 - **Pas de test automatisé du *vrai* `/bad`** : contrairement à l'analyzer (lecture seule), `/bad`
   **mute le repo et ouvre des PR** → effets de bord inacceptables même *gated*. À la place :
