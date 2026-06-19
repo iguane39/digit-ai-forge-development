@@ -164,3 +164,14 @@ immer durch **HITL 1** vor jeder Entwicklung gesteuert — kein Code wird geänd
 wird in dieser Phase gemergt. Mit allen drei Opt-ins aktiviert
 (`CONDUCTOR_USE_CLAUDE_ANALYZER`, `CONDUCTOR_ENABLE_REAL_BMAD`, `CONDUCTOR_ENABLE_REAL_BAD`),
 läuft die vollständige `A→E`-Kette echt durch und hält trotzdem an beiden HITL-Gates an.
+
+## Echtes Spec-Compliance-Gate (Pilot)
+
+Das Spec-Compliance-Gate ist **standardmäßig aus** (der Supervisor führt nur das Dual-Gate + die
+Nicht-Regression aus). Um eine **Konformitätsprüfung pro Story** via `claude -p` zu aktivieren,
+`CONDUCTOR_ENABLE_SPEC_REVIEW=1` setzen (erfordert authentifiziertes `claude`). Es vergleicht die
+Akzeptanzkriterien jeder Story mit dem Diff ihrer PR: ein **under-build** (nicht erfülltes
+Kriterium) blockiert die Story (sie tritt in die auf 3 Retries begrenzte Remediation ein, dann
+`blocked`); ein **over-build** (Verhalten über den Spec hinaus) ist beratend. Alle Findings werden
+in `SPEC_FINDINGS.md` mit einem Status `traité`/`non-traité` für die spätere manuelle Aufnahme
+persistiert. Kein Merge ist betroffen; HITL 2 bleibt unverändert.

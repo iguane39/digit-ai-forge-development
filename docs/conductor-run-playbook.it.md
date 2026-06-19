@@ -166,3 +166,14 @@ sviluppo — nessun codice viene modificato e nulla viene mergiato in questa fas
 tre gli opt-in attivi (`CONDUCTOR_USE_CLAUDE_ANALYZER`, `CONDUCTOR_ENABLE_REAL_BMAD`,
 `CONDUCTOR_ENABLE_REAL_BAD`), la catena `A→E` completa viene eseguita sul serio, facendo
 comunque pausa a entrambi i gate HITL.
+
+## Gate di conformità allo spec reale (pilota)
+
+Il gate di conformità allo spec è **disattivato per impostazione predefinita** (il supervisore
+esegue solo il doppio gate + la non regressione). Per attivare una **revisione di conformità per
+story** via `claude -p`, impostare `CONDUCTOR_ENABLE_SPEC_REVIEW=1` (richiede `claude` autenticato).
+Confronta i criteri di accettazione di ogni story con il diff della sua PR: un **under-build**
+(criterio non soddisfatto) blocca la story (entra nella remediation limitata a 3 retry, poi
+`blocked`); un **over-build** (comportamento oltre lo spec) è consultivo. Tutti i findings sono
+persistiti in `SPEC_FINDINGS.md` con uno stato `traité`/`non-traité` per la ripresa manuale
+successiva. Nessun merge è interessato; HITL 2 è invariato.
