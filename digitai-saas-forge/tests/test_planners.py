@@ -112,3 +112,30 @@ def test_composite_writes_merged_epics_on_disk(tmp_path: Path) -> None:
     out = CompositePlanner(_StubPlanner(pa), _StubPlanner(pb)).plan(_substrate(tmp_path, {}))
     merged = out.epics_md.read_text(encoding="utf-8")
     assert "Remediation" in merged and "Complement" in merged
+
+
+class _WritingStubPlanner:
+    """Planner qui ÉCRIT son contenu sur le chemin epics_md au moment du plan (cas intent=both)."""
+
+    def __init__(self, epics_md: Path, content: str) -> None:
+        self._epics_md = epics_md
+        self._content = content
+
+    def plan(self, substrate: Substrate) -> BmadPlan:
+        self._epics_md.write_text(self._content, encoding="utf-8")
+        return BmadPlan(
+            prd_path=self._epics_md.parent / "p",
+            architecture_path=self._epics_md.parent / "ar",
+            epics_md=self._epics_md,
+        )
+
+
+def test_composite_same_path_reads_first_before_second_overwrites(tmp_path: Path) -> None:
+    """intent=both : le 2ᵉ planner écrit sur le MÊME epics.md ; on lit le 1ᵉʳ AVANT l'écrasement."""
+    shared = tmp_path / "epics.md"
+    shared.write_text("# Remediation\n- R1\n", encoding="utf-8")  # contenu du 1ᵉʳ planner
+    pa = BmadPlan(prd_path=tmp_path / "p", architecture_path=tmp_path / "ar", epics_md=shared)
+    second = _WritingStubPlanner(shared, "# Complement\n- C1\n")  # écrase shared au plan
+    out = CompositePlanner(_StubPlanner(pa), second).plan(_substrate(tmp_path, {}))
+    merged = out.epics_md.read_text(encoding="utf-8")
+    assert "Remediation" in merged and "Complement" in merged  # union malgré le même chemin
