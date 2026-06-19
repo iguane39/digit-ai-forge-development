@@ -57,6 +57,22 @@ def test_no_onramp_returns_substrate_with_baseline(tmp_path: Path) -> None:
     assert substrate.baseline == {"code": True, "design": True}
 
 
+def test_no_onramp_red_baseline_is_declared(tmp_path: Path) -> None:
+    """Do-no-harm : un gate rouge à l'entrée est signalé (declared_degradation), pas avalé."""
+    (tmp_path / "pyproject.toml").write_text("[project]\nname='x'\n", encoding="utf-8")
+    onramp = NoOnramp(code_runner=_CodeRunner(1), design_linter=_Linter({"findings": []}))
+    substrate = onramp.prepare(cadrer("idée", mode="brownfield", existing_repo=tmp_path), tmp_path)
+    assert substrate.baseline == {"code": False, "design": True}
+    assert any("code" in note and "rouge" in note for note in substrate.declared_degradation)
+
+
+def test_no_onramp_green_baseline_no_degradation(tmp_path: Path) -> None:
+    (tmp_path / "pyproject.toml").write_text("[project]\nname='x'\n", encoding="utf-8")
+    onramp = NoOnramp(code_runner=_CodeRunner(0), design_linter=_Linter({"findings": []}))
+    substrate = onramp.prepare(cadrer("idée", mode="brownfield", existing_repo=tmp_path), tmp_path)
+    assert substrate.declared_degradation == []
+
+
 def test_select_onramp_brownfield_is_no_onramp(tmp_path: Path) -> None:
     """Un repo distance A (pyproject + DESIGN.md + CI) → NoOnramp."""
     (tmp_path / "pyproject.toml").write_text("[project]\nname='x'\n", encoding="utf-8")

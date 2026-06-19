@@ -17,7 +17,7 @@ from conductor.onramp.analyzer import Analyzer
 from conductor.onramp.base import Substrate
 from conductor.onramp.defaults import DEFAULT_DESIGN_MD
 from conductor.onramp.detect import detect_stack, has_ci
-from conductor.onramp.no_onramp import capture_baseline
+from conductor.onramp.no_onramp import baseline_notes, capture_baseline
 from conductor.profiles import profile_for_stack
 
 
@@ -67,6 +67,7 @@ class BuilderOnramp:
         baseline = capture_baseline(
             repo, profile, code_runner=self._code_runner, design_linter=self._design_linter
         )
+        notes.extend(baseline_notes(baseline))
         return Substrate(
             repo_path=repo,
             profile=profile,
