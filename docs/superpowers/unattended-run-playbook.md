@@ -13,6 +13,7 @@ ligne à ligne).
 |---|---|
 | Double gate (ruff/mypy/pytest + design WCAG) | Validation de design par EPIC |
 | Non-régression | « Relis la spec » par EPIC |
+| Gate spec-compliance (opt-in `CONDUCTOR_ENABLE_SPEC_REVIEW`) | — |
 | 2 HITL produit (uniquement si `conductor run`) | « Démarrer l'EPIC suivante ? » |
 | Revue humaine avant merge vers `main`/cible partagée | Choix du mode d'exécution |
 | `auto_pr_merge=false` | Messages d'avancement bloquants |

@@ -124,6 +124,23 @@ class GateVerdict(BaseModel):
     log_ref: str = ""
 
 
+class SpecVerdict(BaseModel):
+    """Verdict de conformité au spec d'une story.
+
+    `under-build` (critère non tenu) est bloquant ; `over-build` (comportement non demandé) est
+    consultatif. `passed` est faux dès qu'il existe ≥1 finding `under-build`.
+    """
+
+    passed: bool
+    findings: list[dict[str, str]] = Field(default_factory=list)
+    log_ref: str = ""
+
+    @classmethod
+    def from_findings(cls, findings: list[dict[str, str]], *, log_ref: str = "") -> SpecVerdict:
+        blocking = any(f.get("kind") == "under-build" for f in findings)
+        return cls(passed=not blocking, findings=findings, log_ref=log_ref)
+
+
 # --- E : superviseur / sprint -----------------------------------------------
 
 
