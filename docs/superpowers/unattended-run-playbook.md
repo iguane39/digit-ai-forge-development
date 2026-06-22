@@ -82,6 +82,18 @@ explicite pour merger la branche de run sur `main`. RIEN n'est mergé sur `main`
 - Avancement asynchrone : jamais de message bloquant ; `PLAN.md` + `RUN_LOG.md` à jour ; UNE
   notification aux seuls jalons (GATE 1/2, `blocked`, fin de run).
 
+## Canal de notification
+La notification utilise le **canal natif Claude Code (push)** — aucun secret ni dépendance externe.
+Règles :
+- **Quand** : seulement aux 4 jalons — GATE 1 atteint (attente du GO), GATE 2 atteint (attente de
+  revue), une EPIC passe `blocked`, run terminé. Jamais à chaque EPIC (anti-spam).
+- **Comment** : envoi **non bloquant** ; un échec d'envoi n'arrête jamais le run (on continue, l'état
+  reste dans `PLAN.md`/`RUN_LOG.md`). Chaque envoi est aussi journalisé : `[HH:MM] notification · <jalon>`.
+- **Contenu** : une ligne — `<run-slug> · <jalon> · <action attendue>` (ex. « run-crm · GATE 2 ·
+  revue & merge `main` en attente »).
+- **Activation** : activée par défaut en mode unattended (c'est le sens de « lance et reviens ») ;
+  désactivable explicitement si l'opérateur surveille déjà le terminal.
+
 ## GATE 2 — politique de merge (choix posé au pré-vol)
 Avant la 1ʳᵉ EPIC, poser UNE question (recommandation en tête) et expliquer l'impact CHIFFRÉ :
 
