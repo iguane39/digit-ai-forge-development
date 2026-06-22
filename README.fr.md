@@ -81,7 +81,7 @@ l'opérateur sépare le périmètre des contraintes, puis déroule la chaîne :
 6. **Config sprint (D)** — layout du backlog + section `bad:` (`auto_pr_merge=false`).
 7. **Sprint supervisé (E) → HITL 2** — `/bad` par story, double gate, 3 retries ; aucun merge sans revue humaine.
 
-Prompt opérateur complet : **[`docs/conductor-run-playbook.fr.md`](docs/conductor-run-playbook.fr.md)**.
+**Commence ici — porte d'entrée unique :** **[`docs/run-playbook.md`](docs/run-playbook.md)**. Il met à jour la forge, détecte ton contexte (nouveau / continuation / repo externe / màj forge) et route vers le bon flux. Références de détail : [`conductor-run-playbook.fr.md`](docs/conductor-run-playbook.fr.md) (phases A→E) et [`unattended-run-playbook.md`](docs/superpowers/unattended-run-playbook.md) (mode autonome « lance et reviens »).
 
 ## Licence
 
