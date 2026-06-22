@@ -40,3 +40,11 @@ def test_plan_triggers_and_reads_epics(tmp_path: Path) -> None:
 def test_plan_raises_hitl_pending_if_no_epics(tmp_path: Path) -> None:
     with pytest.raises(HitlPending, match="BMAD|epics"):
         ClaudeCliBmadPlanner(cli=_FakeCli()).plan(_substrate(tmp_path))
+
+
+def test_trigger_is_non_interactive() -> None:
+    """B-10 : le trigger agent instruit aussi un install non-interactif."""
+    from conductor.harness.bmad_planner import _TRIGGER
+
+    assert "--yes" in _TRIGGER
+    assert "--tools claude-code" in _TRIGGER
