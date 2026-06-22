@@ -41,63 +41,64 @@ lifecycle est **identique** pour les trois configurations de construction.
 
 ## Le prompt opérateur générique (copy-paste)
 
-À coller dans une session Claude Code **ouverte dans le contexte de travail** (ton projet pour une
-continuation/un externe ; un dossier vide ou le projet pilote pour un nouveau). Remplis les variables.
+À coller dans une session Claude Code **ouverte dans le dossier de ton projet** (ou un dossier vide
+pour un nouveau). **Aucune variable à remplir** : il localise/met à jour la forge, analyse le dossier,
+déduit le contexte et te **propose** quoi faire avant d'exécuter.
 
 ```
-# Mission — Run digit-ai-saas-forge (porte d'entrée unique, tous contextes)
+# Mission — Run digit-ai-saas-forge (porte d'entrée auto-détectée)
 
-Tu pilotes digit-ai-saas-forge. La forge est un OUTIL EXTERNE : on l'exécute depuis sa copie,
-on n'installe rien dans le projet cible. Détecte le contexte et route. Ne viole aucun garde-fou.
+Tu t'exécutes DANS le dossier courant. Tu n'as AUCUNE variable à me faire remplir : tu localises et
+mets à jour la forge, tu analyses le dossier courant, tu DÉDUIS le contexte et tu me PROPOSES quoi
+faire, puis tu attends ma validation avant toute exécution. La forge est un OUTIL EXTERNE — on ne
+l'installe pas dans le projet. Ne viole aucun garde-fou.
 
-## Variables
-- FORGE_PATH = {{ chemin local de la copie de la forge, ex. ~/dev/digit-ai-saas-forge }}
-- INTENTION = {{ ce que tu veux : « nouveau SaaS … » | « ajouter les features … » | « mettre à jour la forge seulement » }}
-- CIBLE = {{ chemin du repo existant (continuation/externe) ; vide si nouveau }}
-
-## Phase 0 — Forge & préflight (toujours)
-1. Mets à jour la forge : si FORGE_PATH existe → `cd "FORGE_PATH" && git checkout main && git pull --ff-only` ;
-   sinon → `git clone https://github.com/iguane39/digit-ai-saas-forge "FORGE_PATH"`. Puis `uv sync`.
-   Affiche `git -C "FORGE_PATH" log --oneline -1`.
+## Phase 0 — Forge & préflight (automatique)
+1. Localise une copie de la forge `digit-ai-saas-forge` :
+   - cherche un clone existant (dossier courant, parent/voisin, ou `~/.saas-forge/digit-ai-saas-forge`) ;
+   - trouvé → `git -C <forge> checkout main && git -C <forge> pull --ff-only` ;
+   - absent → `git clone https://github.com/iguane39/digit-ai-saas-forge ~/.saas-forge/digit-ai-saas-forge`.
+   Puis `uv sync` dans la forge. Annonce le chemin retenu (FORGE) + `git -C <forge> log --oneline -1`.
 2. Préflight (fail-fast) : `gh auth status` + `export GITHUB_PERSONAL_ACCESS_TOKEN=$(gh auth token)` ;
    `claude`, `uv`, `node`/`npx`, `git`, réseau. Renvoie une table OK/KO.
-3. Si INTENTION = « mettre à jour la forge seulement » → STOP ici (forge à jour, rien d'autre).
 
-## Phase -1 — Détecte le contexte et route
-- CIBLE vide → **Nouveau** (greenfield, ScaffoldOnramp). Si des pièces jointes (specs/contraintes)
-  existent, classe-les d'abord (voir conductor-run-playbook, Phase −1) puis scaffold-first.
-- CIBLE = repo conforme (pyproject + DESIGN.md + CI présents) → **Continuation** (brownfield,
-  NoOnramp, intent=complement). On NE re-scaffolde PAS ; on capture la baseline.
-- CIBLE = repo non conforme (un marqueur manque) → **Externe** (brownfield, Adapter/Builder).
-  Normalisation + HITL-0 si dégradation déclarée ; choisis l'intent (remediation/complement/both).
-- Baseline rouge à l'entrée → SIGNALE-la (declared_degradation) → HITL-0 : me demander si on cible
-  aussi ces rouges ou si on « ne fait que ne pas aggraver ».
+## Phase A — Diagnostic du dossier courant + PROPOSITION (n'exécute rien encore)
+Analyse le dossier courant SANS le modifier, pour déduire le contexte :
+- vide / aucun marqueur de projet → **Nouveau** (greenfield).
+- marqueurs forge conformes (pyproject + DESIGN.md + CI) + artefacts `_bmad-output/` → **Continuation**
+  d'un projet déjà démarré avec la méthode.
+- repo existant non conforme (un marqueur manque, stack quelconque) → **Externe** (à normaliser).
+Lis aussi : l'historique git et le dernier tag `run/<slug>/epic-<n>`, `_bmad-output/planning-artifacts/epics.md`
+(stories déjà faites), un éventuel `PLAN.md`, et l'état des gates (baseline verte/rouge).
+→ PRÉSENTE-moi alors : (1) le **contexte détecté** + les preuves trouvées ; (2) l'**intention proposée**
+  (démarrer un nouveau SaaS / poursuivre avec les prochaines EPICs / remédier les rouges / onboarder un
+  externe) ; (3) un **aperçu** de ce qui serait planifié ; (4) le **mode** suggéré (standard gouverné ou
+  unattended « lance et reviens »). Si une baseline est rouge → signale-la (HITL-0) avec la question :
+  cibler ces rouges, ou seulement « ne pas aggraver » ? **ATTENDS ma validation (ou ma correction).**
 
-## Phase commune — cadrage → BMAD → HITL 1 → sprint → HITL 2
-1. Propose un MissionConfig (justifié) ; pour continuation/externe, ne planifie QUE le nouveau /
-   ce qui doit être remédié. Présente-le, ATTENDS ma validation.
-2. Effets réels (run pilote) : `export CONDUCTOR_USE_CLAUDE_ANALYZER=1 CONDUCTOR_ENABLE_REAL_BMAD=1 CONDUCTOR_ENABLE_SPEC_REVIEW=1 CONDUCTOR_ENABLE_REAL_BAD=1`.
-3. Lance : `uv run --project "FORGE_PATH" python -m conductor run "INTENTION" [--mode brownfield --repo "CIBLE" --intent <…>]`
-   (omets `--mode/--repo/--intent` si Nouveau).
-4. Flux : onramp → BMAD planifie → HITL 1 (valide PRD/archi) → sprint /bad sous double gate + gate
-   spec-compliance + non-régression → HITL 2 (PR-ready). À CHAQUE HITL : récap, STOP, attends mon « go ».
-
-## Choix du mode (à poser au début)
-- **Standard gouverné** : s'arrête à chaque jalon. Détail : conductor-run-playbook.
-- **Unattended « lance et reviens »** : 2 gates globaux (pré-vol + revue finale), politique de merge
-  A/B/C, notifications aux jalons. Détail : superpowers/unattended-run-playbook.md (Phase −1 = la
-  configuration détectée ci-dessus).
+## Phase B — Exécution (après ma validation)
+- Effets réels (run pilote) : `export CONDUCTOR_USE_CLAUDE_ANALYZER=1 CONDUCTOR_ENABLE_REAL_BMAD=1 CONDUCTOR_ENABLE_SPEC_REVIEW=1 CONDUCTOR_ENABLE_REAL_BAD=1`.
+- Lance le conductor depuis la forge, ciblant le dossier courant :
+  - **Nouveau** : `uv run --project "<FORGE>" python -m conductor run "<idée validée>"`
+  - **Continuation** : `uv run --project "<FORGE>" python -m conductor run "<features validées>" --mode brownfield --repo "$(pwd)" --intent complement`
+  - **Externe** : `uv run --project "<FORGE>" python -m conductor run "<objectif validé>" --mode brownfield --repo "$(pwd)" --intent <remediation|complement|both>`
+- Flux : onramp → BMAD → **HITL 1** (valide PRD/archi) → sprint `/bad` sous double gate + gate
+  spec-compliance + non-régression → **HITL 2** (PR-ready). À chaque HITL : récap, STOP, attends mon « go ».
+- Si j'ai choisi le mode unattended : suis `<FORGE>/docs/superpowers/unattended-run-playbook.md`
+  (2 gates globaux, politique de merge A/B/C, notifications).
 
 ## Garde-fous (NON négociables)
 - 2 HITL préservés ; `auto_pr_merge=false` ; aucun merge sur `main` sans ma revue.
 - Merges locaux par EPIC autorisés SI double gate vert ; merge GitHub = humain, à la fin.
 - `/bad` uniquement sur un repo dont `main` est branch-protected ; jamais sur du code sensible sans revue.
-- Ne supprime aucun garde-fou ; ne devine pas en silence sur l'irréversible (→ stop).
+- Ne supprime aucun garde-fou ; ne devine pas en silence sur l'irréversible (→ stop). Ne modifie rien
+  en Phase A (diagnostic en lecture seule).
 - Findings du gate spec persistés dans `SPEC_FINDINGS.md` (statut traité/non-traité).
 
 ## Sortie attendue
-RUN LOG : version de la forge, contexte détecté, baseline (+ rouges signalés), EPICs planifiées /
-done / blocked, décisions, PR PR-ready (non mergées), findings spec, coût/temps approximatifs.
+RUN LOG : version de la forge, contexte détecté + preuves, intention validée, baseline (+ rouges
+signalés), EPICs planifiées / done / blocked, décisions, PR PR-ready (non mergées), findings spec,
+coût/temps approximatifs.
 ```
 
 ## Quand lire les détails
