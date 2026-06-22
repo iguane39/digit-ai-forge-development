@@ -80,7 +80,7 @@ then drives the chain:
 6. **Sprint config (D)** — backlog layout + `bad:` config (`auto_pr_merge=false`).
 7. **Supervised sprint (E) → HITL 2** — `/bad` per story, dual gate, 3-retry remediation; no merge without human review.
 
-Full operator prompt: **[`docs/conductor-run-playbook.md`](docs/conductor-run-playbook.md)**.
+**Start here — single entry point:** **[`docs/run-playbook.md`](docs/run-playbook.md)**. It updates the forge, detects your context (new build / continuation / external repo / forge update) and routes to the right flow. Detailed references: [`conductor-run-playbook.md`](docs/conductor-run-playbook.md) (A→E phases) and [`unattended-run-playbook.md`](docs/superpowers/unattended-run-playbook.md) (autonomous "launch & return" mode).
 
 ## License
 

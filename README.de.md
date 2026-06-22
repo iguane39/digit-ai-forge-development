@@ -82,7 +82,7 @@ Operator trennt Umfang von Constraints und durchläuft dann die Kette:
 6. **Sprint-Konfig (D)** — Backlog-Layout + `bad:`-Sektion (`auto_pr_merge=false`).
 7. **Überwachter Sprint (E) → HITL 2** — `/bad` pro Story, Doppel-Gate, 3 Retries; kein Merge ohne menschliche Prüfung.
 
-Vollständiger Operator-Prompt: **[`docs/conductor-run-playbook.de.md`](docs/conductor-run-playbook.de.md)**.
+**Starte hier — einziger Einstiegspunkt:** **[`docs/run-playbook.md`](docs/run-playbook.md)**. Es aktualisiert die Forge, erkennt deinen Kontext (neu / Fortsetzung / externes Repo / Forge-Update) und leitet zum richtigen Ablauf. Detailreferenzen: [`conductor-run-playbook.de.md`](docs/conductor-run-playbook.de.md) (A→E-Phasen) und [`unattended-run-playbook.md`](docs/superpowers/unattended-run-playbook.md) (autonomer „Starten & zurückkommen"-Modus).
 
 ## Lizenz
 
