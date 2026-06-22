@@ -2,6 +2,8 @@
 
 > 🌍 [English](conductor-run-playbook.md) · [Français](conductor-run-playbook.fr.md) · [Español](conductor-run-playbook.es.md) · [Deutsch](conductor-run-playbook.de.md) · [Italiano](conductor-run-playbook.it.md) · [Português](conductor-run-playbook.pt.md)
 
+> ↩ **Ponto de entrada:** comece por [run-playbook.md](run-playbook.md) — ele detecta o seu contexto (novo / continuação / externo / atualização da forge) e encaminha para aqui para o detalhe A→E.
+
 Este playbook é o prompt do operador para conduzir um `conductor run` de ponta a ponta da
 Digit-AI SaaS Forge **a partir de outro projeto Claude Code**, anexando um dossiê de
 especificações/restrições. A execução é orquestrada mas **governada**: para em dois checkpoints
