@@ -12,6 +12,7 @@ from pathlib import Path
 from conductor.contracts import BmadPlan
 from conductor.governance import HitlPending
 from conductor.harness.claude_cli import CliRunner, SubprocessClaudeCli
+from conductor.harness.epics_parser import parse_epics
 from conductor.onramp.base import Substrate
 
 _PLANNING_DIR = Path("_bmad-output/planning-artifacts")
@@ -41,4 +42,5 @@ class ClaudeCliBmadPlanner:
             prd_path=planning / "PRD.md",
             architecture_path=planning / "architecture.md",
             epics_md=epics,
+            stories=parse_epics(epics.read_text(encoding="utf-8")),
         )
