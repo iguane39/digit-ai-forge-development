@@ -1,5 +1,7 @@
 # Unattended Run — Playbook gouverné (workflow EPIC)
 
+> ↩ **Porte d'entrée :** commence par [run-playbook.md](../run-playbook.md) — il détecte ton contexte et route ici pour le sous-mode autonome.
+
 > Procédure pour piloter un run multi-EPIC « lance et reviens » de la forge/des projets, via le
 > workflow EPIC superpowers (brainstorm → spec → plan → exécution subagent-driven → revue → merge
 > → récap). Objectif : **débit non supervisé maximal SANS affaiblir la gouvernance**.
