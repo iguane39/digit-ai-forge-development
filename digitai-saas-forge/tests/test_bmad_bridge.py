@@ -36,6 +36,15 @@ def _substrate(tmp: Path) -> Substrate:
     return Substrate(repo_path=tmp, profile=FASTAPI_SAAS, design_md_path=tmp / "DESIGN.md")
 
 
+def test_bmad_install_is_non_interactive() -> None:
+    """B-10 : l'install BMAD est headless-safe (sinon l'installeur interactif bloque)."""
+    from conductor.bmad_bridge import BMAD_INSTALL
+
+    assert "--yes" in BMAD_INSTALL
+    assert "--tools claude-code" in BMAD_INSTALL
+    assert "--modules bmm,tea" in BMAD_INSTALL
+
+
 def test_hitl1_approval_marks_plan_approved(tmp_path: Path) -> None:
     plan = lancer_planification(_substrate(tmp_path), planner=FakePlanner(), gate=ApproveGate())
     assert plan.hitl1_approved is True

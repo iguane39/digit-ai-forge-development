@@ -18,8 +18,15 @@ from conductor.contracts import BmadPlan
 from conductor.governance import HitlPending, HumanGate, ManualGate
 from conductor.onramp.base import Substrate
 
-# Modules BMAD requis par BAD (spike S-1b) : bmm = méthode, tea = test architecture (ATDD).
-BMAD_INSTALL = "npx bmad-method install --modules bmm,tea"
+# Version BMAD épinglée (anti-dérive). Vide = dernière version publiée ; renseigner ici une
+# version validée (ex. "x.y.z") une fois confirmée par un run pilote (cf. B-7).
+BMAD_VERSION = ""
+_BMAD_PKG = f"bmad-method@{BMAD_VERSION}" if BMAD_VERSION else "bmad-method"
+
+# Install BMAD **non-interactif** (headless-safe) : `--yes` (auto-confirm npx) + `--tools
+# claude-code` (répond au prompt outil/IDE) ; modules bmm,tea requis par BAD (spike S-1b).
+# Sans ces flags, l'installeur est interactif et bloque en headless.
+BMAD_INSTALL = f"npx --yes {_BMAD_PKG} install --modules bmm,tea --tools claude-code"
 
 # Emplacements normalisés attendus par /bad (spike S-1b).
 PLANNING_DIR = Path("_bmad-output/planning-artifacts")
