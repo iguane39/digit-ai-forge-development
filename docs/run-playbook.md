@@ -85,7 +85,17 @@ Lis aussi : l'historique git et le dernier tag `run/<slug>/epic-<n>`, `_bmad-out
 - Flux : onramp → BMAD → **HITL 1** (valide PRD/archi) → sprint `/bad` sous double gate + gate
   spec-compliance + non-régression → **HITL 2** (PR-ready). À chaque HITL : récap, STOP, attends mon « go ».
 - Si j'ai choisi le mode unattended : suis `<FORGE>/docs/superpowers/unattended-run-playbook.md`
-  (2 gates globaux, politique de merge A/B/C, notifications).
+  (2 gates globaux, politique de merge A/B/C, notifications) — n'invoque AUCUN arrêt de cérémonie
+  (ni le gate « relis la spec » du brainstorming) : auto-valide, journalise, enchaîne.
+
+## Bascule de mode à tout moment
+- En mode **standard**, à CHAQUE arrêt de cérémonie (revue de spec, « démarrer l'EPIC suivante ? »,
+  choix du mode d'exécution, menu de fin de branche), propose TOUJOURS — en plus des options
+  normales — **« Passer en mode unattended (ne plus me redemander, enchaîner jusqu'à la revue
+  finale) »**. Si je la choisis : journalise la bascule et supprime les arrêts de cérémonie pour la
+  suite. Permet de démarrer en gouverné puis de passer en auto, ou de rattraper un mode oublié.
+- Les gates de **gouvernance** (HITL produit, revue finale, double gate, bloqueurs durs) restent
+  quel que soit le mode.
 
 ## Garde-fous (NON négociables)
 - 2 HITL préservés ; `auto_pr_merge=false` ; aucun merge sur `main` sans ma revue.
