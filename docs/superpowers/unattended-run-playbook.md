@@ -48,6 +48,20 @@ l'EPIC <n>`), puis **supprimer les arrêts de cérémonie** pour toute la suite.
 démarrer en gouverné puis de **basculer en cours de route**, ou de **rattraper un mode oublié** au
 départ. La bascule inverse (revenir en gouverné) se fait en interrompant le run à tout moment.
 
+### Gates de cérémonie des skills superpowers — défauts (ne pas redemander)
+Les skills superpowers ont des arrêts intégrés. L'orchestrateur applique ces **défauts** au lieu de
+les poser (ce sont de la cérémonie, pas de la gouvernance) :
+- **writing-plans → choix d'exécution (subagent-driven vs inline)** : TOUJOURS **subagent-driven**,
+  **jamais demandé** — préférence opérateur « multi-agents par défaut », valable dans les **deux modes**.
+- **brainstorming → validation du design / « relis la spec »** : auto-validé en `unattended` (écrit
+  + commité + journalisé) ; conservé en `standard`.
+- **« démarrer l'EPIC suivante ? »** : enchaînement auto en `unattended`.
+- **finishing-a-branch → menu (merge/PR/garder/jeter)** : pas de menu en cours de run ; merge local
+  si double gate vert, décision de merge `main` reportée à la revue finale (GATE 2).
+
+Restent TOUJOURS (gouvernance) : double gate, non-régression, gate spec-compliance, 2 HITL produit,
+revue finale, bloqueurs durs (défaut-sinon-stop).
+
 ## Cycle de vie — 2 gates humains
 
 ### Phase −1 — Configuration de départ (reflet de `select_onramp`, automatique)
