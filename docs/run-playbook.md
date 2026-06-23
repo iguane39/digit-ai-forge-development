@@ -88,12 +88,17 @@ Lis aussi : l'historique git et le dernier tag `run/<slug>/epic-<n>`, `_bmad-out
   (2 gates globaux, politique de merge A/B/C, notifications) — n'invoque AUCUN arrêt de cérémonie
   (ni le gate « relis la spec » du brainstorming) : auto-valide, journalise, enchaîne.
 
+## Défauts des skills (ne pas redemander)
+- **Exécution = subagent-driven, TOUJOURS, jamais demandé** : ne pose PAS le choix subagent/inline
+  du skill writing-plans (préférence « multi-agents par défaut ») — dans les deux modes.
+- **finishing-a-branch** : pas de menu en cours de run (merge local si gate vert ; merge `main` à la revue finale).
+
 ## Bascule de mode à tout moment
 - En mode **standard**, à CHAQUE arrêt de cérémonie (revue de spec, « démarrer l'EPIC suivante ? »,
-  choix du mode d'exécution, menu de fin de branche), propose TOUJOURS — en plus des options
-  normales — **« Passer en mode unattended (ne plus me redemander, enchaîner jusqu'à la revue
-  finale) »**. Si je la choisis : journalise la bascule et supprime les arrêts de cérémonie pour la
-  suite. Permet de démarrer en gouverné puis de passer en auto, ou de rattraper un mode oublié.
+  menu de fin de branche), propose TOUJOURS — en plus des options normales —
+  **« Passer en mode unattended (ne plus me redemander, enchaîner jusqu'à la revue finale) »**. Si
+  je la choisis : journalise la bascule et supprime les arrêts de cérémonie pour la suite. Permet de
+  démarrer en gouverné puis de passer en auto, ou de rattraper un mode oublié.
 - Les gates de **gouvernance** (HITL produit, revue finale, double gate, bloqueurs durs) restent
   quel que soit le mode.
 
