@@ -59,8 +59,8 @@ def test_pipeline_order_is_wired_scaffold_first(monkeypatch: pytest.MonkeyPatch)
 
 
 def test_run_pauses_at_hitl1_by_default(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Défaut greenfield : on neutralise l'onramp (pas de copier) et l'install BMAD (pas de npx) ;
-    la logique réelle de C atteint le point HITL non approuvé → HitlPending."""
+    """Défaut greenfield : on neutralise l'onramp (pas de copier) ; la logique réelle de C
+    atteint le point HITL non approuvé → HitlPending (le conductor n'installe plus BMAD, B-11)."""
     from conductor.contracts import MissionConfig
     from conductor.governance import HitlPending
     from conductor.onramp.base import Substrate
@@ -71,7 +71,6 @@ def test_run_pauses_at_hitl1_by_default(tmp_path: Path, monkeypatch: pytest.Monk
             return Substrate(repo_path=dest, profile=FASTAPI_SAAS, design_md_path=dest / "d.md")
 
     monkeypatch.setattr(cli, "select_onramp", lambda _mission: FakeOnramp())
-    monkeypatch.setattr("conductor.bmad_bridge.subprocess.run", lambda *a, **k: None)
 
     with pytest.raises(HitlPending):
         cli.run("un CRM pour artisans", workdir=tmp_path)

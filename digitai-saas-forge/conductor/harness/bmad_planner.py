@@ -1,8 +1,9 @@
 """ClaudeCliBmadPlanner — planification BMAD réelle déclenchée via le CLI claude.
 
-Déclenche la planification agentique (PRD/architecture/epics) puis OBSERVE les artefacts écrits
-dans _bmad-output/planning-artifacts/. Gated par HITL 1 en aval. skip_permissions car la planif
-écrit des fichiers / lance npx en headless. stories=[] : BAD reconstruit le graphe (spike S-1).
+Déclenche un agent qui **produit directement** les artefacts (PRD/architecture/epics) dans
+_bmad-output/planning-artifacts/, **sans installer** le framework BMAD (installeur TUI non
+headless, B-11), puis OBSERVE epics.md et en parse les stories (parse_epics, B-3). Gated HITL 1.
+skip_permissions car l'agent écrit des fichiers en headless.
 """
 
 from __future__ import annotations
@@ -17,10 +18,10 @@ from conductor.onramp.base import Substrate
 
 _PLANNING_DIR = Path("_bmad-output/planning-artifacts")
 _TRIGGER = (
-    "Installe BMAD-METHOD en mode NON-INTERACTIF "
-    "(npx --yes bmad-method install --modules bmm,tea --tools claude-code) puis lance la "
-    "planification BMAD dans le dossier _bmad-output/planning-artifacts/ : produis PRD.md, "
-    "architecture.md, et epics.md (epics + stories priorisées)."
+    "Produis DIRECTEMENT les artefacts de planification BMAD dans "
+    "_bmad-output/planning-artifacts/ : PRD.md, architecture.md, et epics.md (epics + stories "
+    "priorisées, chacune avec ses critères d'acceptation, au format BMAD). N'installe PAS le "
+    "framework BMAD — son installeur est un TUI non automatisable : rédige les fichiers toi-même."
 )
 
 
