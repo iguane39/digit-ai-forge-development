@@ -38,15 +38,22 @@ Un run porte un **mode** : `standard` (gouverné, défaut) ou `unattended` (« l
 - subsistent uniquement : les **2 gates globaux** (pré-vol, revue finale), les **HITL produit**
   (si `conductor run`), les **bloqueurs durs** (défaut-sinon-stop) et le **double gate**.
 
-**Bascule à tout breakpoint (gouverné → unattended).** Tant qu'on est en `standard`, à CHAQUE arrêt
-de cérémonie (revue de spec, « démarrer l'EPIC suivante ? », choix du mode d'exécution, menu de fin
-de branche), proposer SYSTÉMATIQUEMENT — en plus des options normales — l'option :
-> **« Passer en mode unattended — ne plus me redemander, enchaîner automatiquement jusqu'à la revue finale »**
+**Bascule à tout breakpoint, avec PORTÉE choisie.** Tant qu'on est en `standard`, à CHAQUE arrêt de
+cérémonie, proposer SYSTÉMATIQUEMENT — en plus des options normales — un choix de **portée
+d'autonomie** :
+> 1. **Pas à pas** — cette EPIC seulement, puis je redemande (défaut gouverné).
+> 2. **Unattended — cette EPIC** — enchaîne ses sous-EPICs / stories sans arrêt, re-checkpoint en fin d'EPIC.
+> 3. **Unattended — cette priorité** — enchaîne toutes les EPICs de la priorité courante (ex. P0),
+>    re-checkpoint à la frontière de priorité (P1…).
+> 4. **Unattended — tout** — jusqu'à la revue finale.
 
-Si choisie : journaliser la bascule (`RUN_LOG.md` + `DECISIONS.md` : `mode=unattended à partir de
-l'EPIC <n>`), puis **supprimer les arrêts de cérémonie** pour toute la suite. Cela permet de
-démarrer en gouverné puis de **basculer en cours de route**, ou de **rattraper un mode oublié** au
-départ. La bascule inverse (revenir en gouverné) se fait en interrompant le run à tout moment.
+Si une portée unattended est choisie : journaliser (`RUN_LOG.md` + `DECISIONS.md` :
+`portée=<EPIC|priorité|tout> à partir de l'EPIC <n>`), puis **enchaîner sans arrêt de cérémonie
+jusqu'à la frontière de portée** ; à cette frontière, **re-proposer ce même choix** (sauf « tout »,
+qui va jusqu'à la revue finale). Cela permet d'avancer **pas à pas, EPIC par EPIC, ou priorité par
+priorité**. La gouvernance (double gate, gate spec, revue finale, bloqueurs durs) reste active quelle
+que soit la portée. La frontière de priorité est celle du `PLAN.md` (groupement P0/P1…). Revenir en
+gouverné : interrompre à tout moment.
 
 ### Gates de cérémonie des skills superpowers — défauts (ne pas redemander)
 Les skills superpowers ont des arrêts intégrés. L'orchestrateur applique ces **défauts** au lieu de

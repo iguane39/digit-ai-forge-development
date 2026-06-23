@@ -93,14 +93,17 @@ Lis aussi : l'historique git et le dernier tag `run/<slug>/epic-<n>`, `_bmad-out
   du skill writing-plans (préférence « multi-agents par défaut ») — dans les deux modes.
 - **finishing-a-branch** : pas de menu en cours de run (merge local si gate vert ; merge `main` à la revue finale).
 
-## Bascule de mode à tout moment
-- En mode **standard**, à CHAQUE arrêt de cérémonie (revue de spec, « démarrer l'EPIC suivante ? »,
-  menu de fin de branche), propose TOUJOURS — en plus des options normales —
-  **« Passer en mode unattended (ne plus me redemander, enchaîner jusqu'à la revue finale) »**. Si
-  je la choisis : journalise la bascule et supprime les arrêts de cérémonie pour la suite. Permet de
-  démarrer en gouverné puis de passer en auto, ou de rattraper un mode oublié.
+## Bascule de mode à tout moment (avec portée)
+- En mode **standard**, à CHAQUE arrêt de cérémonie, propose TOUJOURS — en plus des options
+  normales — un choix de **portée d'autonomie** :
+  1. **Pas à pas** (cette EPIC, puis je redemande) ;
+  2. **Unattended — cette EPIC** (enchaîne ses sous-EPICs, re-checkpoint en fin d'EPIC) ;
+  3. **Unattended — cette priorité** (toutes les EPICs de la priorité courante, re-checkpoint à la priorité suivante) ;
+  4. **Unattended — tout** (jusqu'à la revue finale).
+  Journalise la portée choisie ; enchaîne sans cérémonie jusqu'à la frontière, puis re-propose le
+  choix (sauf « tout »). Permet d'avancer pas à pas, EPIC par EPIC, ou priorité par priorité.
 - Les gates de **gouvernance** (HITL produit, revue finale, double gate, bloqueurs durs) restent
-  quel que soit le mode.
+  quel que soit le choix.
 
 ## Garde-fous (NON négociables)
 - 2 HITL préservés ; `auto_pr_merge=false` ; aucun merge sur `main` sans ma revue.
