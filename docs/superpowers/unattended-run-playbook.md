@@ -27,6 +27,27 @@ Cette règle vaut **à l'identique pour la forge ET pour une app client** : merg
 automatiques (si gate vert) ; merge GitHub/`main` **humain, une seule fois, à la fin** (= HITL 2 /
 revue finale). Une EPIC `blocked` n'est pas mergée.
 
+## Mode & bascule (standard ↔ unattended)
+Un run porte un **mode** : `standard` (gouverné, défaut) ou `unattended` (« lance et reviens »).
+
+**En mode `unattended`, l'orchestrateur NE déclenche AUCUN arrêt de cérémonie** — en particulier :
+- ne **PAS** invoquer le gate « relis la spec » du skill brainstorming : la spec est **écrite +
+  commitée + auto-validée**, puis on enchaîne ;
+- pas de « démarrer l'EPIC suivante ? », pas de choix du mode d'exécution, pas de menu de fin de
+  branche → enchaînement automatique. Chaque auto-validation est **journalisée** (`RUN_LOG.md`).
+- subsistent uniquement : les **2 gates globaux** (pré-vol, revue finale), les **HITL produit**
+  (si `conductor run`), les **bloqueurs durs** (défaut-sinon-stop) et le **double gate**.
+
+**Bascule à tout breakpoint (gouverné → unattended).** Tant qu'on est en `standard`, à CHAQUE arrêt
+de cérémonie (revue de spec, « démarrer l'EPIC suivante ? », choix du mode d'exécution, menu de fin
+de branche), proposer SYSTÉMATIQUEMENT — en plus des options normales — l'option :
+> **« Passer en mode unattended — ne plus me redemander, enchaîner automatiquement jusqu'à la revue finale »**
+
+Si choisie : journaliser la bascule (`RUN_LOG.md` + `DECISIONS.md` : `mode=unattended à partir de
+l'EPIC <n>`), puis **supprimer les arrêts de cérémonie** pour toute la suite. Cela permet de
+démarrer en gouverné puis de **basculer en cours de route**, ou de **rattraper un mode oublié** au
+départ. La bascule inverse (revenir en gouverné) se fait en interrompant le run à tout moment.
+
 ## Cycle de vie — 2 gates humains
 
 ### Phase −1 — Configuration de départ (reflet de `select_onramp`, automatique)
@@ -150,7 +171,8 @@ de merge (A auto / B chaque / C risquées, défaut A) avec impact chiffré. Cons
 DECISIONS.md. Estime budget/temps ; gros périmètre → propose un slice MVP. Attends le « GO ».
 
 PHASE 1 (autonome, AUCUN arrêt de cérémonie) : pour chaque EPIC, brainstorm → spec auto-validée
-(consulte DECISIONS.md) → plan → exécution subagent-driven → double gate + non-régression →
+(consulte DECISIONS.md ; N'INVOQUE PAS le gate « relis la spec » du brainstorming — écris, commit,
+auto-valide, journalise) → plan → exécution subagent-driven → double gate + non-régression →
 merge LOCAL sur run/<slug> si vert + tag run/<slug>/epic-<n> → maj PLAN.md + RUN_LOG.md →
 récap+KPIs non bloquant → EPIC suivante automatiquement. Décision émergente : défaut-sinon-stop
 (non bloquant = défaut + log + continue ; irréversible = blocked + continue les indépendantes).
