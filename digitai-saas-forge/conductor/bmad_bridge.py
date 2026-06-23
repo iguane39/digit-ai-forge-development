@@ -1,32 +1,20 @@
 """Étape C — Pont BMAD.
 
-Installe/lance BMAD-METHOD (modules bmm,tea) sur le scaffold et collecte ses artefacts
-dans `_bmad-output/planning-artifacts/epics.md`. Pose **HITL 1** (validation humaine du
-PRD & de l'architecture, décision 07) : sans approbation, la chaîne se met en pause.
-
-C'est ici que se concentre le travail réel post-spike S-1 (produire un backlog BMAD
-valide) ; BAD construira ensuite lui-même le graphe de dépendances.
+Collecte les artefacts de planification BMAD (`_bmad-output/planning-artifacts/epics.md` + PRD +
+architecture) et pose **HITL 1** (décision 07). Le conductor **n'installe PAS** le framework BMAD :
+son installeur est un TUI interactif non automatisable en headless (constaté en pilote, B-11). Les
+artefacts (format BMAD) sont produits directement — par l'agent réel ou à la main — puis collectés
+ici ; BAD construira ensuite lui-même le graphe de dépendances.
 """
 
 from __future__ import annotations
 
-import subprocess
 from pathlib import Path
 from typing import Protocol
 
 from conductor.contracts import BmadPlan
 from conductor.governance import HitlPending, HumanGate, ManualGate
 from conductor.onramp.base import Substrate
-
-# Version BMAD épinglée (anti-dérive). Vide = dernière version publiée ; renseigner ici une
-# version validée (ex. "x.y.z") une fois confirmée par un run pilote (cf. B-7).
-BMAD_VERSION = ""
-_BMAD_PKG = f"bmad-method@{BMAD_VERSION}" if BMAD_VERSION else "bmad-method"
-
-# Install BMAD **non-interactif** (headless-safe) : `--yes` (auto-confirm npx) + `--tools
-# claude-code` (répond au prompt outil/IDE) ; modules bmm,tea requis par BAD (spike S-1b).
-# Sans ces flags, l'installeur est interactif et bloque en headless.
-BMAD_INSTALL = f"npx --yes {_BMAD_PKG} install --modules bmm,tea --tools claude-code"
 
 # Emplacements normalisés attendus par /bad (spike S-1b).
 PLANNING_DIR = Path("_bmad-output/planning-artifacts")
@@ -40,19 +28,20 @@ class BmadPlanner(Protocol):
 
 
 class DefaultBmadPlanner:
-    """Planner de production : installe BMAD puis recense les artefacts de planification.
+    """Planner par défaut : collecte les artefacts de planification, pause HITL 1 si absents.
 
-    L'extraction des stories est volontairement laissée à BAD (spike S-1) : le conductor
-    ne parse pas le backlog, il garantit seulement sa présence.
+    N'installe rien (installeur BMAD = TUI non headless, B-11). Les artefacts au format BMAD sont
+    produits par l'agent réel (opt-in) ou à la main ; le conductor garantit seulement leur
+    présence. L'extraction des stories est laissée à BAD (spike S-1).
     """
 
     def plan(self, substrate: Substrate) -> BmadPlan:
-        subprocess.run(BMAD_INSTALL, cwd=substrate.repo_path, shell=True, check=False)
         epics = substrate.repo_path / EPICS_FILE
         if not epics.exists():
             raise HitlPending(
-                "Planification BMAD à réaliser : produire "
-                f"{EPICS_FILE} dans {substrate.repo_path}, puis approuver (HITL 1)."
+                "Planification BMAD à produire : rédige les artefacts au format BMAD "
+                f"({EPICS_FILE} + PRD.md + architecture.md) dans {substrate.repo_path}, puis "
+                "approuve (HITL 1). Le conductor n'installe pas le framework (installeur TUI)."
             )
         return BmadPlan(
             prd_path=substrate.repo_path / PLANNING_DIR / "PRD.md",

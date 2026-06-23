@@ -42,9 +42,10 @@ def test_plan_raises_hitl_pending_if_no_epics(tmp_path: Path) -> None:
         ClaudeCliBmadPlanner(cli=_FakeCli()).plan(_substrate(tmp_path))
 
 
-def test_trigger_is_non_interactive() -> None:
-    """B-10 : le trigger agent instruit aussi un install non-interactif."""
+def test_trigger_produces_artifacts_without_install() -> None:
+    """B-11 : le trigger produit les artefacts directement, sans installer le framework (TUI)."""
     from conductor.harness.bmad_planner import _TRIGGER
 
-    assert "--yes" in _TRIGGER
-    assert "--tools claude-code" in _TRIGGER
+    assert "npx" not in _TRIGGER  # plus de commande d'install
+    assert "epics.md" in _TRIGGER
+    assert "planning-artifacts" in _TRIGGER

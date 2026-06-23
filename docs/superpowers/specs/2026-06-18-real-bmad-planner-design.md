@@ -56,3 +56,13 @@ suivis pré-existants (stderr ellipsis, playbook multilingue, epics.md composite
 ## 9. Décisions (toutes prises)
 Posture A · opt-in `CONDUCTOR_ENABLE_REAL_BMAD` · observation fichier · tests fakes (pas de vrai
 run automatisé). Aucune question ouverte bloquante.
+
+## 10. Mise à jour B-11 (2026-06-23) — produire les artefacts, ne PAS installer le framework
+Le pilote a montré que l'installeur BMAD est un **TUI interactif non automatisable en headless**
+(les flags `--yes`/`--tools` ne le court-circuitent pas ; B-10 était une hypothèse insuffisante).
+Correctif : le conductor **n'installe plus** BMAD. Le `ClaudeCliBmadPlanner` instruit l'agent de
+**produire directement** PRD/architecture/epics au format BMAD ; le `DefaultBmadPlanner` ne tente
+aucun install et **pause HITL 1** si les artefacts sont absents (à rédiger par l'agent réel ou à la
+main). Ce qui compte en aval, ce sont les **artefacts** (consommés par `parse_epics`/BAD), pas le
+framework installé. Constantes `BMAD_INSTALL`/`BMAD_VERSION` supprimées. Installer le vrai framework
+reste possible **hors-bande** (terminal TTY) si désiré.

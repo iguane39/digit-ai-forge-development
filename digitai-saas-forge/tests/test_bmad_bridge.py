@@ -36,13 +36,23 @@ def _substrate(tmp: Path) -> Substrate:
     return Substrate(repo_path=tmp, profile=FASTAPI_SAAS, design_md_path=tmp / "DESIGN.md")
 
 
-def test_bmad_install_is_non_interactive() -> None:
-    """B-10 : l'install BMAD est headless-safe (sinon l'installeur interactif bloque)."""
-    from conductor.bmad_bridge import BMAD_INSTALL
+def test_default_planner_pauses_without_install(tmp_path: Path) -> None:
+    """B-11 : le planner par défaut n'installe rien (TUI) et pause HITL 1 si artefacts absents."""
+    from conductor.bmad_bridge import DefaultBmadPlanner
 
-    assert "--yes" in BMAD_INSTALL
-    assert "--tools claude-code" in BMAD_INSTALL
-    assert "--modules bmm,tea" in BMAD_INSTALL
+    with pytest.raises(HitlPending, match="format BMAD|installe pas"):
+        DefaultBmadPlanner().plan(_substrate(tmp_path))
+
+
+def test_default_planner_collects_existing_artifacts(tmp_path: Path) -> None:
+    """Artefacts présents → BmadPlan, sans tentative d'install."""
+    from conductor.bmad_bridge import EPICS_FILE, DefaultBmadPlanner
+
+    epics = tmp_path / EPICS_FILE
+    epics.parent.mkdir(parents=True)
+    epics.write_text("# Epics\n", encoding="utf-8")
+    plan = DefaultBmadPlanner().plan(_substrate(tmp_path))
+    assert plan.epics_md == epics
 
 
 def test_hitl1_approval_marks_plan_approved(tmp_path: Path) -> None:
