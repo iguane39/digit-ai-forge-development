@@ -14,6 +14,8 @@ linting del design. Li **orchestra**.
 
 ## Come funziona — una catena in 5 fasi
 
+> 📊 **Panoramica:** [diagramma interattivo del processo — 6 lingue](docs/forge-process-schema.html?lang=it) (ingressi · A→E · gate · HITL · ciclo iterativo).
+
 | Fase | Nome | Ruolo |
 |------|------|-------|
 | **A** | Inquadramento | Trasformare un'idea + vincoli in una config di missione (target, ambito SaaS, brand) |

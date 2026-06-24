@@ -14,6 +14,8 @@ linting. It **conducts** them.
 
 ## How it works — a 5-stage chain
 
+> 📊 **Visual map:** [interactive process diagram — 6 languages](docs/forge-process-schema.html?lang=en) (inputs · A→E · gates · HITL · iterative loop).
+
 | Stage | Name | Role |
 |-------|------|------|
 | **A** | Scoping | Turn an idea + constraints into a mission config (target, SaaS scope, brand) |
