@@ -14,7 +14,7 @@ de design. Ela os **orquestra**.
 
 ## Como funciona — uma cadeia de 5 etapas
 
-> 📊 **Visão geral:** [diagrama interativo do processo — 6 idiomas](docs/forge-process-schema.html?lang=pt) (entradas · A→E · gates · HITL · ciclo iterativo).
+> 📊 **Visão geral:** [diagrama interativo do processo — 6 idiomas](https://iguane39.github.io/digit-ai-saas-forge/forge-process-schema.html?lang=pt) (entradas · A→E · gates · HITL · ciclo iterativo).
 
 | Etapa | Nome | Função |
 |-------|------|--------|

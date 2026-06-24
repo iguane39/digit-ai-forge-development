@@ -14,7 +14,7 @@ Sie **dirigiert** sie.
 
 ## Funktionsweise — eine Kette aus 5 Phasen
 
-> 📊 **Übersicht:** [interaktives Prozessdiagramm — 6 Sprachen](docs/forge-process-schema.html?lang=de) (Eingaben · A→E · Gates · HITL · iterative Schleife).
+> 📊 **Übersicht:** [interaktives Prozessdiagramm — 6 Sprachen](https://iguane39.github.io/digit-ai-saas-forge/forge-process-schema.html?lang=de) (Eingaben · A→E · Gates · HITL · iterative Schleife).
 
 | Phase | Name | Aufgabe |
 |-------|------|---------|

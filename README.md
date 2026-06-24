@@ -14,7 +14,7 @@ linting. It **conducts** them.
 
 ## How it works — a 5-stage chain
 
-> 📊 **Visual map:** [interactive process diagram — 6 languages](docs/forge-process-schema.html?lang=en) (inputs · A→E · gates · HITL · iterative loop).
+> 📊 **Visual map:** [interactive process diagram — 6 languages](https://iguane39.github.io/digit-ai-saas-forge/forge-process-schema.html?lang=en) (inputs · A→E · gates · HITL · iterative loop).
 
 | Stage | Name | Role |
 |-------|------|------|
