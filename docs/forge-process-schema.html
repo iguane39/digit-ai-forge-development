@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Process de la forge — digit-ai-saas-forge</title>
+<style>
+  /* Polices de la charte si installées localement, sinon stack système — AUCUNE requête réseau. */
+  :root {
+    --bg: #ffffff; --bg-soft: #f7f8fa; --ink: #0f172a; --ink-soft: #334155; --ink-muted: #64748b;
+    --line: #e2e8f0; --line-strong: #cbd5e1;
+    --c-purple-bg:#ede9fe; --c-purple-fg:#5b21b6; --c-purple-stroke:#c4b5fd;
+    --c-blue-bg:#dbeafe; --c-blue-fg:#1d4ed8; --c-blue-stroke:#93c5fd;
+    --c-teal-bg:#ccfbf1; --c-teal-fg:#0f766e; --c-teal-stroke:#5eead4;
+    --c-coral-bg:#fee2e2; --c-coral-fg:#b91c1c; --c-coral-stroke:#fca5a5;
+    --c-amber-bg:#fef3c7; --c-amber-fg:#92400e; --c-amber-stroke:#fcd34d;
+    --c-gray-bg:#f1f3f7; --c-gray-fg:#374151; --c-gray-stroke:#cbd5e1;
+    --sans:'DM Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    --display:'Roboto',system-ui,-apple-system,'Segoe UI',sans-serif;
+    --mono:'JetBrains Mono',ui-monospace,'Cascadia Code',Menlo,Consolas,monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); color: var(--ink); font-family: var(--sans); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  .page { max-width: 1280px; margin: 0 auto; padding: 40px 24px 56px; }
+
+  .header { border-bottom: 1px solid var(--line); padding-bottom: 28px; margin-bottom: 30px; }
+  .eyebrow { font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-muted); margin-bottom: 13px; }
+  h1 { font-family: var(--display); font-weight: 800; font-size: clamp(28px,4vw,42px); line-height: 1.1; letter-spacing: -.02em; margin-bottom: 12px; }
+  h1 .accent { color: var(--c-purple-fg); }
+  .lede { font-size: 17px; color: var(--ink-soft); max-width: 880px; margin-bottom: 20px; }
+  .meta { display: flex; flex-wrap: wrap; gap: 24px; font-family: var(--mono); font-size: 11.5px; color: var(--ink-muted); }
+  .meta b { color: var(--ink); font-weight: 700; }
+
+  .diagram-wrap { background: var(--bg-soft); border: 1px solid var(--line); border-radius: 12px; padding: 26px 22px; margin: 8px 0 18px; overflow-x: auto; }
+
+  /* bande d'entrées */
+  .band-label { font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-muted); margin: 4px 0 10px; display: flex; align-items: center; gap: 10px; }
+  .band-label::after { content:""; flex:1; height:1px; background: var(--line); }
+  .inputs { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 8px; }
+  .chip-in { background:#fff; border:1px solid var(--c-gray-stroke); border-left:3px solid var(--c-gray-fg); border-radius:8px; padding:11px 15px; flex:1 1 250px; min-width:230px; max-width:360px; }
+  .chip-in .ex { font-size:10.5px; color:var(--ink-muted); margin-top:6px; line-height:1.5; border-top:1px dashed var(--line); padding-top:5px; }
+  .chip-in .t { font-family: var(--display); font-weight:700; font-size:13.5px; color:var(--ink); }
+  .chip-in .s { font-size:12px; color:var(--ink-muted); }
+  .chip-in .opt { font-family:var(--mono); font-size:9.5px; color:var(--c-amber-fg); background:var(--c-amber-bg); padding:1px 6px; border-radius:100px; margin-left:6px; }
+  .chip-always { border-left-color: var(--ink-muted); }
+  .link-or { align-self:center; font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:.06em; color:var(--c-amber-fg); background:var(--c-amber-bg); border:1px solid var(--c-amber-stroke); border-radius:100px; padding:4px 9px; flex:0 0 auto; }
+  .link-plus { align-self:center; font-family:var(--mono); font-size:15px; font-weight:700; color:var(--ink-muted); background:var(--c-gray-bg); border:1px solid var(--line-strong); border-radius:100px; width:27px; height:27px; display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
+  .inputs-note { font-size:11.5px; color:var(--ink-muted); margin:9px 0 2px; line-height:1.55; }
+  .inputs-note b { color:var(--ink-soft); font-weight:700; }
+
+  /* spine timeline */
+  .spine { display:flex; align-items:stretch; gap:0; min-width:1080px; margin-top:6px; }
+  .step { flex:1; display:flex; flex-direction:column; }
+  .arrow { align-self:center; color:var(--ink-muted); font-size:20px; padding:0 4px; flex:0 0 auto; }
+  .node { background:#fff; border:1px solid var(--line); border-top:3px solid var(--ink-muted); border-radius:10px; padding:13px 13px 14px; height:100%; cursor:help; transition:box-shadow .12s; }
+  .node:hover { box-shadow:0 4px 14px rgba(15,23,42,.12); }
+  .node .tag { font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-muted); }
+  .node .ti { font-family:var(--display); font-weight:700; font-size:14px; color:var(--ink); margin:4px 0 5px; line-height:1.2; }
+  .node .de { font-size:11.5px; color:var(--ink-soft); line-height:1.4; }
+
+  .n-blue   { border-top-color:var(--c-blue-fg); }   .n-blue .tag{color:var(--c-blue-fg);}
+  .n-purple { border-top-color:var(--c-purple-fg); } .n-purple .tag{color:var(--c-purple-fg);}
+  .n-teal   { border-top-color:var(--c-teal-fg); }   .n-teal .tag{color:var(--c-teal-fg);}
+  .n-amber  { border-top-color:var(--c-amber-fg); background:#fffdf6; } .n-amber .tag{color:var(--c-amber-fg);}
+  .n-amber .ti::before { content:"⛔ "; }
+
+  /* gates attachés à E */
+  .gates { display:flex; flex-direction:column; gap:6px; margin-top:8px; }
+  .gate { font-family:var(--mono); font-size:10px; letter-spacing:.02em; background:var(--c-coral-bg); color:var(--c-coral-fg); border:1px solid var(--c-coral-stroke); border-radius:6px; padding:4px 8px; cursor:help; }
+  .gate b { font-weight:700; }
+
+  /* bannière de boucle */
+  .loop { margin:14px 0 4px; min-width:1080px; display:flex; align-items:center; gap:12px; background:#fff; border:1px dashed var(--c-purple-stroke); border-radius:8px; padding:10px 16px; }
+  .loop .ic { font-size:18px; color:var(--c-purple-fg); }
+  .loop .tx { font-size:12.5px; color:var(--ink-soft); } .loop .tx b{ color:var(--c-purple-fg); font-family:var(--display); }
+
+  /* sortie callout */
+  .out-note { margin-top:14px; background:var(--c-teal-bg); border:1px solid var(--c-teal-stroke); border-radius:8px; padding:11px 16px; font-size:13px; color:var(--c-teal-fg); }
+  .out-note b { font-weight:700; } .out-note code{ font-family:var(--mono); font-size:.85em; background:#fff; padding:1px 5px; border-radius:3px; }
+
+  /* légende */
+  .legend { display:flex; flex-wrap:wrap; gap:16px 22px; margin-top:18px; font-size:12px; color:var(--ink-soft); }
+  .legend .it { display:flex; align-items:center; gap:7px; }
+  .sw { width:14px; height:14px; border-radius:3px; border:1px solid; }
+  .sw-gray{background:var(--c-gray-bg);border-color:var(--c-gray-fg);} .sw-blue{background:var(--c-blue-bg);border-color:var(--c-blue-fg);}
+  .sw-purple{background:var(--c-purple-bg);border-color:var(--c-purple-fg);} .sw-amber{background:var(--c-amber-bg);border-color:var(--c-amber-fg);}
+  .sw-coral{background:var(--c-coral-bg);border-color:var(--c-coral-fg);} .sw-teal{background:var(--c-teal-bg);border-color:var(--c-teal-fg);}
+
+  .footer { margin-top:48px; padding-top:22px; border-top:1px solid var(--line); display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; font-size:12px; color:var(--ink-muted); }
+  .footer .brand { font-family:var(--display); font-weight:700; letter-spacing:.06em; }
+
+  @media print { .page{padding:0;max-width:100%;} .diagram-wrap{background:#fff;overflow:visible;} .spine,.loop{min-width:0;} }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="header">
+    <div class="eyebrow">digit-ai-saas-forge · process de bout en bout</div>
+    <h1>De l'idée au SaaS <span class="accent">PR-ready</span>, sous double gate &amp; 2 HITL</h1>
+    <p class="lede">La forge ne réinvente rien : elle <b>orchestre</b> des moteurs éprouvés (planification, scaffold,
+      développement autonome, lint design) pour porter une intention produit jusqu'à un dépôt testé et on-brand —
+      par itérations gouvernées, jamais en auto-merge.</p>
+    <div class="meta">
+      <span><b>Entrées</b> cahier des charges · contraintes · app existante (opt.)</span>
+      <span><b>Chaîne</b> A → B → C → D → E</span>
+      <span><b>Garde-fous</b> double gate · 2 HITL · auto_pr_merge=false</span>
+    </div>
+  </header>
+
+  <div class="diagram-wrap">
+
+    <div class="band-label">Entrées</div>
+    <div class="inputs">
+      <div class="chip-in" title="Le « quoi » : intention produit, personas, features, user stories, règles métier, écrans, données, critères de succès. OPTIONNEL si une application existante est fournie (ex. pure remédiation, sans nouvelles specs). Requis pour un projet neuf.">
+        <div class="t">Cahier des charges <span class="opt">conditionnel</span></div><div class="s">le « quoi » — scope produit</div>
+        <div class="ex">ex. personas · features · user stories · écrans &amp; flux · règles métier · données · critères de succès</div>
+      </div>
+      <div class="link-or" title="L'un, l'autre, ou les deux — au moins un des deux requis.">ET / OU</div>
+      <div class="chip-in" title="L'app à reprendre : continuation (projet déjà forgé) ou reprise externe (repo à normaliser). OPTIONNELLE pour un projet neuf. Requise pour une continuation, un complément ou une remédiation.">
+        <div class="t">Application existante <span class="opt">conditionnel</span></div><div class="s">le « sur quoi » — repo à reprendre</div>
+        <div class="ex">ex. repo déjà forgé (continuation) · repo externe à normaliser · gates rouges à remédier · code legacy</div>
+      </div>
+      <div class="link-plus" title="Les contraintes s'ajoutent dans tous les cas.">+</div>
+      <div class="chip-in chip-always" title="Le « comment / dans quoi » : stack imposée, intégrations, sécurité/conformité (RGPD, multi-tenant, RBAC, SSO), perfs, budget, délai, charte design, exigences CI. S'appliquent dans TOUS les cas.">
+        <div class="t">Contraintes</div><div class="s">le « comment / dans quoi » — s'appliquent toujours</div>
+        <div class="ex">ex. stack imposée · RGPD · multi-tenant · RBAC · SSO · perfs · budget · délai · charte design · CI</div>
+      </div>
+    </div>
+    <div class="inputs-note">
+      <b>Au moins l'un des deux</b> — cahier des charges <b>et/ou</b> application existante :
+      cahier seul → <b>nouveau projet</b> · app seule → <b>remédiation</b> · les deux →
+      <b>continuation / complément</b>. Les contraintes accompagnent les trois cas.
+    </div>
+
+    <div class="band-label" style="margin-top:18px;">Chaîne gouvernée &nbsp;— &nbsp;Entrée → Sortie</div>
+    <div class="spine">
+
+      <div class="step"><div class="node n-blue" title="select_onramp détecte le contexte : Nouveau (greenfield, scaffold) · Continuation (NoOnramp, baseline capturée, pas de re-scaffold) · Externe (Adapter/Builder + normalisation + HITL-0). La suite est identique pour les 3.">
+        <div class="tag">Contexte</div><div class="ti">Détection / Onramp</div>
+        <div class="de">3 configs : Nouveau · Continuation · Externe (+ HITL-0 si dégradation)</div>
+      </div></div>
+      <div class="arrow">›</div>
+
+      <div class="step"><div class="node n-purple" title="Transforme idée + contraintes en MissionConfig : cible, scope SaaS (11 briques build/buy), charte. Le mapping est le vrai travail.">
+        <div class="tag">A</div><div class="ti">Cadrage</div><div class="de">→ MissionConfig (cible, briques, charte)</div>
+      </div></div>
+      <div class="arrow">›</div>
+
+      <div class="step"><div class="node n-purple" title="Génère le squelette de production (copier + briques) AVANT tout agent. Invariant : B avant C.">
+        <div class="tag">B</div><div class="ti">Scaffold-first</div><div class="de">squelette avant tout agent</div>
+      </div></div>
+      <div class="arrow">›</div>
+
+      <div class="step"><div class="node n-purple" title="Planification BMAD : produit PRD, architecture, epics et stories PRIORISÉS (le backlog par priorité). Les artefacts sont rédigés directement (pas d'install framework).">
+        <div class="tag">C</div><div class="ti">Planification BMAD</div><div class="de">PRD · Architecture · <b>backlog par priorité</b> (epics/stories)</div>
+      </div></div>
+      <div class="arrow">›</div>
+
+      <div class="step"><div class="node n-amber" title="ARRÊT HUMAIN n°1 : validation du PRD et de l'architecture avant tout développement. Sans « go », la chaîne se met en pause.">
+        <div class="tag">Contrôle</div><div class="ti">HITL 1</div><div class="de">valide PRD / architecture</div>
+      </div></div>
+      <div class="arrow">›</div>
+
+      <div class="step"><div class="node n-purple" title="Adapter de placement & config : place le backlog là où le moteur autonome l'attend + écrit la section bad: (auto_pr_merge=false). Ne compile PAS de graphe (BAD le construit).">
+        <div class="tag">D</div><div class="ti">Adapter de sprint</div><div class="de">placement backlog + config</div>
+      </div></div>
+      <div class="arrow">›</div>
+
+      <div class="step">
+        <div class="node n-purple" title="Sprint autonome /bad : 1 worktree git par story, pipeline 7 étapes dont test d'acceptation d'abord (ATDD/TDD) → implémentation → revues. 3 retries puis story bloquée + escalade.">
+          <div class="tag">E</div><div class="ti">Sprint /bad (TDD)</div><div class="de">1 worktree/story · ATDD → dev → revues</div>
+        </div>
+        <div class="gates">
+          <div class="gate" title="Gate code : ruff (lint) + mypy --strict (types) + pytest (tests). ET gate design : lint WCAG 2.2 AA. Aucune story ne passe si l'un échoue."><b>Double gate</b> · code + design</div>
+          <div class="gate" title="Un gate vert à l'entrée ne doit pas passer au rouge (do-no-harm, brownfield).">Non-régression</div>
+          <div class="gate" title="Juge la conformité de la PR aux critères d'acceptation de la story (under-build bloquant, over-build consultatif). Findings tracés dans SPEC_FINDINGS.md.">Gate spec-compliance</div>
+        </div>
+      </div>
+      <div class="arrow">›</div>
+
+      <div class="step"><div class="node n-amber" title="ARRÊT HUMAIN n°2 : revue des PR-ready (double gate vert, mergeable) + stories bloquées. On ne merge rien sans ce feu vert.">
+        <div class="tag">Contrôle</div><div class="ti">HITL 2</div><div class="de">revue avant merge</div>
+      </div></div>
+      <div class="arrow">›</div>
+
+      <div class="step"><div class="node n-teal" title="Pull Requests prêtes à la revue : auto_pr_merge=false, JAMAIS auto-mergées. Le merge sur main est déclenché par un humain.">
+        <div class="tag">Sortie</div><div class="ti">PR-ready</div><div class="de">PR ouvertes, non mergées</div>
+      </div></div>
+
+    </div>
+
+    <div class="loop">
+      <span class="ic">↻</span>
+      <span class="tx"><b>Boucle itérative</b> par EPIC / par priorité — à chaque palier : mode <b>gouverné</b> (arrêts) ou
+        <b>unattended</b> à portée choisie (cette EPIC · cette priorité · tout). Les gates s'appliquent à chaque itération.</span>
+    </div>
+
+    <div class="out-note">
+      <b>Aucun merge sur <code>main</code> sans humain.</b> La forge produit des <b>PR-ready</b> ;
+      <code>auto_pr_merge=false</code> est verrouillé. Le merge final est une décision humaine (HITL 2 / revue finale).
+    </div>
+
+    <div class="legend">
+      <span class="it"><span class="sw sw-gray"></span> Entrées</span>
+      <span class="it"><span class="sw sw-blue"></span> Détection de contexte</span>
+      <span class="it"><span class="sw sw-purple"></span> Étapes forge (automatiques)</span>
+      <span class="it"><span class="sw sw-amber"></span> Arrêts humains (HITL)</span>
+      <span class="it"><span class="sw sw-coral"></span> Gates de qualité</span>
+      <span class="it"><span class="sw sw-teal"></span> Sortie</span>
+    </div>
+
+  </div>
+
+  <p style="font-size:12.5px;color:var(--ink-muted);font-style:italic;">Survole chaque bloc pour le détail. Schéma fidèle au process réel (A→E) ; rien n'est simplifié en « tout automatique ».</p>
+
+  <footer class="footer">
+    <div class="brand">DIGIT-AI · CONSEIL ET STRATÉGIE IA</div>
+    <div>Schéma de process · digit-ai-saas-forge · 2026</div>
+  </footer>
+
+</div>
+</body>
+</html>
