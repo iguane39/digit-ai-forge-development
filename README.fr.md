@@ -14,6 +14,8 @@ ni le lint design. Elle les **orchestre**.
 
 ## Fonctionnement — une chaîne en 5 étapes
 
+> 📊 **Vue d'ensemble :** [schéma interactif du process — 6 langues](docs/forge-process-schema.html?lang=fr) (entrées · A→E · gates · HITL · boucle itérative).
+
 | Étape | Nom | Rôle |
 |-------|-----|------|
 | **A** | Cadrage | Transformer une idée + des contraintes en config de mission (cible, scope SaaS, charte) |

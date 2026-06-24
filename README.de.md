@@ -14,6 +14,8 @@ Sie **dirigiert** sie.
 
 ## Funktionsweise — eine Kette aus 5 Phasen
 
+> 📊 **Übersicht:** [interaktives Prozessdiagramm — 6 Sprachen](docs/forge-process-schema.html?lang=de) (Eingaben · A→E · Gates · HITL · iterative Schleife).
+
 | Phase | Name | Aufgabe |
 |-------|------|---------|
 | **A** | Scoping | Idee + Rahmenbedingungen in eine Mission-Config überführen (Ziel, SaaS-Umfang, Marke) |
