@@ -12,9 +12,10 @@ la mission doit être construite comme ``list[str]`` par l'appelant, pas comme f
 
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
@@ -42,14 +43,31 @@ class ProcessRunner(Protocol):
 
 
 class SubprocessProcessRunner:
-    """Runner de prod : ``shutil.which(args[0])`` + subprocess (shell=False, list, timeout)."""
+    """Runner de prod : ``shutil.which(args[0])`` + subprocess (shell=False, list, timeout).
+
+    ``env_overlay`` : variables appliquées **par-dessus** l'environnement courant pour chaque
+    spawn (ex. préfixer le PATH avec le shim ``gh``). ``None`` = héritage intégral de
+    l'environnement (comportement historique, non-régression). Porté par le constructeur — et non
+    par ``run`` — pour ne pas alourdir le contrat ``ProcessRunner`` partagé par tous les runners.
+    """
+
+    def __init__(self, *, env_overlay: Mapping[str, str] | None = None) -> None:
+        self._env_overlay = dict(env_overlay) if env_overlay is not None else None
 
     def run(
         self, args: Sequence[str], *, cwd: Path | None = None, timeout_s: int = 300
     ) -> ProcessResult:
         if not args:
             raise ValueError("ProcessRunner.run : args vide")
-        exe = shutil.which(args[0])
+        # L'overlay doit aussi guider la résolution du binaire : si l'appelant préfixe le PATH
+        # (shim gh), c'est ce PATH-là que `shutil.which` doit voir, pas celui du process courant.
+        proc_env = {**os.environ, **self._env_overlay} if self._env_overlay is not None else None
+        # Sans overlay : résolution historique (n'impose pas le kwarg `path`). Avec overlay :
+        # `shutil.which` doit voir le PATH préfixé (shim gh), pas celui du process courant.
+        if proc_env is None:
+            exe = shutil.which(args[0])
+        else:
+            exe = shutil.which(args[0], path=proc_env.get("PATH"))
         if exe is None:
             raise ToolNotFound(f"Outil introuvable dans le PATH : {args[0]!r}")
         try:
@@ -64,6 +82,7 @@ class SubprocessProcessRunner:
                 errors="replace",
                 timeout=timeout_s,
                 check=False,
+                env=proc_env,
             )
         except subprocess.TimeoutExpired as exc:
             raise RuntimeError(f"{args[0]} : timeout après {timeout_s}s") from exc

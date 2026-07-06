@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import os
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Protocol
 
@@ -41,6 +42,9 @@ class SubprocessClaudeCli:
             défaut, surchargée par l'env ``CONDUCTOR_CLAUDE_TIMEOUT_S``.
         skip_permissions: Si ``True``, ajoute ``--dangerously-skip-permissions`` à la commande
             (nécessaire pour le mode autonome BAD).
+        env_overlay: Variables d'environnement appliquées au sous-processus ``claude`` (ex.
+            préfixer le PATH avec le shim ``gh`` sur Azure DevOps). ``None`` = environnement hérité
+            tel quel. Ignoré si ``runner`` est fourni (le fake gère son propre environnement).
         runner: ProcessRunner injectable (fake en test).
     """
 
@@ -49,11 +53,12 @@ class SubprocessClaudeCli:
         *,
         timeout_s: int | None = None,
         skip_permissions: bool = False,
+        env_overlay: Mapping[str, str] | None = None,
         runner: ProcessRunner | None = None,
     ) -> None:
         self._timeout_s = timeout_s if timeout_s is not None else _default_timeout_s()
         self._skip_permissions = skip_permissions
-        self._runner: ProcessRunner = runner or SubprocessProcessRunner()
+        self._runner: ProcessRunner = runner or SubprocessProcessRunner(env_overlay=env_overlay)
 
     def run(self, prompt: str, cwd: Path) -> str:
         cmd = ["claude", "-p", prompt, "--output-format", "json"]
