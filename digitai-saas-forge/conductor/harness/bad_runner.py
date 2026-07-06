@@ -11,7 +11,7 @@ from typing import Any
 
 from conductor.contracts import BadSprintLayout, StoryOutcome
 from conductor.harness.claude_cli import CliRunner, SubprocessClaudeCli
-from conductor.harness.gh import GhRunner, SubprocessGh
+from conductor.harness.git_provider import GitProvider, resolve_git_provider
 
 _TRIGGER = (
     "run BAD : lance le sprint autonome (un worktree git par story, pipeline 7 étapes). "
@@ -45,19 +45,25 @@ def _to_outcome(pr: dict[str, Any]) -> StoryOutcome:
 
 
 class ClaudeCliBadRunner:
-    """Implémente BadRunner : /bad réel (CliRunner) + observation via GhRunner."""
+    """Implémente BadRunner : /bad réel (CliRunner) + observation via GitProvider (P-04)."""
 
-    def __init__(self, *, cli: CliRunner | None = None, gh: GhRunner | None = None) -> None:
+    def __init__(
+        self, *, cli: CliRunner | None = None, provider: GitProvider | None = None
+    ) -> None:
         self._cli = cli or SubprocessClaudeCli(skip_permissions=True)
-        self._gh = gh or SubprocessGh()
+        self._provider = provider  # None → résolu par remote au run (github/azdo/gitlab)
+
+    def _list_prs(self, layout: BadSprintLayout) -> list[dict[str, Any]]:
+        provider = self._provider or resolve_git_provider(layout.project_root)
+        return provider.list_prs(layout.project_root)
 
     def run_sprint(self, layout: BadSprintLayout) -> list[StoryOutcome]:
         self._cli.run(_TRIGGER, layout.project_root)
-        return [_to_outcome(pr) for pr in self._gh.list_prs(layout.project_root)]
+        return [_to_outcome(pr) for pr in self._list_prs(layout)]
 
     def remediate(self, story_id: str, layout: BadSprintLayout) -> StoryOutcome:
         self._cli.run(_REMEDIATE.format(story_id=story_id), layout.project_root)
-        for pr in self._gh.list_prs(layout.project_root):
+        for pr in self._list_prs(layout):
             if str(pr.get("headRefName", "")) == story_id:
                 return _to_outcome(pr)
         return StoryOutcome(story_id=story_id, code_ok=False)
