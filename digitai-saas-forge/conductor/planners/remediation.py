@@ -15,16 +15,19 @@ from conductor.onramp.base import Substrate
 PLANNING_DIR = Path("_bmad-output/planning-artifacts")
 
 
-def _remediation_stories(baseline: dict[str, bool]) -> list[Story]:
+def _remediation_stories(baseline: dict[str, bool], code_check: str | None) -> list[Story]:
     stories: list[Story] = []
     if baseline.get("code") is False:
+        # Dérivé de la stack (profil), pas de tooling Python en dur — la commande vaut
+        # `npm test`, `uv run pytest`, … selon le profil détecté.
+        cmd = code_check or "le gate code du projet"
         stories.append(
             Story(
                 id="R1",
                 epic="remediation",
                 title="Rendre la CI code verte",
                 acceptance=[
-                    "Le gate code (ruff/mypy/pytest) passe",
+                    f"La commande de gate code (`{cmd}`) passe (exit 0)",
                     "Aucune régression introduite",
                 ],
             )
@@ -56,7 +59,9 @@ class RemediationPlanner:
 
     def plan(self, substrate: Substrate) -> BmadPlan:
         baseline = substrate.baseline or {}
-        stories = _remediation_stories(baseline)
+        profile = getattr(substrate, "profile", None)
+        code_check = profile.code_check if profile is not None else None
+        stories = _remediation_stories(baseline, code_check)
         planning = substrate.repo_path / PLANNING_DIR
         planning.mkdir(parents=True, exist_ok=True)
         epics_md = planning / "epics.md"

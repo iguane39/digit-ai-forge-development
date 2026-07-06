@@ -30,6 +30,23 @@ def test_remediation_emits_story_for_red_code(tmp_path: Path) -> None:
     assert all("design" not in t.lower() for t in titles)
 
 
+def test_remediation_code_check_derived_from_profile(tmp_path: Path) -> None:
+    # La story R1 cite la commande du profil (node-ts → npm test), pas ruff/mypy/pytest en dur.
+    from conductor.profiles import NODE_TS
+
+    (tmp_path / "design").mkdir(parents=True, exist_ok=True)
+    substrate = Substrate(
+        repo_path=tmp_path,
+        profile=NODE_TS,
+        design_md_path=tmp_path / "design/DESIGN.md",
+        baseline={"code": False, "design": True},
+    )
+    plan = RemediationPlanner().plan(substrate)
+    accept = " ".join(a for s in plan.stories for a in (s.acceptance or []))
+    assert "npm test" in accept
+    assert "pytest" not in accept
+
+
 def test_remediation_emits_story_for_red_design(tmp_path: Path) -> None:
     plan = RemediationPlanner().plan(_substrate(tmp_path, {"code": True, "design": False}))
     assert any("design" in s.title.lower() for s in plan.stories)

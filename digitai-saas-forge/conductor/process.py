@@ -58,6 +58,10 @@ class SubprocessProcessRunner:
                 cwd=cwd,
                 capture_output=True,
                 text=True,
+                # Les outils (git/gh/az/npm) émettent de l'UTF-8 ; sans forçage, `text=True`
+                # décode avec le codepage Windows (cp1252) et corrompt les accents (P-07).
+                encoding="utf-8",
+                errors="replace",
                 timeout=timeout_s,
                 check=False,
             )
