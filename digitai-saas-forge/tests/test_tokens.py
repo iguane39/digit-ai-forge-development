@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
 
 import pytest
@@ -42,3 +43,22 @@ def test_export_raises_on_empty_output(tmp_path: Path) -> None:
     runner = FakeExportRunner(0, "  ")
     with pytest.raises(RuntimeError):
         export_tokens(Path("design/DESIGN.md"), "css-tailwind", tmp_path, runner=runner)
+
+
+def test_npx_export_runner_uses_process_runner_list_args() -> None:
+    """P-02 : l'export npx passe par le ProcessRunner (args en liste), pas en nom nu."""
+    from conductor.process import ProcessResult
+    from conductor.tokens import NpxExportRunner
+
+    seen: dict[str, list[str]] = {}
+
+    class _FakeProc:
+        def run(
+            self, args: Sequence[str], *, cwd: Path | None = None, timeout_s: int = 300
+        ) -> ProcessResult:
+            seen["args"] = list(args)
+            return ProcessResult(0, "content", "")
+
+    rc, out = NpxExportRunner(runner=_FakeProc()).export(Path("d/DESIGN.md"), "dtcg")
+    assert rc == 0 and out == "content"
+    assert seen["args"][0] == "npx" and "export" in seen["args"]

@@ -12,12 +12,12 @@ testable hors-ligne ; l'invocation du CLI (`run_design_gate`) arrive en Epic 2 (
 from __future__ import annotations
 
 import json
-import subprocess
 import sys
 from pathlib import Path
 from typing import Any, Protocol
 
 from conductor.contracts import GateVerdict
+from conductor.process import ProcessRunner, SubprocessProcessRunner
 
 # Outil de gate design, épinglé (décision 06 / risque 7 — alpha). Adopté, jamais forké.
 DESIGN_MD_PKG = "@google/design.md@0.3.0"
@@ -86,13 +86,16 @@ class NpxDesignLinter:
     résolution npx du nom contenant un point est fragile selon les plateformes.
     """
 
+    def __init__(self, runner: ProcessRunner | None = None) -> None:
+        self._runner: ProcessRunner = runner or SubprocessProcessRunner()
+
     def lint_json(self, design_md: Path) -> dict[str, Any]:
-        cmd = [
+        args = [
             "npx", "--yes", "-p", DESIGN_MD_PKG,
             "designmd", "lint", "--format", "json", str(design_md),
         ]
-        proc = subprocess.run(cmd, capture_output=True, text=True, check=False)
-        report: dict[str, Any] = json.loads(proc.stdout) if proc.stdout.strip() else {}
+        result = self._runner.run(args)
+        report: dict[str, Any] = json.loads(result.stdout) if result.stdout.strip() else {}
         return report
 
 

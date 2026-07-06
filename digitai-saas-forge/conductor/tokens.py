@@ -7,11 +7,11 @@ fake en test).
 
 from __future__ import annotations
 
-import subprocess
 from pathlib import Path
 from typing import Literal, Protocol
 
 from conductor.gates.design_gate import DESIGN_MD_PKG
+from conductor.process import ProcessRunner, SubprocessProcessRunner
 
 ExportFormat = Literal["css-tailwind", "dtcg"]
 
@@ -26,13 +26,16 @@ class ExportRunner(Protocol):
 
 
 class NpxExportRunner:
+    def __init__(self, runner: ProcessRunner | None = None) -> None:
+        self._runner: ProcessRunner = runner or SubprocessProcessRunner()
+
     def export(self, design_md: Path, fmt: ExportFormat) -> tuple[int, str]:
-        cmd = [
+        args = [
             "npx", "--yes", "-p", DESIGN_MD_PKG,
             "designmd", "export", "--format", fmt, str(design_md),
         ]
-        proc = subprocess.run(cmd, capture_output=True, text=True, check=False)
-        return proc.returncode, proc.stdout
+        result = self._runner.run(args)
+        return result.returncode, result.stdout
 
 
 def export_tokens(
