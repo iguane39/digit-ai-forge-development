@@ -104,6 +104,11 @@ def run_design_gate(design_md: Path, *, linter: DesignLinter | None = None) -> G
 
     Le verdict dépend du CONTENU du rapport, jamais de l'exit code du CLI.
     """
+    if not design_md.exists():
+        # P-10 : do-no-harm — pas de DESIGN.md → gate design SKIP tracé, jamais un échec.
+        return GateVerdict(
+            gate="design", passed=True, findings=[{"skipped": f"DESIGN.md absent : {design_md}"}]
+        )
     report = (linter or NpxDesignLinter()).lint_json(design_md)
     return evaluate_findings(report)
 
