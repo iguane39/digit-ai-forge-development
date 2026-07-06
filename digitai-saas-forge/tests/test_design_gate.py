@@ -87,3 +87,21 @@ def test_run_design_gate_blocks_on_wcag_warning() -> None:
     report = {"findings": [{"severity": "warning", "message": "contrast 2.1:1 - fails WCAG AA."}]}
     verdict = run_design_gate(Path("design/DESIGN.md"), linter=FakeLinter(report))
     assert verdict.passed is False
+
+
+def test_npx_design_linter_uses_process_runner_list_args() -> None:
+    """P-01 : npx passe par le ProcessRunner (args en liste, shutil.which), pas en nom nu."""
+    from conductor.gates.design_gate import NpxDesignLinter
+    from conductor.process import ProcessResult
+
+    seen: dict[str, list[str]] = {}
+
+    class _FakeProc:
+        def run(self, args: Any, *, cwd: Any = None, timeout_s: int = 300) -> ProcessResult:
+            seen["args"] = list(args)
+            return ProcessResult(0, '{"findings": []}', "")
+
+    report = NpxDesignLinter(runner=_FakeProc()).lint_json(Path("d/DESIGN.md"))
+    assert report == {"findings": []}
+    assert seen["args"][0] == "npx" and "--yes" in seen["args"]
+    assert str(Path("d/DESIGN.md")) in seen["args"]
