@@ -20,22 +20,25 @@ class FakeRunner:
 
 
 def test_code_gate_passes_on_zero(tmp_path: Path) -> None:
-    verdict = run_code_gate(tmp_path, runner=FakeRunner(0))
+    verdict = run_code_gate(tmp_path, profile=FASTAPI_SAAS, runner=FakeRunner(0))
     assert verdict.gate == "code"
     assert verdict.passed is True
     assert verdict.findings == []
 
 
 def test_code_gate_fails_on_nonzero(tmp_path: Path) -> None:
-    verdict = run_code_gate(tmp_path, runner=FakeRunner(1))
+    verdict = run_code_gate(tmp_path, profile=FASTAPI_SAAS, runner=FakeRunner(1))
     assert verdict.passed is False
     assert verdict.findings  # remonte la commande + le code de sortie
 
 
-def test_code_gate_delegates_default_harness(tmp_path: Path) -> None:
+def test_code_gate_skips_without_profile(tmp_path: Path) -> None:
+    """P-06 : sans profil ni commande, le gate code est SKIP tracé (pas de défaut Python)."""
     runner = FakeRunner(0)
-    run_code_gate(tmp_path, runner=runner)
-    assert runner.calls[0][0] == "uv run pytest"  # délégué, pas réimplémenté
+    verdict = run_code_gate(tmp_path, runner=runner)
+    assert verdict.passed is True  # do-no-harm : ne bloque pas
+    assert runner.calls == []  # aucun 'uv run pytest' implicite
+    assert verdict.findings and "skipped" in verdict.findings[0]
 
 
 def test_code_gate_uses_profile_code_check(tmp_path: Path) -> None:

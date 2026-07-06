@@ -68,7 +68,7 @@ class FakeLinter:
         return self.report
 
 
-def test_run_design_gate_passes_with_info_only() -> None:
+def test_run_design_gate_passes_with_info_only(tmp_path: Path) -> None:
     """Reproduit le rapport réel de notre DESIGN.md (3 findings info → PASS)."""
     report = {
         "findings": [
@@ -78,15 +78,28 @@ def test_run_design_gate_passes_with_info_only() -> None:
         "summary": {"errors": 0, "warnings": 0, "infos": 2},
     }
     linter = FakeLinter(report)
-    verdict = run_design_gate(Path("design/DESIGN.md"), linter=linter)
+    design_md = tmp_path / "DESIGN.md"
+    design_md.write_text("# design", encoding="utf-8")
+    verdict = run_design_gate(design_md, linter=linter)
     assert verdict.passed is True
-    assert linter.seen == [Path("design/DESIGN.md")]
+    assert linter.seen == [design_md]
 
 
-def test_run_design_gate_blocks_on_wcag_warning() -> None:
+def test_run_design_gate_blocks_on_wcag_warning(tmp_path: Path) -> None:
     report = {"findings": [{"severity": "warning", "message": "contrast 2.1:1 - fails WCAG AA."}]}
-    verdict = run_design_gate(Path("design/DESIGN.md"), linter=FakeLinter(report))
+    design_md = tmp_path / "DESIGN.md"
+    design_md.write_text("# design", encoding="utf-8")
+    verdict = run_design_gate(design_md, linter=FakeLinter(report))
     assert verdict.passed is False
+
+
+def test_run_design_gate_skips_when_absent(tmp_path: Path) -> None:
+    """P-10 : DESIGN.md absent → skip tracé (do-no-harm), le linter n'est pas appelé."""
+    linter = FakeLinter({"findings": [{"severity": "error", "message": "boom"}]})
+    verdict = run_design_gate(tmp_path / "nope.md", linter=linter)
+    assert verdict.passed is True
+    assert linter.seen == []
+    assert verdict.findings and "skipped" in verdict.findings[0]
 
 
 def test_npx_design_linter_uses_process_runner_list_args() -> None:

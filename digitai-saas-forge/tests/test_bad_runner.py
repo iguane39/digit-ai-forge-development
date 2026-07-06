@@ -42,7 +42,7 @@ def _pr(branch: str, *, ok: bool, url: str = "u") -> dict[str, Any]:
 
 def test_run_sprint_maps_prs_to_outcomes(tmp_path: Path) -> None:
     gh = _FakeGh([_pr("story-1-1-login", ok=True, url="http://pr/1")])
-    runner = ClaudeCliBadRunner(cli=_FakeCli(), gh=gh)
+    runner = ClaudeCliBadRunner(cli=_FakeCli(), provider=gh)
     outcomes = runner.run_sprint(_layout(tmp_path))
     assert len(outcomes) == 1
     assert outcomes[0].story_id == "story-1-1-login"
@@ -52,25 +52,27 @@ def test_run_sprint_maps_prs_to_outcomes(tmp_path: Path) -> None:
 
 def test_run_sprint_triggers_bad(tmp_path: Path) -> None:
     cli = _FakeCli()
-    ClaudeCliBadRunner(cli=cli, gh=_FakeGh([])).run_sprint(_layout(tmp_path))
+    ClaudeCliBadRunner(cli=cli, provider=_FakeGh([])).run_sprint(_layout(tmp_path))
     assert cli.prompts and "BAD" in cli.prompts[0]
 
 
 def test_code_ok_false_on_failed_check(tmp_path: Path) -> None:
     gh = _FakeGh([_pr("story-2-1-x", ok=False)])
-    outcomes = ClaudeCliBadRunner(cli=_FakeCli(), gh=gh).run_sprint(_layout(tmp_path))
+    outcomes = ClaudeCliBadRunner(cli=_FakeCli(), provider=gh).run_sprint(_layout(tmp_path))
     assert outcomes[0].code_ok is False
 
 
 def test_code_ok_false_on_pending_check(tmp_path: Path) -> None:
     # CI encore en cours juste après le trigger → NON ok (anti faux-positif).
     pr = {"headRefName": "story-4-1-x", "url": "u", "statusCheckRollup": [{"state": "PENDING"}]}
-    outcomes = ClaudeCliBadRunner(cli=_FakeCli(), gh=_FakeGh([pr])).run_sprint(_layout(tmp_path))
+    runner = ClaudeCliBadRunner(cli=_FakeCli(), provider=_FakeGh([pr]))
+    outcomes = runner.run_sprint(_layout(tmp_path))
     assert outcomes[0].code_ok is False
 
 
 def test_remediate_reobserves_target_story(tmp_path: Path) -> None:
     gh = _FakeGh([_pr("story-3-1-x", ok=True, url="http://pr/3")])
-    out = ClaudeCliBadRunner(cli=_FakeCli(), gh=gh).remediate("story-3-1-x", _layout(tmp_path))
+    runner = ClaudeCliBadRunner(cli=_FakeCli(), provider=gh)
+    out = runner.remediate("story-3-1-x", _layout(tmp_path))
     assert out.story_id == "story-3-1-x"
     assert out.pr_url == "http://pr/3"

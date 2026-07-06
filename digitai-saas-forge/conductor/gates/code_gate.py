@@ -19,9 +19,6 @@ if TYPE_CHECKING:
 from conductor.contracts import GateVerdict
 from conductor.process import ProcessRunner, SubprocessProcessRunner
 
-# Commande par défaut du harness code du template (déléguée, pas réimplémentée).
-DEFAULT_CODE_CHECK = "uv run pytest"
-
 
 class CommandRunner(Protocol):
     def run(self, command: str, cwd: Path) -> int: ...
@@ -43,14 +40,23 @@ def run_code_gate(
     repo_path: Path,
     *,
     profile: TargetProfile | None = None,
-    command: str = DEFAULT_CODE_CHECK,
+    command: str | None = None,
     runner: CommandRunner | None = None,
 ) -> GateVerdict:
     """Lit le verdict de la CI pour le dépôt de story (passed = exit 0).
 
-    La commande vient du `TargetProfile` si fourni (sinon `command`/défaut).
+    La commande vient du `TargetProfile` (ou de `command`). **P-06** : aucun défaut Python —
+    sans commande utilisable (profil absent ou `code_check=None`), le gate est **skip tracé**
+    (do-no-harm), jamais un `uv run pytest` implicite.
     """
     cmd = profile.code_check if (profile and profile.code_check) else command
+    if not cmd:
+        return GateVerdict(
+            gate="code",
+            passed=True,
+            findings=[{"skipped": "aucune commande code (profil absent ou sans code_check)"}],
+            log_ref=str(repo_path),
+        )
     rc = (runner or SubprocessRunner()).run(cmd, repo_path)
     return GateVerdict(
         gate="code",

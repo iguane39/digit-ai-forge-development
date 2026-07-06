@@ -44,8 +44,17 @@ def test_capture_baseline_marks_failing_code(tmp_path: Path) -> None:
 
 
 def test_no_onramp_requires_target_markers(tmp_path: Path) -> None:
-    with pytest.raises(ValueError, match="marqueurs"):
+    with pytest.raises(ValueError, match="non supportée"):
         NoOnramp().prepare(cadrer("idée", mode="brownfield", existing_repo=tmp_path), tmp_path)
+
+
+def test_no_onramp_accepts_node_ts_repo(tmp_path: Path) -> None:
+    """P-03/P-05 : un repo node-ts (package.json) est accepté, profil dérivé de detect_stack."""
+    (tmp_path / "package.json").write_text('{"name": "x"}', encoding="utf-8")
+    onramp = NoOnramp(code_runner=_CodeRunner(0), design_linter=_Linter({"findings": []}))
+    substrate = onramp.prepare(cadrer("idée", mode="brownfield", existing_repo=tmp_path), tmp_path)
+    assert substrate.profile.name == "node-ts"  # pas FastAPI forcé
+    assert substrate.baseline == {"code": True, "design": True}
 
 
 def test_no_onramp_returns_substrate_with_baseline(tmp_path: Path) -> None:

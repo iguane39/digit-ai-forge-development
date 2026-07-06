@@ -13,8 +13,8 @@ from conductor.contracts import MissionConfig
 from conductor.gates.code_gate import CommandRunner, run_code_gate
 from conductor.gates.design_gate import DesignLinter, run_design_gate
 from conductor.onramp.base import Substrate
-from conductor.onramp.detect import has_pyproject
-from conductor.profiles import FASTAPI_SAAS, TargetProfile
+from conductor.onramp.detect import detect_stack
+from conductor.profiles import TargetProfile, profile_for_stack
 
 
 def baseline_notes(baseline: dict[str, bool]) -> list[str]:
@@ -57,18 +57,20 @@ class NoOnramp:
 
     def prepare(self, config: MissionConfig, dest: Path) -> Substrate:
         repo = dest  # en brownfield, `dest` EST le repo existant
-        if not has_pyproject(repo):
+        stack = detect_stack(repo)  # P-03 : profil piloté par la stack détectée, pas FastAPI forcé
+        profile = profile_for_stack(stack)  # P-05 : marqueur de conformité dérivé du profil
+        if profile is None:
             raise ValueError(
-                f"NoOnramp (branche A) attend un repo cible : marqueurs absents dans {repo} "
-                "(pyproject.toml introuvable). Un repo non conforme relève de BC/BB."
+                f"NoOnramp (branche A) attend un repo cible reconnu (pyproject.toml, "
+                f"package.json…) dans {repo} ; stack '{stack}' non supportée → relève de BC/BB."
             )
         baseline = capture_baseline(
-            repo, FASTAPI_SAAS, code_runner=self._code_runner, design_linter=self._design_linter
+            repo, profile, code_runner=self._code_runner, design_linter=self._design_linter
         )
         return Substrate(
             repo_path=repo,
-            profile=FASTAPI_SAAS,
-            design_md_path=repo / FASTAPI_SAAS.design_md_path,
+            profile=profile,
+            design_md_path=repo / profile.design_md_path,
             baseline=baseline,
             declared_degradation=baseline_notes(baseline),
         )
