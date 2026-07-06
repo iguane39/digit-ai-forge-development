@@ -21,3 +21,6 @@ findings.json
 
 # Node (utilisé seulement via npx pour design.md)
 node_modules/
+
+# Bin généré du shim gh→az (installé au run sur Azure DevOps)
+.gh-shim-bin/
