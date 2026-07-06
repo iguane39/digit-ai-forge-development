@@ -30,6 +30,8 @@ packages = ["conductor"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+# Dépendance tierce vendorisée au tag (BAD @v1.2.0) : épinglée, jamais modifiée → hors lint.
+extend-exclude = ["vendor"]
 
 [tool.ruff.lint]
 # E/F (pyflakes+pycodestyle), I (isort), UP (pyupgrade), B (bugbear), SIM (simplify)
