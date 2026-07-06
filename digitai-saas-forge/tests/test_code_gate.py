@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
 
 from conductor.gates.code_gate import run_code_gate
@@ -48,3 +49,24 @@ def test_code_gate_profile_fastapi_runs_pytest(tmp_path: Path) -> None:
     runner = FakeRunner(0)
     run_code_gate(tmp_path, profile=FASTAPI_SAAS, runner=runner)
     assert runner.calls[0][0] == "uv run pytest"
+
+
+def test_subprocess_runner_splits_command_no_shell(tmp_path: Path) -> None:
+    """P-08 : le runner de prod découpe en list[str] et passe par le ProcessRunner (shell=False)."""
+    from conductor.gates.code_gate import SubprocessRunner
+    from conductor.process import ProcessResult
+
+    seen: dict[str, object] = {}
+
+    class _FakeProc:
+        def run(
+            self, args: Sequence[str], *, cwd: Path | None = None, timeout_s: int = 300
+        ) -> ProcessResult:
+            seen["args"] = list(args)
+            seen["cwd"] = cwd
+            return ProcessResult(0, "", "")
+
+    rc = SubprocessRunner(runner=_FakeProc()).run("uv run pytest", tmp_path)
+    assert rc == 0
+    assert seen["args"] == ["uv", "run", "pytest"]  # list[str], pas de chaîne shell
+    assert seen["cwd"] == tmp_path

@@ -9,7 +9,7 @@ test).
 
 from __future__ import annotations
 
-import subprocess
+import shlex
 from pathlib import Path
 from typing import TYPE_CHECKING, Protocol
 
@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from conductor.profiles import TargetProfile
 
 from conductor.contracts import GateVerdict
+from conductor.process import ProcessRunner, SubprocessProcessRunner
 
 # Commande par défaut du harness code du template (déléguée, pas réimplémentée).
 DEFAULT_CODE_CHECK = "uv run pytest"
@@ -27,8 +28,15 @@ class CommandRunner(Protocol):
 
 
 class SubprocessRunner:
+    """Runner de prod : découpe la commande en ``list[str]`` et délègue au ProcessRunner
+    (``shell=False``, binaire résolu par ``shutil.which`` — portable). La commande vient du
+    profil (valeur de confiance), donc ``shlex.split`` est sûr ; jamais de ``shell=True``."""
+
+    def __init__(self, runner: ProcessRunner | None = None) -> None:
+        self._runner: ProcessRunner = runner or SubprocessProcessRunner()
+
     def run(self, command: str, cwd: Path) -> int:
-        return subprocess.run(command, cwd=cwd, shell=True, check=False).returncode
+        return self._runner.run(shlex.split(command), cwd=cwd).returncode
 
 
 def run_code_gate(
