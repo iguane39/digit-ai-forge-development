@@ -6,12 +6,13 @@ from pathlib import Path
 
 from conductor.contracts import MissionConfig
 from conductor.onramp.base import Substrate
+from conductor.process import ProcessRunner
 from conductor.profiles import FASTAPI_SAAS
-from conductor.scaffold import CommandRunner, scaffold
+from conductor.scaffold import scaffold
 
 
 class ScaffoldOnramp:
-    def __init__(self, runner: CommandRunner | None = None) -> None:
+    def __init__(self, runner: ProcessRunner | None = None) -> None:
         self._runner = runner
 
     def prepare(self, config: MissionConfig, dest: Path) -> Substrate:
