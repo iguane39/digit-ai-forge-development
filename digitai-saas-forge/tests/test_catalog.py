@@ -2,12 +2,21 @@
 
 from __future__ import annotations
 
-from conductor.catalog import CATALOG, T0_BRICKS, resolve_bricks
+from conductor.catalog import CATALOG, T0_BRICKS, BrickAction, resolve_bricks
 from conductor.contracts import BrickChoice
 
 
 def test_catalog_has_eleven_bricks() -> None:
     assert len(CATALOG) == 11
+
+
+def test_actions_are_role_based() -> None:
+    """P-11 : les actions référencent un rôle + args (list[str]), plus de chaîne shell `cd … &&`."""
+    billing = CATALOG["billing"].actions
+    assert billing and isinstance(billing[0], BrickAction)
+    assert billing[0].role == "backend"
+    assert billing[0].args == ["{pm}", "add", "stripe"]
+    assert CATALOG["analytics"].actions[0].role == "frontend"
 
 
 def test_t0_bricks_are_build_and_flagged() -> None:

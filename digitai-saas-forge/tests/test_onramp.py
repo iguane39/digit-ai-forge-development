@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
 
 from conductor.cadrage import cadrer
@@ -9,6 +10,7 @@ from conductor.contracts import MissionConfig
 from conductor.onramp import select_onramp
 from conductor.onramp.base import Onramp, Substrate
 from conductor.onramp.scaffold_onramp import ScaffoldOnramp
+from conductor.process import ProcessResult
 from conductor.profiles import FASTAPI_SAAS
 
 
@@ -35,11 +37,13 @@ def test_fake_onramp_satisfies_protocol() -> None:
 
 class _FakeRunner:
     def __init__(self) -> None:
-        self.calls: list[tuple[str, Path]] = []
+        self.calls: list[tuple[list[str], Path | None]] = []
 
-    def run(self, command: str, cwd: Path) -> int:
-        self.calls.append((command, cwd))
-        return 0
+    def run(
+        self, args: Sequence[str], *, cwd: Path | None = None, timeout_s: int = 300
+    ) -> ProcessResult:
+        self.calls.append((list(args), cwd))
+        return ProcessResult(0, "", "")
 
 
 def test_scaffold_onramp_generates_and_returns_substrate(tmp_path: Path) -> None:
@@ -48,7 +52,7 @@ def test_scaffold_onramp_generates_and_returns_substrate(tmp_path: Path) -> None
     assert substrate.profile is FASTAPI_SAAS
     assert substrate.repo_path == tmp_path / "app"
     assert substrate.baseline is None  # greenfield : rien à préserver
-    assert any("copier copy" in c for c, _ in runner.calls)  # scaffold-first exécuté
+    assert any("copier copy" in " ".join(c) for c, _ in runner.calls)  # scaffold-first exécuté
 
 
 def test_select_onramp_greenfield_is_scaffold() -> None:

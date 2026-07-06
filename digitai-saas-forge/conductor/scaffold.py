@@ -8,29 +8,15 @@ injectable (subprocess en prod, fake en test — aucune dépendance réseau pour
 
 from __future__ import annotations
 
-import subprocess
 from pathlib import Path
-from typing import Protocol
 
 from conductor.catalog import resolve_bricks
 from conductor.contracts import MissionConfig, ScaffoldResult
+from conductor.process import ProcessRunner, SubprocessProcessRunner
+from conductor.profiles import FASTAPI_SAAS, TargetProfile
 
 # Cible déterministe (spike S-3). Consommée par génération Copier, pas comme dépendance.
 TEMPLATE_REF = "gh:fastapi/full-stack-fastapi-template"
-
-
-class CommandRunner(Protocol):
-    """Exécute une commande shell dans un répertoire et renvoie son code de sortie."""
-
-    def run(self, command: str, cwd: Path) -> int: ...
-
-
-class SubprocessRunner:
-    """Runner de production : délègue au shell. Aucun état."""
-
-    def run(self, command: str, cwd: Path) -> int:
-        cwd.mkdir(parents=True, exist_ok=True)
-        return subprocess.run(command, cwd=cwd, shell=True, check=False).returncode
 
 
 def _copier_answers(config: MissionConfig) -> dict[str, str]:
@@ -52,34 +38,52 @@ def _copier_answers(config: MissionConfig) -> dict[str, str]:
     return answers
 
 
-def _copier_command(config: MissionConfig, dest: Path) -> str:
-    data = " ".join(f"--data {k}={v}" for k, v in _copier_answers(config).items())
-    return f"copier copy {data} {TEMPLATE_REF} {dest}"
+def _copier_args(config: MissionConfig, dest: Path) -> list[str]:
+    """Commande copier en ``list[str]`` (P-08 : pas de f-string shell ; chemins sûrs)."""
+    args = ["copier", "copy"]
+    for key, value in _copier_answers(config).items():
+        args += ["--data", f"{key}={value}"]
+    args += [TEMPLATE_REF, str(dest)]
+    return args
 
 
 def scaffold(
     config: MissionConfig,
     dest: Path,
     *,
-    runner: CommandRunner | None = None,
+    runner: ProcessRunner | None = None,
+    profile: TargetProfile = FASTAPI_SAAS,
 ) -> ScaffoldResult:
     """B · génère le squelette de production puis greffe les briques (build-vs-buy).
 
+    P-08 : tout passe par le `ProcessRunner` (``list[str]``, ``shell=False``, ``shutil.which``).
+    P-11 : chaque action est exécutée dans le répertoire de son rôle (``profile.roles``), avec le
+    gestionnaire du rôle substitué à ``{pm}`` ; un rôle absent du profil → action **skip tracée**.
     Lève RuntimeError si une commande échoue (le scaffold doit être sain avant tout agent).
     """
-    run = (runner or SubprocessRunner()).run
+    run = (runner or SubprocessProcessRunner()).run
+    dest.mkdir(parents=True, exist_ok=True)
 
     # 1. Génération déterministe du squelette (apporte le harness CI = contrat code).
-    cmd = _copier_command(config, dest)
-    if (rc := run(cmd, dest)) != 0:
-        raise RuntimeError(f"copier a échoué (code {rc}) : {cmd}")
+    copier_args = _copier_args(config, dest)
+    if (res := run(copier_args, cwd=dest)).returncode != 0:
+        raise RuntimeError(f"copier a échoué (code {res.returncode}) : {' '.join(copier_args)}")
 
     # 2. Greffe des briques (t0 forcées + choisies), dans l'ordre déterministe du catalogue.
     installed: list[str] = []
+    skipped: list[str] = []
     for spec in resolve_bricks(config.saas_scope):
         for action in spec.actions:
-            if (rc := run(action, dest)) != 0:
-                raise RuntimeError(f"Greffe '{spec.name}' a échoué (code {rc}) : {action}")
+            workdir = profile.roles.get(action.role)
+            if workdir is None:  # rôle non applicable pour ce profil → skip tracé (do-no-harm)
+                skipped.append(f"{spec.name}:{action.role}")
+                continue
+            pm = profile.pkg_managers.get(action.role, "")
+            cmd = [pm if tok == "{pm}" else tok for tok in action.args]
+            if (res := run(cmd, cwd=dest / workdir)).returncode != 0:
+                raise RuntimeError(
+                    f"Greffe '{spec.name}' a échoué (code {res.returncode}) : {' '.join(cmd)}"
+                )
         installed.append(spec.name)
 
     return ScaffoldResult(
@@ -90,4 +94,4 @@ def scaffold(
     )
 
 
-__all__ = ["CommandRunner", "SubprocessRunner", "scaffold"]
+__all__ = ["scaffold"]
