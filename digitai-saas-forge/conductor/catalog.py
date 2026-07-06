@@ -19,31 +19,43 @@ from conductor.contracts import BrickChoice, BrickDecision
 T0_BRICKS: tuple[str, ...] = ("multi-tenancy", "rbac", "auth-sso")
 
 
+class BrickAction(BaseModel):
+    """Action de greffe portable (P-11) : commande exécutée dans le répertoire d'un RÔLE.
+
+    `role` est résolu par le profil (``roles`` → répertoire, ``pkg_managers`` → gestionnaire).
+    Le token littéral ``{pm}`` dans ``args`` est substitué par le gestionnaire du rôle. Un rôle
+    absent du profil → action **non applicable** (skip tracé au scaffold). Plus de ``cd … && …``.
+    """
+
+    role: str
+    args: list[str]
+
+
 class BrickSpec(BaseModel):
     """Spécification d'une brique : décision par défaut + recettes de scaffolding."""
 
     name: str
     default_decision: BrickDecision
     resource: str  # librairie / service de référence
-    actions: list[str] = Field(default_factory=list)  # commandes shell (cwd = dépôt généré)
+    actions: list[BrickAction] = Field(default_factory=list)  # actions par rôle (P-11)
     t0: bool = False  # greffée par défaut au scaffold (décision 05)
 
 
-# Source : Toolkit SaaS, 11 briques (spike S-3 §S-3.2). Les actions « build » du back
-# supposent le gestionnaire `uv` du template.
+# Source : Toolkit SaaS, 11 briques (spike S-3 §S-3.2). Actions par rôle (P-11) : `{pm}` = le
+# gestionnaire du rôle (backend → uv, frontend → npm), résolu par le profil au scaffold.
 CATALOG: dict[str, BrickSpec] = {
     "auth-sso": BrickSpec(
         name="auth-sso",
         default_decision="build",
         resource="Authlib (build) ; WorkOS si SSO entreprise",
-        actions=["cd backend && uv add authlib"],
+        actions=[BrickAction(role="backend", args=["{pm}", "add", "authlib"])],
         t0=True,
     ),
     "rbac": BrickSpec(
         name="rbac",
         default_decision="build",
         resource="Casbin",
-        actions=["cd backend && uv add casbin"],
+        actions=[BrickAction(role="backend", args=["{pm}", "add", "casbin"])],
         t0=True,
     ),
     "multi-tenancy": BrickSpec(
@@ -51,7 +63,10 @@ CATALOG: dict[str, BrickSpec] = {
         default_decision="build",
         resource="tenant_id row-level (Organization + organization_id)",
         actions=[
-            'cd backend && alembic revision --autogenerate -m "add tenancy"',
+            BrickAction(
+                role="backend",
+                args=["alembic", "revision", "--autogenerate", "-m", "add tenancy"],
+            ),
         ],
         t0=True,
     ),
@@ -59,25 +74,30 @@ CATALOG: dict[str, BrickSpec] = {
         name="billing",
         default_decision="buy",
         resource="Stripe (Polar.sh/Lemon Squeezy si TVA UE)",
-        actions=["cd backend && uv add stripe"],
+        actions=[BrickAction(role="backend", args=["{pm}", "add", "stripe"])],
     ),
     "observability": BrickSpec(
         name="observability",
         default_decision="build",
         resource="OpenTelemetry (build) ; Grafana (buy)",
-        actions=["cd backend && uv add opentelemetry-sdk opentelemetry-instrumentation-fastapi"],
+        actions=[
+            BrickAction(
+                role="backend",
+                args=["{pm}", "add", "opentelemetry-sdk", "opentelemetry-instrumentation-fastapi"],
+            )
+        ],
     ),
     "analytics": BrickSpec(
         name="analytics",
         default_decision="buy",
         resource="PostHog (buy / self-host)",
-        actions=["cd frontend && npm i posthog-js"],
+        actions=[BrickAction(role="frontend", args=["{pm}", "i", "posthog-js"])],
     ),
     "feature-flags": BrickSpec(
         name="feature-flags",
         default_decision="build",
         resource="OpenFeature SDK + Unleash (self-host)",
-        actions=["cd backend && uv add openfeature-sdk"],
+        actions=[BrickAction(role="backend", args=["{pm}", "add", "openfeature-sdk"])],
     ),
     "crud-api": BrickSpec(
         name="crud-api",
@@ -89,19 +109,24 @@ CATALOG: dict[str, BrickSpec] = {
         name="emailing",
         default_decision="buy",
         resource="Resend + react-email (natif : SMTP + MJML)",
-        actions=["cd frontend && npm i react-email @react-email/components"],
+        actions=[
+            BrickAction(
+                role="frontend",
+                args=["{pm}", "i", "react-email", "@react-email/components"],
+            )
+        ],
     ),
     "jobs-async": BrickSpec(
         name="jobs-async",
         default_decision="build",
         resource="ARQ + Redis (build) ; Inngest si orchestration",
-        actions=["cd backend && uv add arq"],
+        actions=[BrickAction(role="backend", args=["{pm}", "add", "arq"])],
     ),
     "dashboards": BrickSpec(
         name="dashboards",
         default_decision="build",
         resource="Recharts + endpoints d'agrégation ; Metabase (buy)",
-        actions=["cd frontend && npm i recharts"],
+        actions=[BrickAction(role="frontend", args=["{pm}", "i", "recharts"])],
     ),
 }
 
