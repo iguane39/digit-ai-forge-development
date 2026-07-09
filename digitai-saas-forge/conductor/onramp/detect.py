@@ -12,7 +12,10 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Literal
 
+from conductor.capabilities import Capabilities, detect_capabilities
 from conductor.profiles import FASTAPI_SAAS
+
+__all__ = ["Capabilities", "detect_capabilities", "detect_distance", "detect_stack", "has_ci"]
 
 
 def has_ci(repo: Path) -> bool:
@@ -39,8 +42,10 @@ def detect_distance(repo: Path) -> Literal["A", "C"]:
     return "A" if (has_design and has_ci(repo)) else "C"
 
 
-def detect_stack(repo: Path) -> Literal["fastapi", "node-ts", "unknown"]:
-    """Détecte la stack par marqueurs : pyproject.toml → fastapi ; package.json → node-ts.
+def detect_stack(repo: Path) -> Literal["fastapi", "node-ts", "generic"]:
+    """Détecte la stack par marqueur RACINE curé : pyproject.toml → fastapi ; package.json →
+    node-ts ; sinon ``generic`` (P-15 : plus d'échec indirect — la résolution générique prend le
+    relais via ``resolve_profile`` + ``BuilderOnramp``).
 
     Priorité à pyproject.toml si les deux marqueurs coexistent (cas full-stack rare).
     """
@@ -48,4 +53,4 @@ def detect_stack(repo: Path) -> Literal["fastapi", "node-ts", "unknown"]:
         return "fastapi"
     if (repo / "package.json").exists():
         return "node-ts"
-    return "unknown"
+    return "generic"

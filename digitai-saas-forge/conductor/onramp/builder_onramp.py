@@ -18,36 +18,49 @@ from conductor.onramp.base import Substrate
 from conductor.onramp.defaults import DEFAULT_DESIGN_MD
 from conductor.onramp.detect import detect_stack, has_ci
 from conductor.onramp.no_onramp import baseline_notes, capture_baseline
-from conductor.profiles import profile_for_stack
+from conductor.profiles import TargetProfile, profile_for_stack
 
 
 class BuilderOnramp:
-    """Branche B : hisse une stack non-FastAPI au contrat cible (profil synthétisé)."""
+    """Branche B : hisse une stack non-FastAPI au contrat cible (profil synthétisé/injecté).
+
+    Profil résolu par la cascade générique (``resolve_profile``) et **injecté** par
+    ``select_onramp`` pour une stack quelconque (P-14). Sans injection, comportement historique :
+    résolution par marqueur curé (node-ts)."""
 
     def __init__(
         self,
         *,
+        profile: TargetProfile | None = None,
+        confidence: str = "inferred",
         code_runner: CommandRunner | None = None,
         design_linter: DesignLinter | None = None,
         analyzer: Analyzer | None = None,
     ) -> None:
+        self._profile = profile
+        self._confidence = confidence
         self._code_runner = code_runner
         self._design_linter = design_linter
         self._analyzer: Analyzer | None = analyzer
 
     def prepare(self, config: MissionConfig, dest: Path) -> Substrate:
         repo = dest
-        stack = detect_stack(repo)
-        profile = profile_for_stack(stack)
-        if profile is None or stack == "fastapi":
-            raise ValueError(
-                f"BuilderOnramp : stack '{stack}' non gérée par un profil dédié dans {repo} "
-                "(FastAPI relève de NoOnramp/AdapterOnramp ; stack inconnue = non supportée)."
-            )
+        if self._profile is not None:
+            profile, confidence = self._profile, self._confidence
+        else:  # historique : résolution par marqueur curé (node-ts)
+            stack = detect_stack(repo)
+            resolved = profile_for_stack(stack)
+            if resolved is None or stack == "fastapi":
+                raise ValueError(
+                    f"BuilderOnramp : stack '{stack}' non gérée par un profil dédié dans {repo} "
+                    "(FastAPI relève de NoOnramp/AdapterOnramp ; passer un profil résolu pour une "
+                    "stack quelconque)."
+                )
+            profile, confidence = resolved, "curated"
 
         notes: list[str] = [
-            f"Profil '{profile.name}' synthétisé : contrat hissé dans la stack d'origine"
-            " (B-standard).",
+            f"Profil '{profile.name}' synthétisé (confiance : {confidence}) : contrat hissé dans "
+            "la stack d'origine (B-standard).",
             "Catalogue de briques vide pour cette stack (à enrichir).",
         ]
 
@@ -75,4 +88,5 @@ class BuilderOnramp:
             baseline=baseline,
             arch_map=arch_map,
             declared_degradation=notes,
+            profile_confidence=confidence,
         )

@@ -98,8 +98,9 @@ sind die Phasen C→E für alle drei identisch:
   → `NoOnramp`: KEIN Scaffold; erfasst eine Baseline, die das Nicht-Regressions-Gate speist; plant
   nur die neuen Epics.
 - **Externes** Projekt (`--mode brownfield`, zu normalisierendes Repo) → `AdapterOnramp`
-  (unvollständiges FastAPI) oder `BuilderOnramp` (Nicht-FastAPI-Stack) + HITL-0 bei deklarierter
-  Degradierung; dann `--intent remediation|complement|both`.
+  (unvollständiges FastAPI) oder `BuilderOnramp` (**beliebiger Stack**, per Kaskade aufgelöstes
+  Profil — Manifest `.forge/profile.toml` → kuratiert → heuristische Inferenz → optionales LLM;
+  P-14/P-15) + HITL-0 bei deklarierter Degradierung; dann `--intent remediation|complement|both`.
 
 ## Phase C — BMAD-Brücke → HITL 1
 `npx bmad-method install --modules bmm,tea`, dann erzeuge die Planung in

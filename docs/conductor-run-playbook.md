@@ -96,7 +96,8 @@ identical for the three:
 - **Continuation** of a forge-built project (`--mode brownfield`, repo already conformant) →
   `NoOnramp`: NO scaffold; capture a baseline that feeds the non-regression gate; plan only the new epics.
 - **External** project (`--mode brownfield`, repo to normalize) → `AdapterOnramp` (incomplete FastAPI)
-  or `BuilderOnramp` (non-FastAPI stack) + HITL-0 if degradation is declared; then
+  or `BuilderOnramp` (**any stack**, via a profile resolved by cascade — manifest `.forge/profile.toml`
+  → curated → heuristic inference → opt-in LLM; P-14/P-15) + HITL-0 if degradation is declared; then
   `--intent remediation|complement|both`.
 
 ## Phase C — BMAD bridge → HITL 1

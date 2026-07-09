@@ -98,8 +98,9 @@ substrate, quindi le Fasi C→E sono identiche per le tre:
   `NoOnramp`: NESSUNO scaffold; cattura una baseline che alimenta il gate di non regressione;
   pianifica solo gli epic nuovi.
 - **Progetto esterno** (`--mode brownfield`, repo da normalizzare) → `AdapterOnramp` (FastAPI
-  incompleto) o `BuilderOnramp` (stack non-FastAPI) + HITL-0 se viene dichiarato un degrado; poi
-  `--intent remediation|complement|both`.
+  incompleto) o `BuilderOnramp` (**qualsiasi stack**, profilo risolto a cascata — manifesto
+  `.forge/profile.toml` → curato → inferenza euristica → LLM opt-in; P-14/P-15) + HITL-0 se viene
+  dichiarato un degrado; poi `--intent remediation|complement|both`.
 
 ## Fase C — Ponte BMAD → HITL 1
 `npx bmad-method install --modules bmm,tea`, poi produci la pianificazione in

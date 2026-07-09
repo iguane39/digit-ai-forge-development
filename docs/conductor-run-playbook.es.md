@@ -98,7 +98,8 @@ por lo que las Fases C→E son idénticas para las tres:
   `NoOnramp`: SIN scaffold; captura una baseline que alimenta la compuerta de no regresión;
   planifica solo los epics nuevos.
 - **Proyecto externo** (`--mode brownfield`, repo a normalizar) → `AdapterOnramp` (FastAPI incompleto)
-  o `BuilderOnramp` (stack no FastAPI) + HITL-0 si se declara degradación; luego
+  o `BuilderOnramp` (**cualquier stack**, perfil resuelto por cascada — manifiesto `.forge/profile.toml`
+  → curado → inferencia heurística → LLM opt-in; P-14/P-15) + HITL-0 si se declara degradación; luego
   `--intent remediation|complement|both`.
 
 ## Fase C — Puente BMAD → HITL 1
