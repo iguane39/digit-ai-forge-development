@@ -4,6 +4,14 @@
 
 > **De la idea a un SaaS listo para producción, en un solo comando — bajo una doble compuerta de código y diseño.**
 
+## 🚀 Empieza con una sola frase
+
+¿Nunca instalaste nada? Abre una sesión de Claude Code (o cualquier agente de código) en la carpeta de tu proyecto — una carpeta vacía para un proyecto nuevo — y pega:
+
+> **Usa la Digit-AI SaaS Forge (https://github.com/iguane39/digit-ai-saas-forge) en mi carpeta actual para construir, continuar o remediar este proyecto — sigue su run-playbook `docs/run-playbook.md`.**
+
+Eso es todo. El playbook clona/actualiza la forja por sí mismo, luego **detecta automáticamente** el contexto (nuevo · continuación · repo externo) y el proveedor Git (GitHub o Azure DevOps), **sin ninguna variable que rellenar**, y te propone qué hacer antes de ejecutar. Añade *«en unattended de principio a fin»* para procesar todo el backlog sin paradas (salvo la revisión humana, HITL 2).
+
 Digit-AI SaaS Forge es un acelerador de SaaS agéntico. Una **capa de orquestación ligera**
 (`conductor/`) secuencia y restringe motores de terceros probados para llevar una intención
 de producto hasta un repositorio SaaS estructurado, probado y conforme a una guía de marca —
