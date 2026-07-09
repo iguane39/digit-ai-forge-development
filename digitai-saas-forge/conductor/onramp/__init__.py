@@ -9,6 +9,7 @@ from conductor.onramp.builder_onramp import BuilderOnramp
 from conductor.onramp.detect import detect_distance, detect_stack
 from conductor.onramp.no_onramp import NoOnramp
 from conductor.onramp.scaffold_onramp import ScaffoldOnramp
+from conductor.profiles import resolve_profile
 
 __all__ = [
     "AdapterOnramp",
@@ -25,8 +26,10 @@ def select_onramp(mission: MissionConfig) -> Onramp:
     """greenfield → Scaffold ; brownfield → routage stack-aware.
 
     fastapi : NoOnramp (distance A) ou AdapterOnramp (distance C).
-    node-ts (et futurs profils) : BuilderOnramp (B-standard).
-    stack inconnue : non supportée.
+    node-ts : BuilderOnramp (profil curé).
+    stack quelconque (generic) : BuilderOnramp avec profil résolu par cascade (P-14/P-15) —
+    plus jamais de « stack non supportée » pour un repo analysable. Erreur seulement si le repo
+    n'expose aucun signal (levée par ``resolve_profile``).
     """
     if mission.mode == "greenfield":
         return ScaffoldOnramp()
@@ -37,7 +40,6 @@ def select_onramp(mission: MissionConfig) -> Onramp:
         return NoOnramp() if detect_distance(repo) == "A" else AdapterOnramp()
     if stack == "node-ts":
         return BuilderOnramp()
-    raise ValueError(
-        f"Stack non supportée pour {repo} : ni FastAPI ni node-ts. "
-        "Ajouter un profil (TargetProfile) + un cas de routage pour cette stack."
-    )
+    # generic : cascade ① manifeste → ③ inférence → (④ LLM) ; lève seulement si aucun signal.
+    resolution = resolve_profile(repo)
+    return BuilderOnramp(profile=resolution.profile, confidence=resolution.confidence)

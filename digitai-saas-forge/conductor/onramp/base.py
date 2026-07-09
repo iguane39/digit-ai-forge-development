@@ -24,6 +24,9 @@ class Substrate(BaseModel):
     baseline: dict[str, bool] | None = None  # statut vert/rouge des gates existants (capturé en BA)
     arch_map: dict[str, Any] | None = None  # carte d'architecture (remplie en BC/BB)
     declared_degradation: list[str] = Field(default_factory=list)  # dégradation explicite (B)
+    # P-17 : niveau de confiance du profil résolu (curated/manifest/inferred/analyzed) — affiché
+    # au HITL-0. "curated" = profil de registre (aucune validation supplémentaire requise).
+    profile_confidence: str = "curated"
 
 
 class Onramp(Protocol):
