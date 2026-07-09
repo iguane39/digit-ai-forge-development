@@ -62,8 +62,9 @@ def test_detect_stack_node_ts(tmp_path: Path) -> None:
     assert detect_stack(tmp_path) == "node-ts"
 
 
-def test_detect_stack_unknown(tmp_path: Path) -> None:
-    assert detect_stack(tmp_path) == "unknown"
+def test_detect_stack_generic_when_no_root_marker(tmp_path: Path) -> None:
+    # P-15 : plus d'"unknown" qui fait lever indirectement — classé "generic".
+    assert detect_stack(tmp_path) == "generic"
 
 
 def test_select_onramp_node_ts_is_builder(tmp_path: Path) -> None:

@@ -45,10 +45,13 @@ def run_code_gate(
 ) -> GateVerdict:
     """Lit le verdict de la CI pour le dépôt de story (passed = exit 0).
 
-    La commande vient du `TargetProfile` (ou de `command`). **P-06** : aucun défaut Python —
-    sans commande utilisable (profil absent ou `code_check=None`), le gate est **skip tracé**
-    (do-no-harm), jamais un `uv run pytest` implicite.
+    **P-16** : si le profil porte des commandes PAR RÔLE (`commands`), chacune est exécutée dans
+    le répertoire du rôle et le verdict est agrégé (rôle sans commande test → skip tracé). Sinon
+    la commande vient de `code_check` (ou de `command`). **P-06** : aucun défaut Python — sans
+    commande utilisable, le gate est **skip tracé** (do-no-harm), jamais un `pytest` implicite.
     """
+    if profile and profile.commands:
+        return _run_role_gate(repo_path, profile, runner)
     cmd = profile.code_check if (profile and profile.code_check) else command
     if not cmd:
         return GateVerdict(
@@ -64,3 +67,27 @@ def run_code_gate(
         findings=[] if rc == 0 else [{"command": cmd, "returncode": str(rc)}],
         log_ref=str(repo_path),
     )
+
+
+def _run_role_gate(
+    repo_path: Path, profile: TargetProfile, runner: CommandRunner | None
+) -> GateVerdict:
+    """Exécute la commande de test de chaque rôle dans son répertoire (P-16), verdict agrégé."""
+    r = runner or SubprocessRunner()
+    findings: list[dict[str, str]] = []
+    passed = True
+    ran_any = False
+    for role, cmds in profile.commands.items():
+        test = cmds.test
+        if not test:
+            findings.append({"skipped": f"rôle '{role}' sans commande test (P-06)"})
+            continue
+        ran_any = True
+        role_dir = repo_path / profile.roles.get(role, ".")
+        rc = r.run(test, role_dir)
+        if rc != 0:
+            passed = False
+            findings.append({"role": role, "command": test, "returncode": str(rc)})
+    if not ran_any:
+        findings.append({"skipped": "aucune commande test par rôle utilisable (P-06)"})
+    return GateVerdict(gate="code", passed=passed, findings=findings, log_ref=str(repo_path))

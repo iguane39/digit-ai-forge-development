@@ -33,11 +33,41 @@ n'installe rien dans le projet cible. Les évolutions de la forge s'appliquent *
 |---|---|---|---|
 | **Nouveau** | pas de repo cible (idée + pièces jointes) | greenfield · `ScaffoldOnramp` (scaffold-first) | — |
 | **Continuation** | repo généré par la forge, conforme (pyproject + DESIGN.md + CI) | brownfield · `NoOnramp` (pas de scaffold, baseline) | `complement` |
-| **Externe** | repo existant non conforme (un marqueur manque) | brownfield · `AdapterOnramp` (FastAPI incomplet) / `BuilderOnramp` (autre stack) + HITL-0 | `remediation` / `complement` / `both` |
+| **Externe** | repo existant non conforme — **stack quelconque** (FastAPI incomplet, ou toute autre techno) | brownfield · `AdapterOnramp` (FastAPI incomplet) / `BuilderOnramp` (profil résolu) + HITL-0 | `remediation` / `complement` / `both` |
 | **MàJ forge seule** | on veut juste rafraîchir l'outil | — | — (stop après Phase 0) |
 
 Le routage est automatique (`select_onramp` : `detect_stack` + `detect_distance`). Le reste du
 lifecycle est **identique** pour les trois configurations de construction.
+
+**Stack quelconque (P-14/P-15).** Un repo externe n'a plus besoin d'être FastAPI ou node-ts : la
+forge **résout un `TargetProfile`** par cascade — ① manifeste `.forge/profile.toml` → ② profil curé →
+③ inférence heuristique (rôles/commandes détectés) → ④ analyse LLM (opt-in). Un repo full-stack
+(ex. backend Flask dans `backend/` + front React dans `frontend/`, sans marqueur racine) est
+onrampé via `BuilderOnramp` + HITL-0, là où il était rejeté. Erreur **seulement** si le repo
+n'expose aucun signal exploitable → fournir un manifeste (voir ci-dessous).
+
+### Manifeste opposable `.forge/profile.toml` (P-18)
+
+Pour décrire explicitement la stack (prioritaire sur toute détection) :
+
+```toml
+name = "flask-react"
+has_ui = true
+
+[roles]                 # rôle -> répertoire
+backend  = "backend"
+frontend = "frontend"
+
+[pkg_managers]          # rôle -> gestionnaire
+backend  = "pip"
+frontend = "npm"
+
+[commands.backend]      # commandes par rôle ; clé absente = non applicable (skip tracé)
+test = "pytest"
+[commands.frontend]
+test  = "npm test"
+build = "npm run build"
+```
 
 ## Le prompt opérateur générique (copy-paste)
 
