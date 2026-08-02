@@ -58,8 +58,12 @@ class BuilderOnramp:
                 )
             profile, confidence = resolved, "curated"
 
+        # Un profil issu du manifeste n'est pas SYNTHÉTISÉ : il est DÉCLARÉ par l'utilisateur.
+        # Le libellé remonte au HITL-0 ; annoncer une inférence là où il y a une déclaration
+        # ferait valider une dégradation qui n'en est pas une.
+        origine = "déclaré au manifeste" if confidence == "manifest" else "synthétisé"
         notes: list[str] = [
-            f"Profil '{profile.name}' synthétisé (confiance : {confidence}) : contrat hissé dans "
+            f"Profil '{profile.name}' {origine} (confiance : {confidence}) : contrat hissé dans "
             "la stack d'origine (B-standard).",
             "Catalogue de briques vide pour cette stack (à enrichir).",
         ]

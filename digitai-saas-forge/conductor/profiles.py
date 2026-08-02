@@ -22,7 +22,19 @@ from conductor.catalog import CATALOG, BrickSpec
 # Rôles « backend » préférés comme commande primaire (pour la baseline / le gate simple).
 _PRIMARY_ROLE_ORDER = ["backend", "api", "server", "app"]
 
+# Manifeste opposable (P-18) : chemin défini UNE fois, lu par `resolve_profile` et par le
+# routage des bretelles (`select_onramp`). Deux définitions du même chemin finiraient par diverger.
+MANIFEST_RELPATH = Path(".forge") / "profile.toml"
+
 Confidence = Literal["curated", "manifest", "inferred", "analyzed"]
+
+
+def has_manifest(repo: Path) -> bool:
+    """Le dépôt porte-t-il un manifeste opposable ? (P-18)
+
+    Prédicat public : le routage doit pouvoir écarter la présence d'un manifeste AVANT de
+    consulter le moindre marqueur de stack — le manifeste prime sur les curés."""
+    return (repo / MANIFEST_RELPATH).exists()
 
 
 class RoleCommands(BaseModel):
@@ -141,9 +153,8 @@ def resolve_profile(repo: Path) -> ProfileResolution:
     """Cascade P-14 : ① manifeste → ② curé → ③ inférence → (④ analyse LLM opt-in). 1er qui répond.
 
     Lève seulement si le repo n'expose AUCUN signal (P-15) — message actionnable."""
-    manifest = repo / ".forge" / "profile.toml"
-    if manifest.exists():
-        return ProfileResolution(TargetProfile.from_manifest(manifest), "manifest")
+    if has_manifest(repo):
+        return ProfileResolution(TargetProfile.from_manifest(repo / MANIFEST_RELPATH), "manifest")
 
     # ② curé : réutilise le registre existant si un marqueur curé est reconnu.
     from conductor.onramp.detect import detect_stack
