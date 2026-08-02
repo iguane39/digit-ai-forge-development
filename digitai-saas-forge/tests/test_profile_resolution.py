@@ -136,6 +136,73 @@ def test_manifest_requires_name_and_roles(tmp_path: Path) -> None:
         resolve_profile(tmp_path)
 
 
+# --- §7.2b Manifeste opposable AUX CURÉS (V-1) -----------------------------------------------
+# Régression : `select_onramp` interrogeait `detect_stack` AVANT d'écarter le manifeste. Un repo
+# portant `pyproject.toml`/`package.json` à la racine partait sur une bretelle à profil codé en
+# dur (has_ui=True) et sa déclaration n'était jamais lue. `test_manifest_wins_over_inference`
+# ne l'attrapait pas : son repo (`_fullstack`) n'a AUCUN marqueur racine, donc il est `generic`.
+_MANIFEST_SANS_UI = """\
+name = "outil-sans-ui"
+has_ui = false
+
+[roles]
+cli = "."
+
+[pkg_managers]
+cli = "uv"
+
+[commands.cli]
+test = "pytest -q"
+lint = "ruff check ."
+"""
+
+
+def _declare(repo: Path, marqueur: str, manifeste: str = _MANIFEST_SANS_UI) -> Path:
+    """Repo portant un marqueur de stack curé À LA RACINE **et** un manifeste opposable."""
+    (repo / marqueur).write_text("{}\n" if marqueur.endswith(".json") else "[project]\n", "utf-8")
+    (repo / ".forge").mkdir()
+    (repo / ".forge" / "profile.toml").write_text(manifeste, encoding="utf-8")
+    return repo
+
+
+def _declared_profile(onramp: BuilderOnramp) -> TargetProfile:
+    """Profil porté par la bretelle. L'attribut est privé, mais c'est précisément ce que le
+    routage doit transmettre et aucun accesseur public ne l'expose."""
+    profile = onramp._profile
+    assert profile is not None
+    return profile
+
+
+def test_manifest_wins_over_curated_pyproject_marker(tmp_path: Path) -> None:
+    """V-1 : avec un pyproject.toml, le routage partait sur NoOnramp/AdapterOnramp."""
+    mission = cadrer("i", mode="brownfield", existing_repo=_declare(tmp_path, "pyproject.toml"))
+    onramp = select_onramp(mission)
+    assert isinstance(onramp, BuilderOnramp)
+    assert _declared_profile(onramp).name == "outil-sans-ui"
+    assert _declared_profile(onramp).has_ui is False
+
+
+def test_manifest_wins_over_curated_package_json_marker(tmp_path: Path) -> None:
+    """V-1, branche node-ts : BuilderOnramp() SANS profil → curé NODE_TS (has_ui=True)."""
+    mission = cadrer("i", mode="brownfield", existing_repo=_declare(tmp_path, "package.json"))
+    onramp = select_onramp(mission)
+    assert isinstance(onramp, BuilderOnramp)
+    assert _declared_profile(onramp).name == "outil-sans-ui"
+
+
+def test_declared_headless_repo_gets_no_design_md(tmp_path: Path) -> None:
+    """V-2 : la normalisation n'écrit plus de DESIGN.md dans un dépôt qui se déclare sans UI."""
+    repo = _declare(tmp_path, "pyproject.toml")
+    res = resolve_profile(repo)
+    substrate = BuilderOnramp(
+        profile=res.profile, confidence=res.confidence,
+        code_runner=_CodeRunner(0), design_linter=_Linter(),
+    ).prepare(cadrer("i", mode="brownfield", existing_repo=repo), repo)
+    assert not (repo / "design" / "DESIGN.md").exists()  # rien d'écrit chez l'utilisateur
+    assert substrate.profile_confidence == "manifest"
+    assert "déclaré au manifeste" in substrate.declared_degradation[0]  # ni « synthétisé »
+
+
 # --- §7.3 Curés intacts ----------------------------------------------------------------------
 def test_curated_fastapi_resolves_curated(tmp_path: Path) -> None:
     (tmp_path / "pyproject.toml").write_text("[project]\nname='x'\n", encoding="utf-8")

@@ -9,7 +9,7 @@ from conductor.onramp.builder_onramp import BuilderOnramp
 from conductor.onramp.detect import detect_distance, detect_stack
 from conductor.onramp.no_onramp import NoOnramp
 from conductor.onramp.scaffold_onramp import ScaffoldOnramp
-from conductor.profiles import resolve_profile
+from conductor.profiles import has_manifest, resolve_profile
 
 __all__ = [
     "AdapterOnramp",
@@ -23,8 +23,10 @@ __all__ = [
 
 
 def select_onramp(mission: MissionConfig) -> Onramp:
-    """greenfield → Scaffold ; brownfield → routage stack-aware.
+    """greenfield → Scaffold ; brownfield → manifeste opposable, puis routage stack-aware.
 
+    manifeste `.forge/profile.toml` présent : BuilderOnramp avec le profil DÉCLARÉ (P-18) —
+    le manifeste prime sur tout autre signal, marqueurs curés compris.
     fastapi : NoOnramp (distance A) ou AdapterOnramp (distance C).
     node-ts : BuilderOnramp (profil curé).
     stack quelconque (generic) : BuilderOnramp avec profil résolu par cascade (P-14/P-15) —
@@ -35,6 +37,13 @@ def select_onramp(mission: MissionConfig) -> Onramp:
         return ScaffoldOnramp()
     assert mission.existing_repo is not None  # garanti par cadrer() ; mypy narrowing
     repo = mission.existing_repo
+    # P-18 : le manifeste est OPPOSABLE — il doit être écarté avant de consulter `detect_stack`.
+    # Sans ce court-circuit, un repo portant `pyproject.toml`/`package.json` à la racine part sur
+    # une bretelle à profil codé en dur (has_ui=True) et sa déclaration n'est jamais lue : un outil
+    # sans interface se voyait imposer le gate design, voire un `design/DESIGN.md` non sollicité.
+    if has_manifest(repo):
+        resolution = resolve_profile(repo)
+        return BuilderOnramp(profile=resolution.profile, confidence=resolution.confidence)
     stack = detect_stack(repo)
     if stack == "fastapi":
         return NoOnramp() if detect_distance(repo) == "A" else AdapterOnramp()
