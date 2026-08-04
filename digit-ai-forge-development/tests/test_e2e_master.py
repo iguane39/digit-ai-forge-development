@@ -22,19 +22,22 @@ def test_cli_version_exits_zero() -> None:
     assert exc.value.code == 0
 
 
-def test_pipeline_order_is_wired_scaffold_first(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_pipeline_order_is_wired_scaffold_first(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """run() câble A → onramp(B) → C → D → E ; l'onramp (scaffold-first) précède C."""
     import types
 
+    from conductor.contracts import SprintReport
     from conductor.onramp.base import Substrate
     from conductor.profiles import FASTAPI_SAAS
 
     calls: list[str] = []
 
-    def rec(name: str) -> Callable[..., object]:
+    def rec(name: str, result: object = None) -> Callable[..., object]:
         def _f(*_a: object, **_k: object) -> object:
             calls.append(name)
-            return object()
+            return result if result is not None else object()
 
         return _f
 
@@ -52,9 +55,10 @@ def test_pipeline_order_is_wired_scaffold_first(monkeypatch: pytest.MonkeyPatch)
     monkeypatch.setattr(cli, "select_onramp", lambda _mission: RecOnramp())
     monkeypatch.setattr(cli, "lancer_planification", rec("C"))
     monkeypatch.setattr(cli, "preparer_sprint", rec("D"))
-    monkeypatch.setattr(cli, "superviser", rec("E"))
+    # E rend un vrai SprintReport : run() le sérialise désormais en sortie machine (R-V1).
+    monkeypatch.setattr(cli, "superviser", rec("E", SprintReport()))
 
-    cli.run("idée de test")
+    cli.run("idée de test", workdir=tmp_path)
     assert calls == ["A", "B", "C", "D", "E"]
 
 
