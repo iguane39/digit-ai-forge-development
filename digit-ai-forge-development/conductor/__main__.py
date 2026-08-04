@@ -3,23 +3,35 @@
 Enchaîne les cinq étapes dans l'ordre structurel A → B → C → D → E. L'ordre
 scaffold-first (B avant C) est un invariant, pas une option (décision 02).
 La logique de chaque étape arrive aux Epics 1 et 3 ; ici on câble la séquence.
+
+Le run laisse une **sortie machine** (`_forge-output/run-report.json` dans le repo cible) et
+rend un **code de retour signifiant** : 0 run complet, 2 pause HITL (légitime, ≠ échec),
+1 erreur.
 """
 
 from __future__ import annotations
 
 import argparse
+import contextlib
 import re
+import sys
 from pathlib import Path
 
 from conductor import __version__
 from conductor.bmad_bridge import BmadPlanner, lancer_planification
 from conductor.cadrage import cadrer
-from conductor.contracts import MissionConfig
-from conductor.governance import require_hitl0
+from conductor.contracts import MissionConfig, SprintReport
+from conductor.governance import HitlPending, require_hitl0
 from conductor.onramp import select_onramp
 from conductor.planners import ComplementPlanner, CompositePlanner, RemediationPlanner
+from conductor.report import Clock, RunStatus, write_run_report
 from conductor.sprint_config import preparer_sprint
 from conductor.supervisor import superviser
+
+# Codes de retour du CLI — une pause HITL n'est PAS un échec (décision 07).
+EXIT_OK = 0
+EXIT_ERROR = 1
+EXIT_HITL_PENDING = 2
 
 
 def _slug(idea: str) -> str:
@@ -46,8 +58,14 @@ def run(
     existing_repo: Path | None = None,
     intent: str = "remediation",
     workdir: Path = Path("generated"),
-) -> None:
-    """Orchestration A → B (onramp) → C (HITL 1) → D → E (HITL 2), greenfield ou brownfield."""
+    clock: Clock | None = None,
+) -> SprintReport:
+    """Orchestration A → B (onramp) → C (HITL 1) → D → E (HITL 2), greenfield ou brownfield.
+
+    Renvoie le `SprintReport` de l'étape E et écrit systématiquement la sortie machine
+    `_forge-output/run-report.json` dans le repo cible — y compris en pause HITL ou en échec,
+    où l'exception d'origine est relayée telle quelle à l'appelant.
+    """
     mission = cadrer(
         idea,
         mode=mode,  # type: ignore[arg-type]
@@ -58,17 +76,34 @@ def run(
         # garde explicite (≠ assert, non silencé par -O) ; cadrer() garantit déjà l'invariant
         if mission.existing_repo is None:
             raise ValueError("Le mode brownfield exige un existing_repo.")
-        target = mission.existing_repo
+        dest = mission.existing_repo
     else:
-        target = workdir / _slug(idea)
-    substrate = select_onramp(mission).prepare(mission, target)  # B
-    # HITL-0 seulement s'il y a quelque chose à valider (normalisation/dégradation déclarée) :
-    # actif en C/B, sauté en A (repo déjà conforme) — conforme à la spec.
-    if mission.mode == "brownfield" and substrate.declared_degradation:
-        require_hitl0("normalisation & carte d'archi", substrate)
-    plan = lancer_planification(substrate, planner=_select_planner(mission))  # C — HITL 1
-    layout = preparer_sprint(plan, target, baseline=substrate.baseline)  # D
-    superviser(layout)  # E — HITL 2
+        dest = workdir / _slug(idea)
+
+    def _emit(status: RunStatus, *, sprint: SprintReport | None = None, detail: str = "") -> None:
+        write_run_report(
+            dest, status=status, idea=idea, mode=mode, sprint=sprint, detail=detail, clock=clock
+        )
+
+    try:
+        substrate = select_onramp(mission).prepare(mission, dest)  # B
+        # HITL-0 seulement s'il y a quelque chose à valider (normalisation/dégradation déclarée) :
+        # actif en C/B, sauté en A (repo déjà conforme) — conforme à la spec.
+        if mission.mode == "brownfield" and substrate.declared_degradation:
+            require_hitl0("normalisation & carte d'archi", substrate)
+        plan = lancer_planification(substrate, planner=_select_planner(mission))  # C — HITL 1
+        layout = preparer_sprint(plan, dest, baseline=substrate.baseline)  # D
+        report = superviser(layout)  # E — HITL 2
+    except HitlPending as pause:
+        _emit("hitl-pending", detail=str(pause))
+        raise
+    except Exception as err:
+        # un échec d'écriture du rapport ne doit jamais masquer l'erreur d'origine
+        with contextlib.suppress(OSError):
+            _emit("error", detail=f"{type(err).__name__} : {err}")
+        raise
+    _emit("complete", sprint=report)
+    return report
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -83,9 +118,24 @@ def main(argv: list[str] | None = None) -> int:
         "--intent", choices=["remediation", "complement", "both"], default="remediation"
     )
     args = parser.parse_args(argv)
-    if args.command == "run":
-        run(args.idea, mode=args.mode, existing_repo=args.repo, intent=args.intent)
-    return 0
+    if args.command != "run":
+        return EXIT_OK
+    try:
+        run(
+            args.idea,
+            mode=args.mode,
+            existing_repo=args.repo,
+            intent=args.intent,
+        )
+    except HitlPending as pause:
+        # Pause légitime, pas un échec : on imprime la question posée à l'humain.
+        print(f"HITL — validation humaine requise :\n  {pause}")
+        print("Le run est en pause. Approuve hors chaîne, puis relance.")
+        return EXIT_HITL_PENDING
+    except Exception as err:
+        print(f"Échec du run — {type(err).__name__} : {err}", file=sys.stderr)
+        return EXIT_ERROR
+    return EXIT_OK
 
 
 if __name__ == "__main__":
