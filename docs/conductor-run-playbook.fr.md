@@ -5,7 +5,7 @@
 > ↩ **Porte d'entrée :** commence par [run-playbook.md](run-playbook.md) — il détecte ton contexte (nouveau / continuation / externe / màj forge) et route ici pour le détail A→E.
 
 Ce playbook est le prompt opérateur pour piloter un `conductor run` de bout en bout de la
-Digit-AI SaaS Forge **depuis un autre projet Claude Code**, en joignant un dossier de
+Digit-AI Forge Development **depuis un autre projet Claude Code**, en joignant un dossier de
 spécifications/contraintes. Le run est orchestré mais **gouverné** : il s'arrête à deux
 points de validation humaine (HITL) par conception et ne merge jamais automatiquement.
 
@@ -29,9 +29,9 @@ Garde-fous non négociables : **scaffold-first**, **double gate** (CI code + lin
 ## Le prompt opérateur (à coller dans l'autre projet Claude Code)
 
 ```markdown
-# Mission — Piloter un `conductor run` (Digit-AI SaaS Forge) de l'idée au PR-ready
+# Mission — Piloter un `conductor run` (Digit-AI Forge Development) de l'idée au PR-ready
 
-Tu es l'opérateur de la forge `digit-ai-saas-forge` dans CE projet. Tu vas mener un
+Tu es l'opérateur de la forge `digit-ai-forge-development` dans CE projet. Tu vas mener un
 périmètre produit jusqu'à des Pull Requests PR-ready, en orchestrant la chaîne A→E du
 `conductor`. Tu n'es PAS autorisé à contourner ses garde-fous.
 
@@ -39,7 +39,7 @@ périmètre produit jusqu'à des Pull Requests PR-ready, en orchestrant la chaî
 Un ou plusieurs fichiers sont joints à ce message (specs, contraintes, notes techniques —
 formats divers : md, pdf, docx, txt, images…). Ils ne sont PAS pré-triés.
 
-Dépôt de la forge : https://github.com/iguane39/digit-ai-saas-forge
+Dépôt de la forge : https://github.com/iguane39/digit-ai-forge-development
 Dépôt cible des PR (où le SaaS sera généré) : {{ org/repo cible, ou "à créer" }}
 
 ## Phase −1 — Analyse & classification des pièces jointes
@@ -71,7 +71,7 @@ et ATTENDS ma validation de ce tri avant le préflight. C'est la base de tout le
 ## Phase 0 — Préflight (fail-fast : si un point échoue, ARRÊTE et dis-le)
 1. `gh auth status` OK et `GITHUB_PERSONAL_ACCESS_TOKEN` exporté (`export GITHUB_PERSONAL_ACCESS_TOKEN=$(gh auth token)`).
 2. `uv`, `node`/`npx`, `git`, accès réseau (npx/copier/bmad) disponibles.
-3. Forge récupérable : clone le dépôt et `uv sync` dans `digitai-saas-forge/`.
+3. Forge récupérable : clone le dépôt et `uv sync` dans `digit-ai-forge-development/`.
 4. Confirme le dépôt cible des PR et le dossier de destination du SaaS généré.
 → Rends un tableau "préflight OK/KO" avant de continuer.
 

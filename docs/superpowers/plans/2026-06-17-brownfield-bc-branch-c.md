@@ -6,7 +6,7 @@
 
 **Architecture:** `detect_distance(repo)` route brownfield vers `NoOnramp` (A, déjà conforme) ou `AdapterOnramp` (C, à normaliser). `AdapterOnramp` normalise puis capture la baseline et la carte d'archi via un `Analyzer` injectable (heuristique par défaut ; variante sous-agent = stub harness). `require_hitl0` ajoute le 3ᵉ point de validation (carte/normalisation) avant la planification. Réutilise massivement BA (baseline, RegressionGate, planners, supervisor). Greenfield et branche A inchangés.
 
-**Tech Stack:** Python 3.11+, pydantic v2, pytest, ruff, mypy --strict, uv. Paquet `digitai-saas-forge/conductor`. Pré-requis : BA mergé. Branche : `epic-bc-branch-c`.
+**Tech Stack:** Python 3.11+, pydantic v2, pytest, ruff, mypy --strict, uv. Paquet `digit-ai-forge-development/conductor`. Pré-requis : BA mergé. Branche : `epic-bc-branch-c`.
 
 ---
 
@@ -20,7 +20,7 @@
 - **Modify** `conductor/__main__.py` — `run()` pose HITL-0 en brownfield avant la planification.
 - **Tests** : `tests/test_detect.py`, `tests/test_analyzer.py`, `tests/test_adapter_onramp.py`, `tests/test_bc_e2e.py` (create) ; `tests/test_onramp.py`, `tests/test_governance*`/e2e (modify as needed).
 
-Commandes depuis `digitai-saas-forge/`. **Toujours afficher la sortie des gates** (jamais `>/dev/null`).
+Commandes depuis `digit-ai-forge-development/`. **Toujours afficher la sortie des gates** (jamais `>/dev/null`).
 
 ---
 

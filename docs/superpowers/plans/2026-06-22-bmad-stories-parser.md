@@ -6,7 +6,7 @@
 
 **Architecture:** Fonction pure `parse_epics` (machine à états ligne par ligne) dans un nouveau module harness ; câblage dans le planner réel avec fallback `stories=[]`. **Ne reconstruit pas le graphe** (décision 01).
 
-**Tech Stack:** Python 3.11+, pydantic v2 (`Story` existant), `re`, pytest, ruff, mypy --strict, uv. Branche `feat/bmad-stories-parser` (depuis main). Spec : [docs/superpowers/specs/2026-06-22-bmad-stories-parser-design.md](../specs/2026-06-22-bmad-stories-parser-design.md). CWD : `digitai-saas-forge/`.
+**Tech Stack:** Python 3.11+, pydantic v2 (`Story` existant), `re`, pytest, ruff, mypy --strict, uv. Branche `feat/bmad-stories-parser` (depuis main). Spec : [docs/superpowers/specs/2026-06-22-bmad-stories-parser-design.md](../specs/2026-06-22-bmad-stories-parser-design.md). CWD : `digit-ai-forge-development/`.
 
 ---
 

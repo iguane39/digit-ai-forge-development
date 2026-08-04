@@ -1,5 +1,5 @@
 [project]
-name = "digitai-saas-forge"
+name = "digit-ai-forge-development"
 version = "0.0.0"
 description = "Accélérateur SaaS Digit-AI — couche d'orchestration mince (conductor) de l'idée au SaaS de production."
 readme = "README.md"

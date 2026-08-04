@@ -1,4 +1,4 @@
-# Digit-AI SaaS Forge
+# Digit-AI Forge Development
 
 [English](README.md) · [Français](README.fr.md) · [Español](README.es.md) · **Deutsch** · [Italiano](README.it.md) · [Português](README.pt.md)
 
@@ -8,11 +8,11 @@
 
 Noch nichts installiert? Öffne eine Claude-Code-Sitzung (oder einen beliebigen Coding-Agenten) im Ordner deines Projekts — ein leerer Ordner für ein brandneues Projekt — und füge ein:
 
-> **Nutze die Digit-AI SaaS Forge (https://github.com/iguane39/digit-ai-saas-forge) auf meinem aktuellen Ordner, um dieses Projekt zu erstellen, fortzuführen oder zu sanieren — folge ihrem Run-Playbook `docs/run-playbook.md`.**
+> **Nutze die Digit-AI Forge Development (https://github.com/iguane39/digit-ai-forge-development) auf meinem aktuellen Ordner, um dieses Projekt zu erstellen, fortzuführen oder zu sanieren — folge ihrem Run-Playbook `docs/run-playbook.md`.**
 
 Das war's. Das Playbook klont/aktualisiert die Forge selbst, **erkennt dann automatisch** den Kontext (neu · Fortführung · externes Repo) und den Git-Provider (GitHub oder Azure DevOps) **ohne auszufüllende Variablen** und schlägt vor, was zu tun ist, bevor es ausführt. Füge *„unattended von Anfang bis Ende"* hinzu, um das gesamte Backlog ohne Stopps abzuarbeiten (außer der menschlichen Review, HITL 2).
 
-Digit-AI SaaS Forge ist ein agentischer SaaS-Beschleuniger. Eine **schlanke
+Digit-AI Forge Development ist ein agentischer SaaS-Beschleuniger. Eine **schlanke
 Orchestrierungsschicht** (`conductor/`) sequenziert und beschränkt bewährte Drittanbieter-
 Engines, um eine Produktidee bis zu einem strukturierten, getesteten und markenkonformen
 SaaS-Repository zu führen — ohne diese Engines jemals umzuschreiben oder zu forken.
@@ -22,7 +22,7 @@ Sie **dirigiert** sie.
 
 ## Funktionsweise — eine Kette aus 5 Phasen
 
-> 📊 **Übersicht:** [interaktives Prozessdiagramm — 6 Sprachen](https://iguane39.github.io/digit-ai-saas-forge/forge-process-schema.html?lang=de) (Eingaben · A→E · Gates · HITL · iterative Schleife).
+> 📊 **Übersicht:** [interaktives Prozessdiagramm — 6 Sprachen](https://iguane39.github.io/digit-ai-forge-development/forge-process-schema.html?lang=de) (Eingaben · A→E · Gates · HITL · iterative Schleife).
 
 | Phase | Name | Aufgabe |
 |-------|------|---------|
@@ -56,14 +56,14 @@ Merge. Automatisches Mergen ist bewusst deaktiviert.
 
 | Pfad | Inhalt |
 |------|--------|
-| [`digitai-saas-forge/`](digitai-saas-forge/) | Der Code: `conductor/` (Master-Framework), parametrisierbares Ziel, Gates, CI |
+| [`digit-ai-forge-development/`](digit-ai-forge-development/) | Der Code: `conductor/` (Master-Framework), parametrisierbares Ziel, Gates, CI |
 | [`docs/`](docs/) | Design-Korpus: Analyse, PRD (BMAD-Format), Architektur, Implementierungsplan, Spike-Notizen, Ausführungsentscheidungen |
 | [`input/`](input/) | Das ursprüngliche Gründungsdossier |
 
 ## Schnellstart
 
 ```bash
-cd digitai-saas-forge
+cd digit-ai-forge-development
 uv sync
 uv run pytest        # Code-Gate (ruff + strenges mypy + pytest)
 conductor --version

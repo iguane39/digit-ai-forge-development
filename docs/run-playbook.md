@@ -1,6 +1,6 @@
 # Run Playbook — porte d'entrée unique (tous contextes)
 
-> **Commence ici.** Ce playbook est l'unique point d'entrée pour piloter digit-ai-saas-forge, quel
+> **Commence ici.** Ce playbook est l'unique point d'entrée pour piloter digit-ai-forge-development, quel
 > que soit le contexte : nouveau projet, mise à jour de la forge, continuation d'un projet généré,
 > ou reprise d'un projet externe. Il **détecte le contexte** et **route** vers le bon flux.
 >
@@ -76,7 +76,7 @@ pour un nouveau). **Aucune variable à remplir** : il localise/met à jour la fo
 déduit le contexte et te **propose** quoi faire avant d'exécuter.
 
 ```
-# Mission — Run digit-ai-saas-forge (porte d'entrée auto-détectée)
+# Mission — Run digit-ai-forge-development (porte d'entrée auto-détectée)
 
 Tu t'exécutes DANS le dossier courant. Tu n'as AUCUNE variable à me faire remplir : tu localises et
 mets à jour la forge, tu analyses le dossier courant, tu DÉDUIS le contexte et tu me PROPOSES quoi
@@ -84,10 +84,10 @@ faire, puis tu attends ma validation avant toute exécution. La forge est un OUT
 l'installe pas dans le projet. Ne viole aucun garde-fou.
 
 ## Phase 0 — Forge & préflight (automatique)
-1. Localise une copie de la forge `digit-ai-saas-forge` :
-   - cherche un clone existant (dossier courant, parent/voisin, ou `~/.saas-forge/digit-ai-saas-forge`) ;
+1. Localise une copie de la forge `digit-ai-forge-development` :
+   - cherche un clone existant (dossier courant, parent/voisin, ou `~/.forge-development/digit-ai-forge-development`) ;
    - trouvé → `git -C <forge> checkout main && git -C <forge> pull --ff-only` ;
-   - absent → `git clone https://github.com/iguane39/digit-ai-saas-forge ~/.saas-forge/digit-ai-saas-forge`.
+   - absent → `git clone https://github.com/iguane39/digit-ai-forge-development ~/.forge-development/digit-ai-forge-development`.
    Puis `uv sync` dans la forge. Annonce le chemin retenu (FORGE) + `git -C <forge> log --oneline -1`.
 2. Préflight (fail-fast) : `gh auth status` + `export GITHUB_PERSONAL_ACCESS_TOKEN=$(gh auth token)` ;
    `claude`, `uv`, `node`/`npx`, `git`, réseau. Renvoie une table OK/KO.

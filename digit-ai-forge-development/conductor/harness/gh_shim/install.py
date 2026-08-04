@@ -12,7 +12,7 @@ import stat
 import sys
 from pathlib import Path
 
-# Racine importable contenant le paquet ``conductor`` (….../digitai-saas-forge).
+# Racine importable contenant le paquet ``conductor`` (….../digit-ai-forge-development).
 # install.py = conductor/harness/gh_shim/install.py → parents[3] = racine du dépôt forge.
 _PKG_ROOT = Path(__file__).resolve().parents[3]
 

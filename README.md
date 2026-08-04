@@ -1,4 +1,4 @@
-# Digit-AI SaaS Forge
+# Digit-AI Forge Development
 
 **English** · [Français](README.fr.md) · [Español](README.es.md) · [Deutsch](README.de.md) · [Italiano](README.it.md) · [Português](README.pt.md)
 
@@ -8,11 +8,11 @@
 
 Never installed anything? Open a Claude Code session (or any coding agent) in your project folder — an empty folder for a brand-new project — and paste:
 
-> **Use the Digit-AI SaaS Forge (https://github.com/iguane39/digit-ai-saas-forge) on my current folder to build, continue, or remediate this project — follow its run-playbook `docs/run-playbook.md`.**
+> **Use the Digit-AI Forge Development (https://github.com/iguane39/digit-ai-forge-development) on my current folder to build, continue, or remediate this project — follow its run-playbook `docs/run-playbook.md`.**
 
 That's it. The playbook clones/updates the forge itself, then **auto-detects** the context (new · continuation · external repo) and the Git provider (GitHub or Azure DevOps) with **zero variables to fill**, and proposes what to do before executing. Append *"unattended end to end"* to run the whole backlog without stops (except the human review gate, HITL 2).
 
-Digit-AI SaaS Forge is an agentic SaaS accelerator. A **thin orchestration layer**
+Digit-AI Forge Development is an agentic SaaS accelerator. A **thin orchestration layer**
 (`conductor/`) sequences and constrains battle-tested third-party engines to carry a
 product intention all the way to a structured, tested, on-brand SaaS repository — without
 ever rewriting or forking those engines.
@@ -22,7 +22,7 @@ linting. It **conducts** them.
 
 ## How it works — a 5-stage chain
 
-> 📊 **Visual map:** [interactive process diagram — 6 languages](https://iguane39.github.io/digit-ai-saas-forge/forge-process-schema.html?lang=en) (inputs · A→E · gates · HITL · iterative loop).
+> 📊 **Visual map:** [interactive process diagram — 6 languages](https://iguane39.github.io/digit-ai-forge-development/forge-process-schema.html?lang=en) (inputs · A→E · gates · HITL · iterative loop).
 
 | Stage | Name | Role |
 |-------|------|------|
@@ -54,14 +54,14 @@ Autonomous merging is disabled by design.
 
 | Path | Contents |
 |------|----------|
-| [`digitai-saas-forge/`](digitai-saas-forge/) | The code: `conductor/` (master framework), parameterizable target, gates, CI |
+| [`digit-ai-forge-development/`](digit-ai-forge-development/) | The code: `conductor/` (master framework), parameterizable target, gates, CI |
 | [`docs/`](docs/) | Design corpus: analysis, PRD (BMAD format), architecture, implementation plan, spike notes, execution decisions |
 | [`input/`](input/) | The original founder dossier |
 
 ## Quickstart
 
 ```bash
-cd digitai-saas-forge
+cd digit-ai-forge-development
 uv sync
 uv run pytest        # code gate (ruff + strict mypy + pytest)
 conductor --version

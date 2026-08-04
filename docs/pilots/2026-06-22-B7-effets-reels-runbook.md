@@ -7,7 +7,7 @@
 1. `claude` CLI authentifié (`claude` répond).
 2. `gh auth status` OK + `export GITHUB_PERSONAL_ACCESS_TOKEN=$(gh auth token)`.
 3. **Repo cible jetable**, dont `main` est **branch-protected** (jamais de code client sensible).
-4. Forge à jour : `cd digitai-saas-forge && uv sync`.
+4. Forge à jour : `cd digit-ai-forge-development && uv sync`.
 
 ## Ordre — du moins au plus risqué (n'inverse pas)
 On isole les sources d'échec : lecture seule → docs → lecture PR → mutation du repo.

@@ -1,4 +1,4 @@
-# Digit-AI SaaS Forge
+# Digit-AI Forge Development
 
 [English](README.md) · **Français** · [Español](README.es.md) · [Deutsch](README.de.md) · [Italiano](README.it.md) · [Português](README.pt.md)
 
@@ -8,11 +8,11 @@
 
 Jamais rien installé ? Ouvre une session Claude Code (ou tout agent de code) dans le dossier de ton projet — un dossier vide pour un tout nouveau projet — et colle :
 
-> **Utilise la Digit-AI SaaS Forge (https://github.com/iguane39/digit-ai-saas-forge) sur mon dossier courant pour construire, reprendre ou remédier ce projet — suis son run-playbook `docs/run-playbook.md`.**
+> **Utilise la Digit-AI Forge Development (https://github.com/iguane39/digit-ai-forge-development) sur mon dossier courant pour construire, reprendre ou remédier ce projet — suis son run-playbook `docs/run-playbook.md`.**
 
 C'est tout. Le playbook clone/met à jour la forge lui-même, puis **auto-détecte** le contexte (nouveau · continuation · repo externe) et le provider Git (GitHub ou Azure DevOps), **sans aucune variable à remplir**, et te propose quoi faire avant d'exécuter. Ajoute *« en unattended de bout en bout »* pour traiter tout le backlog sans arrêt (hors revue humaine, HITL 2).
 
-Digit-AI SaaS Forge est un accélérateur SaaS agentique. Une **couche d'orchestration mince**
+Digit-AI Forge Development est un accélérateur SaaS agentique. Une **couche d'orchestration mince**
 (`conductor/`) séquence et contraint des moteurs tiers éprouvés pour mener une intention
 produit jusqu'à un dépôt SaaS structuré, testé et conforme à une charte — sans jamais
 réécrire ni forker ces moteurs.
@@ -22,7 +22,7 @@ ni le lint design. Elle les **orchestre**.
 
 ## Fonctionnement — une chaîne en 5 étapes
 
-> 📊 **Vue d'ensemble :** [schéma interactif du process — 6 langues](https://iguane39.github.io/digit-ai-saas-forge/forge-process-schema.html?lang=fr) (entrées · A→E · gates · HITL · boucle itérative).
+> 📊 **Vue d'ensemble :** [schéma interactif du process — 6 langues](https://iguane39.github.io/digit-ai-forge-development/forge-process-schema.html?lang=fr) (entrées · A→E · gates · HITL · boucle itérative).
 
 | Étape | Nom | Rôle |
 |-------|-----|------|
@@ -55,14 +55,14 @@ Deux points de validation humaine (HITL) : approbation du PRD & de l'architectur
 
 | Chemin | Contenu |
 |--------|---------|
-| [`digitai-saas-forge/`](digitai-saas-forge/) | Le code : `conductor/` (framework maître), cible paramétrable, gates, CI |
+| [`digit-ai-forge-development/`](digit-ai-forge-development/) | Le code : `conductor/` (framework maître), cible paramétrable, gates, CI |
 | [`docs/`](docs/) | Corpus de conception : analyse, PRD (format BMAD), architecture, plan d'implémentation, notes de spike, décisions d'exécution |
 | [`input/`](input/) | Le dossier fondateur d'origine |
 
 ## Démarrage rapide
 
 ```bash
-cd digitai-saas-forge
+cd digit-ai-forge-development
 uv sync
 uv run pytest        # gate code (ruff + mypy strict + pytest)
 conductor --version

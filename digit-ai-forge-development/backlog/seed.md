@@ -1,4 +1,4 @@
-# Backlog d'amorçage — digitai-saas-forge
+# Backlog d'amorçage — digit-ai-forge-development
 
 > Brief d'amorçage du **dogfooding** (DE-1) : BMAD-METHOD re-formalisera ce backlog en
 > artefacts versionnés dans `_bmad-output/planning-artifacts/epics.md`.

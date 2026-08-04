@@ -6,7 +6,7 @@
 
 **Architecture:** Onramp brownfield `NoOnramp` (vérifie les marqueurs cible + capture une baseline) → planners enfichables `RemediationPlanner` (déterministe : tests/CI + design, depuis la baseline) et `ComplementPlanner` (réutilise `DefaultBmadPlanner`), composables via `CompositePlanner` → étape E enrichie d'un `RegressionGate` (do-no-harm). B0 a déjà posé `TargetProfile`, `Substrate`, `Onramp`, `select_onramp`, le pipeline sur `Substrate`. BA ne touche pas le greenfield (zéro régression).
 
-**Tech Stack:** Python 3.11+, pydantic v2, pytest, ruff, mypy --strict, uv. Paquet `digitai-saas-forge/conductor`.
+**Tech Stack:** Python 3.11+, pydantic v2, pytest, ruff, mypy --strict, uv. Paquet `digit-ai-forge-development/conductor`.
 
 **Pré-requis :** B0 mergé sur `main`. Brancher depuis `main` : `git checkout main && git pull && git checkout -b epic-ba-branch-a`.
 
@@ -25,7 +25,7 @@
 - **Modify** `conductor/__main__.py` — `run()`/CLI brownfield (mode, repo, intent) + sélection de planner.
 - **Tests** : `tests/test_no_onramp.py`, `tests/test_regression_gate.py`, `tests/test_planners.py`, `tests/test_brownfield_e2e.py` (create) ; `tests/test_cadrage.py`, `tests/test_sprint_config.py`, `tests/test_supervisor.py` (modify).
 
-Commandes depuis `digitai-saas-forge/` : `uv run ruff check .`, `uv run mypy`, `uv run pytest`.
+Commandes depuis `digit-ai-forge-development/` : `uv run ruff check .`, `uv run mypy`, `uv run pytest`.
 
 ---
 

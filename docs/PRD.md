@@ -1,4 +1,4 @@
-# PRD — `digitai-saas-forge` (framework maître)
+# PRD — `digit-ai-forge-development` (framework maître)
 
 > Format BMAD-METHOD, appliqué en **dogfooding** : on planifie la forge avec la méthode que la forge orchestre.
 > Niveau : **P1 (méta-produit)** — le repo qui transforme une idée en SaaS de production.
@@ -10,7 +10,7 @@
 
 > **Une idée → un SaaS de production PR-ready, en une commande, sous double gouvernance code & design.**
 
-`digitai-saas-forge` est une **couche d'orchestration mince** qui séquence des moteurs tiers éprouvés (BMAD-METHOD, BAD, full-stack-fastapi-template, design.md) pour mener une intention produit jusqu'à un dépôt SaaS structuré, testé et conforme à une charte — sans réécrire aucun de ces moteurs. Elle encode des partis-pris non négociables (`scaffold-first`, `double gate`, 2 HITL) qui garantissent la qualité par construction.
+`digit-ai-forge-development` est une **couche d'orchestration mince** qui séquence des moteurs tiers éprouvés (BMAD-METHOD, BAD, full-stack-fastapi-template, design.md) pour mener une intention produit jusqu'à un dépôt SaaS structuré, testé et conforme à une charte — sans réécrire aucun de ces moteurs. Elle encode des partis-pris non négociables (`scaffold-first`, `double gate`, 2 HITL) qui garantissent la qualité par construction.
 
 **Ce que ce n'est pas** : ni un framework applicatif, ni un fork de BMAD/BAD, ni un générateur no-code. C'est un *chef d'orchestre*.
 
