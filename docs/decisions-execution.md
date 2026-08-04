@@ -14,7 +14,7 @@
 
 ## DE-1 — Dogfooding BMAD réel
 
-**Décision** : la forge `digitai-saas-forge` est planifiée en **faisant réellement tourner BMAD-METHOD sur elle-même** — pas seulement « à la manière de ». Le repo possède donc son propre `_bmad-output/planning-artifacts/epics.md` et son `sprint-status.yaml`, générés par BMAD à partir d'un brief décrivant la forge.
+**Décision** : la forge `digit-ai-forge-development` est planifiée en **faisant réellement tourner BMAD-METHOD sur elle-même** — pas seulement « à la manière de ». Le repo possède donc son propre `_bmad-output/planning-artifacts/epics.md` et son `sprint-status.yaml`, générés par BMAD à partir d'un brief décrivant la forge.
 
 **Conséquences**
 - **Epic 0** doit installer BMAD (`npx bmad-method install --modules bmm,tea`) dans le repo de la forge lui-même.

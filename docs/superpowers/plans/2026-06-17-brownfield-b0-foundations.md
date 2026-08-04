@@ -6,7 +6,7 @@
 
 **Architecture:** L'onramp généralise le scaffold-first : `ScaffoldOnramp` enveloppe le `scaffold.py` existant et produit un `Substrate` (repo + profil de cible + futures baseline/carte d'archi). Le pipeline A→E reçoit désormais un `Substrate` au lieu d'un `ScaffoldResult`. Le profil `fastapi-saas` réifie le comportement actuel. Les onramps brownfield (None/Adapter/Builder) sont des epics ultérieurs (BA/BC/BB) ; en B0, choisir `brownfield` lève une `NotImplementedError` explicite.
 
-**Tech Stack:** Python 3.11+, pydantic v2, pytest, ruff, mypy --strict, uv. Travail dans le paquet `digitai-saas-forge/conductor`.
+**Tech Stack:** Python 3.11+, pydantic v2, pytest, ruff, mypy --strict, uv. Travail dans le paquet `digit-ai-forge-development/conductor`.
 
 ---
 
@@ -23,7 +23,7 @@
 - **Modify** `conductor/__main__.py` — `run()` sélectionne l'onramp selon le mode et fait circuler le `Substrate`.
 - **Tests** : `tests/test_profiles.py`, `tests/test_onramp.py` (create) ; `tests/test_code_gate.py`, `tests/test_cadrage.py`, `tests/test_bmad_bridge.py`, `tests/test_e2e_master.py` (modify).
 
-Toutes les commandes se lancent depuis `digitai-saas-forge/`.
+Toutes les commandes se lancent depuis `digit-ai-forge-development/`.
 
 ---
 

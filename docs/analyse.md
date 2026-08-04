@@ -1,6 +1,6 @@
 # Analyse critique — Dossier fondateur « Accélérateur SaaS Digit-AI »
 
-> Source : `input/Digit-AI - SaaS Forge - Accelerateur SaaS - Dossier fondateur repo - 20260616d.html` (daté 16 juin 2026).
+> Source : `input/Digit-AI - Forge Development - Accelerateur SaaS - Dossier fondateur repo - 20260616d.html` (daté 16 juin 2026).
 > Cette analyse ne paraphrase pas le dossier : elle en extrait les objectifs, valide les partis-pris, et surtout **expose les manques, ambiguïtés et risques non résolus** qui doivent être tranchés avant de coder.
 
 ---
@@ -9,7 +9,7 @@
 
 Mener **une idée jusqu'à un produit SaaS de production** via une chaîne gouvernée, où une **couche d'orchestration mince** (« framework maître ») séquence et contraint des moteurs tiers existants — sans jamais les réécrire ni les forker.
 
-Le dossier nomme le repo cible : **`digitai-saas-forge`** (nom paramétrable).
+Le dossier nomme le repo cible : **`digit-ai-forge-development`** (nom paramétrable).
 
 ---
 
@@ -19,7 +19,7 @@ Le dossier opère implicitement sur deux niveaux qu'il faut tenir séparés sous
 
 | Niveau | Quoi | Statut |
 |---|---|---|
-| **P1 — méta-produit** | Le repo `digitai-saas-forge` : le framework maître à coder. | **C'est l'objet de ce livrable.** |
+| **P1 — méta-produit** | Le repo `digit-ai-forge-development` : le framework maître à coder. | **C'est l'objet de ce livrable.** |
 | **P2 — produit final** | Un SaaS quelconque généré *par* la forge. | Out of scope direct ; sert de cas de validation. |
 
 **BMAD-METHOD** et **BAD** sont des dépendances orchestrées dans **P2**. Ce livrable applique néanmoins la *méthode* BMAD en **dogfooding** pour planifier **P1** (cf. `PRD.md`).
@@ -77,7 +77,7 @@ Le framework maître enchaîne cinq étapes (bande 2 du dossier) :
 ## 6. Le repo à construire (arborescence cible du dossier)
 
 ```
-digitai-saas-forge/
+digit-ai-forge-development/
 ├─ README.md                    # vitrine + quickstart
 ├─ pyproject.toml               # uv · outillage
 ├─ conductor/                   # le framework maître (couche mince)

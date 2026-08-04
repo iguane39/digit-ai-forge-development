@@ -7,7 +7,7 @@
 > P-12 = audit chemins → rien à corriger. `shell=True` totalement éliminé.
 
 > Audit **lecture seule** du conductor. Snapshot audité : **`44bbb00`**
-> (`digit-ai-saas-forge/digitai-saas-forge`, 39 fichiers Python, `conductor/`).
+> (`digit-ai-forge-development/digit-ai-forge-development`, 39 fichiers Python, `conductor/`).
 > Aucun fichier de la forge n'a été modifié par cet audit. Ce document est le livrable.
 
 ## Constat d'architecture (résumé exécutif)

@@ -1,4 +1,4 @@
-# Plan d'implémentation — `digitai-saas-forge`
+# Plan d'implémentation — `digit-ai-forge-development`
 
 > Séquencé **sur le backlog d'amorçage du dossier fondateur** (Epics 0→3) et leurs gates de sortie.
 > Modèle d'exécution : « à la BAD » — epic par epic, story → worktree → double gate.

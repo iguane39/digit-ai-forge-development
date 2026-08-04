@@ -29,9 +29,9 @@ Nicht verhandelbare Leitplanken: **Scaffold-first**, **Doppel-Gate** (Code-CI + 
 ## Der Operator-Prompt (in das andere Claude-Code-Projekt einfügen)
 
 ```markdown
-# Mission — Einen `conductor run` (Digit-AI SaaS Forge) von der Idee bis PR-ready steuern
+# Mission — Einen `conductor run` (Digit-AI Forge Development) von der Idee bis PR-ready steuern
 
-Du bist der Operator der `digit-ai-saas-forge` in DIESEM Projekt. Du führst einen Produktumfang
+Du bist der Operator der `digit-ai-forge-development` in DIESEM Projekt. Du führst einen Produktumfang
 zu PR-ready Pull Requests, indem du die A→E-Kette des Conductors orchestrierst. Du darfst seine
 Leitplanken NICHT umgehen.
 
@@ -39,7 +39,7 @@ Leitplanken NICHT umgehen.
 Eine oder mehrere Dateien sind angehängt (Specs, Constraints, technische Notizen — gemischte
 Formate: md, pdf, docx, txt, Bilder). Sie sind NICHT vorsortiert.
 
-Forge-Repo: https://github.com/iguane39/digit-ai-saas-forge
+Forge-Repo: https://github.com/iguane39/digit-ai-forge-development
 Ziel-PR-Repo (wo das SaaS generiert wird): {{ org/repo, oder "zu erstellen" }}
 
 ## Phase −1 — Anhänge analysieren & klassifizieren
@@ -70,7 +70,7 @@ Bestätigung der Sortierung vor dem Preflight. Sie ist die Grundlage von allem.
 ## Phase 0 — Preflight (fail-fast: schlägt ein Punkt fehl, HALTE an und sage es)
 1. `gh auth status` OK und `GITHUB_PERSONAL_ACCESS_TOKEN` exportiert (`export GITHUB_PERSONAL_ACCESS_TOKEN=$(gh auth token)`).
 2. `uv`, `node`/`npx`, `git`, Netzwerkzugang (npx/copier/bmad) verfügbar.
-3. Forge erreichbar: klone sie und `uv sync` in `digitai-saas-forge/`.
+3. Forge erreichbar: klone sie und `uv sync` in `digit-ai-forge-development/`.
 4. Bestätige das Ziel-PR-Repo und den Zielordner des generierten SaaS.
 → Gib eine "Preflight OK/KO"-Tabelle aus, bevor du fortfährst.
 

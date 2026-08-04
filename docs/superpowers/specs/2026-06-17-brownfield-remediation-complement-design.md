@@ -1,7 +1,7 @@
 # Design — Brownfield : remédiation & complément de périmètre
 
 > Date : 2026-06-17 · Statut : **validé en brainstorming, prêt pour le plan d'implémentation**
-> Portée : étendre `digitai-saas-forge` pour traiter des **projets existants** — remédiation et/ou
+> Portée : étendre `digit-ai-forge-development` pour traiter des **projets existants** — remédiation et/ou
 > compléments (fonctionnels et techniques) — en réutilisant la colonne d'orchestration A→E,
 > la gouvernance (2 HITL, `auto_pr_merge=false`) et le double gate.
 

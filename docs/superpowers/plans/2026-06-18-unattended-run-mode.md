@@ -8,7 +8,7 @@
 
 **Tech Stack:** Markdown uniquement. Vérifications via `rg` (ripgrep). Spec source : [docs/superpowers/specs/2026-06-18-unattended-run-mode-design.md](../specs/2026-06-18-unattended-run-mode-design.md).
 
-**Note git :** la racine `c:\dev\Digit-AI - Saas Forge` n'est pas un dépôt git (le repo est sous `digitai-saas-forge/`). Les étapes « commit » sont donc **optionnelles** : ne committer que si ces fichiers sont suivis par git ; sinon, sauter l'étape commit (le fichier sur disque suffit).
+**Note git :** la racine `c:\dev\Digit-AI - Forge Development` n'est pas un dépôt git (le repo est sous `digit-ai-forge-development/`). Les étapes « commit » sont donc **optionnelles** : ne committer que si ces fichiers sont suivis par git ; sinon, sauter l'étape commit (le fichier sur disque suffit).
 
 ---
 

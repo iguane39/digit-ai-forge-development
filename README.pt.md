@@ -1,4 +1,4 @@
-# Digit-AI SaaS Forge
+# Digit-AI Forge Development
 
 [English](README.md) · [Français](README.fr.md) · [Español](README.es.md) · [Deutsch](README.de.md) · [Italiano](README.it.md) · **Português**
 
@@ -8,11 +8,11 @@
 
 Nunca instalou nada? Abra uma sessão do Claude Code (ou qualquer agente de código) na pasta do seu projeto — uma pasta vazia para um projeto novo — e cole:
 
-> **Use a Digit-AI SaaS Forge (https://github.com/iguane39/digit-ai-saas-forge) na minha pasta atual para construir, continuar ou remediar este projeto — siga o run-playbook `docs/run-playbook.md`.**
+> **Use a Digit-AI Forge Development (https://github.com/iguane39/digit-ai-forge-development) na minha pasta atual para construir, continuar ou remediar este projeto — siga o run-playbook `docs/run-playbook.md`.**
 
 É isso. O playbook clona/atualiza a forge por conta própria, depois **detecta automaticamente** o contexto (novo · continuação · repo externo) e o provedor Git (GitHub ou Azure DevOps), **sem nenhuma variável a preencher**, e propõe o que fazer antes de executar. Acrescente *«em unattended de ponta a ponta»* para processar todo o backlog sem paradas (exceto a revisão humana, HITL 2).
 
-Digit-AI SaaS Forge é um acelerador de SaaS agêntico. Uma **camada de orquestração enxuta**
+Digit-AI Forge Development é um acelerador de SaaS agêntico. Uma **camada de orquestração enxuta**
 (`conductor/`) sequencia e restringe motores de terceiros consolidados para levar uma intenção
 de produto até um repositório SaaS estruturado, testado e em conformidade com uma identidade
 de marca — sem nunca reescrever nem fazer fork desses motores.
@@ -22,7 +22,7 @@ de design. Ela os **orquestra**.
 
 ## Como funciona — uma cadeia de 5 etapas
 
-> 📊 **Visão geral:** [diagrama interativo do processo — 6 idiomas](https://iguane39.github.io/digit-ai-saas-forge/forge-process-schema.html?lang=pt) (entradas · A→E · gates · HITL · ciclo iterativo).
+> 📊 **Visão geral:** [diagrama interativo do processo — 6 idiomas](https://iguane39.github.io/digit-ai-forge-development/forge-process-schema.html?lang=pt) (entradas · A→E · gates · HITL · ciclo iterativo).
 
 | Etapa | Nome | Função |
 |-------|------|--------|
@@ -56,14 +56,14 @@ merge final. O merge automático está desativado por concepção.
 
 | Caminho | Conteúdo |
 |---------|----------|
-| [`digitai-saas-forge/`](digitai-saas-forge/) | O código: `conductor/` (framework mestre), alvo parametrizável, gates, CI |
+| [`digit-ai-forge-development/`](digit-ai-forge-development/) | O código: `conductor/` (framework mestre), alvo parametrizável, gates, CI |
 | [`docs/`](docs/) | Corpus de design: análise, PRD (formato BMAD), arquitetura, plano de implementação, notas de spike, decisões de execução |
 | [`input/`](input/) | O dossiê fundador original |
 
 ## Início rápido
 
 ```bash
-cd digitai-saas-forge
+cd digit-ai-forge-development
 uv sync
 uv run pytest        # gate de código (ruff + mypy strict + pytest)
 conductor --version
