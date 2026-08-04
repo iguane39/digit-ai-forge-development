@@ -112,6 +112,12 @@ Lis aussi : l'historique git et le dernier tag `run/<slug>/epic-<n>`, `_bmad-out
   - **Nouveau** : `uv run --project "<FORGE>" python -m conductor run "<idée validée>"`
   - **Continuation** : `uv run --project "<FORGE>" python -m conductor run "<features validées>" --mode brownfield --repo "$(pwd)" --intent complement`
   - **Externe** : `uv run --project "<FORGE>" python -m conductor run "<objectif validé>" --mode brownfield --repo "$(pwd)" --intent <remediation|complement|both>`
+- Options de cadrage (facultatives, valables pour les trois cas) : `--charter <chemin/DESIGN.md>`
+  (charte client), `--target <slug>` (cible de production), `--style <slug>` (style design),
+  `--scope <chemin.json>` (scope SaaS build/buy par brique).
+- **Codes de retour** : `0` run complet · `2` **pause HITL** (légitime, la question est imprimée en
+  clair — ne la traite JAMAIS comme un échec) · `1` erreur. Sortie machine systématique dans
+  `<repo cible>/_forge-output/run-report.json`.
 - Flux : onramp → BMAD → **HITL 1** (valide PRD/archi) → sprint `/bad` sous double gate + gate
   spec-compliance + non-régression → **HITL 2** (PR-ready). À chaque HITL : récap, STOP, attends mon « go ».
 - Si j'ai choisi le mode unattended : suis `<FORGE>/docs/superpowers/unattended-run-playbook.md`
@@ -148,6 +154,68 @@ RUN LOG : version de la forge, contexte détecté + preuves, intention validée,
 signalés), EPICs planifiées / done / blocked, décisions, PR PR-ready (non mergées), findings spec,
 coût/temps approximatifs.
 ```
+
+## Sortie machine & codes de retour
+
+Un run laisse une trace exploitable par un **outil** (CI, script, agent superviseur), en plus du
+RUN LOG destiné à l'humain.
+
+**Fichier** — `<repo cible>/_forge-output/run-report.json`, écrit dans les **trois** issues d'un run
+(complet, pause HITL, échec) et écrasé à chaque run :
+
+```json
+{
+  "status": "complete",
+  "generated_at": "2026-08-04T12:30:45Z",
+  "idea": "un CRM pour artisans",
+  "mode": "greenfield",
+  "target": "generated/un-crm-pour-artisans",
+  "detail": "",
+  "sprint": { "results": [], "hitl2_approved": false, "merged": false }
+}
+```
+
+`status` vaut `complete` · `hitl-pending` · `error` ; `sprint` est le `SprintReport` de l'étape E,
+`null` tant qu'elle n'a pas rendu son bilan ; `detail` porte la question HITL ou le message
+d'erreur. `merged` reste verrouillé à `false` (décision 07).
+
+**Codes de retour de `conductor run`**
+
+| Code | Sens | Réaction attendue |
+|---|---|---|
+| `0` | run complet (E a rendu son bilan) | lire `run-report.json`, passer à la revue HITL 2 |
+| `2` | **pause HITL** — pas un échec | traiter la question imprimée, approuver, relancer |
+| `1` | erreur | lire `detail` (rapport) ou stderr, corriger, relancer |
+
+Un `2` est une pause **par conception** : en automatisation ou en CI, ne le confonds pas avec un
+échec (sinon la gouvernance HITL passe pour une panne).
+
+## Options de cadrage du CLI
+
+| Flag | Défaut | Rôle |
+|---|---|---|
+| `--mode` | `greenfield` | `greenfield` / `brownfield` |
+| `--repo` | — | repo cible existant (exigé en brownfield) |
+| `--intent` | `remediation` | `remediation` / `complement` / `both` |
+| `--charter` | `design/DESIGN.md` | chemin du `DESIGN.md` client (charte de marque) |
+| `--target` | `fastapi-saas` | slug de la cible de production |
+| `--style` | `digitai` | slug du style design retenu |
+| `--scope` | — | fichier JSON du scope SaaS (build/buy par brique) |
+
+Format de `--scope` — une liste de briques, validée par les contrats pydantic ; un fichier
+illisible, un JSON malformé ou un schéma non respecté sort en code `1` avec un message explicite
+(aucune trace Python) :
+
+```json
+[
+  { "name": "billing", "decision": "buy" },
+  { "name": "analytics", "decision": "skip" }
+]
+```
+
+`decision` ∈ `build` · `buy` · `skip`. Les briques de **t0** (`multi-tenancy`, `rbac`, `auth-sso`)
+restent forcées en `build` quoi que contienne le fichier (décision canonique 05), et un nom hors
+catalogue est rejeté tôt.
 
 ## Quand lire les détails
 - **Phases A→E, classification de pièces jointes, sections pilote** → [conductor-run-playbook](conductor-run-playbook.md).
