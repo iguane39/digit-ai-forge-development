@@ -14,16 +14,16 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v5
       - run: uv sync --dev
-        working-directory: digitai-saas-forge
+        working-directory: digit-ai-forge-development
       - name: Ruff (lint)
         run: uv run ruff check .
-        working-directory: digitai-saas-forge
+        working-directory: digit-ai-forge-development
       - name: Mypy (strict)
         run: uv run mypy
-        working-directory: digitai-saas-forge
+        working-directory: digit-ai-forge-development
       - name: Pytest
         run: uv run pytest
-        working-directory: digitai-saas-forge
+        working-directory: digit-ai-forge-development
 
   # --- Gate design (FR-G2/G3) : design.md lint + politique de sévérité forge ---
   # BLOQUANT depuis l'Epic 2 (story 2.1).
@@ -37,7 +37,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v5
       - run: uv sync --dev
-        working-directory: digitai-saas-forge
+        working-directory: digit-ai-forge-development
       # ⚠ NE PAS se fier à l'exit code du linter (warnings → exit 0, cf. S-2.3).
       # On capture le JSON via l'alias de bin `designmd` (robuste cross-plateforme),
       # puis NOTRE politique décide du blocage.
@@ -45,7 +45,7 @@ jobs:
         run: >-
           npx --yes -p @google/design.md@0.3.0 designmd lint
           --format json design/DESIGN.md > findings.json
-        working-directory: digitai-saas-forge
+        working-directory: digit-ai-forge-development
       - name: Politique de sévérité (gate bloquant)
         run: uv run python -m conductor.gates.design_gate findings.json
-        working-directory: digitai-saas-forge
+        working-directory: digit-ai-forge-development

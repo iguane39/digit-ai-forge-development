@@ -5,7 +5,7 @@
 > ↩ **Entry point:** start from [run-playbook.md](run-playbook.md) — it detects your context (new / continuation / external / forge update) and routes here for the A→E details.
 
 This playbook is the operator prompt to drive an end-to-end `conductor run` of the Digit-AI
-SaaS Forge **from another Claude Code project**, by attaching a specifications/constraints
+Forge Development **from another Claude Code project**, by attaching a specifications/constraints
 dossier. The run is orchestrated but **governed**: it stops at two human checkpoints (HITL)
 by design and never auto-merges.
 
@@ -29,9 +29,9 @@ Non-negotiable guardrails: **scaffold-first**, **dual gate** (code CI + design l
 ## The operator prompt (copy-paste into the other Claude Code project)
 
 ```markdown
-# Mission — Drive a `conductor run` (Digit-AI SaaS Forge) from idea to PR-ready
+# Mission — Drive a `conductor run` (Digit-AI Forge Development) from idea to PR-ready
 
-You are the operator of the `digit-ai-saas-forge` in THIS project. You will take a product
+You are the operator of the `digit-ai-forge-development` in THIS project. You will take a product
 scope to PR-ready Pull Requests by orchestrating the conductor's A→E chain. You are NOT
 allowed to bypass its guardrails.
 
@@ -39,7 +39,7 @@ allowed to bypass its guardrails.
 One or more files are attached (specs, constraints, technical notes — mixed formats: md,
 pdf, docx, txt, images). They are NOT pre-sorted.
 
-Forge repo: https://github.com/iguane39/digit-ai-saas-forge
+Forge repo: https://github.com/iguane39/digit-ai-forge-development
 Target PR repo (where the SaaS is generated): {{ org/repo, or "to create" }}
 
 ## Phase −1 — Analyze & classify the attachments
@@ -69,7 +69,7 @@ validation of the sort before preflight. It is the foundation of everything else
 ## Phase 0 — Preflight (fail-fast: if any item fails, STOP and say so)
 1. `gh auth status` OK and `GITHUB_PERSONAL_ACCESS_TOKEN` exported (`export GITHUB_PERSONAL_ACCESS_TOKEN=$(gh auth token)`).
 2. `uv`, `node`/`npx`, `git`, network access (npx/copier/bmad) available.
-3. Forge reachable: clone it and `uv sync` in `digitai-saas-forge/`.
+3. Forge reachable: clone it and `uv sync` in `digit-ai-forge-development/`.
 4. Confirm the target PR repo and the destination folder of the generated SaaS.
 → Return a "preflight OK/KO" table before continuing.
 

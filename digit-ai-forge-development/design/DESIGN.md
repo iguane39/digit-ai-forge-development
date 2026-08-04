@@ -1,5 +1,5 @@
 ---
-name: Digit-AI SaaS Forge
+name: Digit-AI Forge Development
 version: 0.1.0
 colors:
   primary: "#2563eb"
@@ -26,7 +26,7 @@ rounded:
   pill: 999
 ---
 
-# Digit-AI SaaS Forge — Design System
+# Digit-AI Forge Development — Design System
 
 Charte de référence (paramétrable, décision 08). Lintable par `design.md` ; exportable
 en tokens Tailwind / DTCG (charte → code sans ressaisie).

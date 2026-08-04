@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.11+, pydantic v2, pytest, ruff, mypy --strict, uv. Branche `feat/spec-compliance-gate` (depuis main). Spec : [docs/superpowers/specs/2026-06-18-spec-compliance-gate-design.md](../specs/2026-06-18-spec-compliance-gate-design.md).
 
-**Convention CWD :** toutes les commandes s'exécutent depuis `digitai-saas-forge/` (racine du package conductor).
+**Convention CWD :** toutes les commandes s'exécutent depuis `digit-ai-forge-development/` (racine du package conductor).
 
 ---
 

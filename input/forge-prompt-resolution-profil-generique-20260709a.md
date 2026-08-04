@@ -1,6 +1,6 @@
-# Prompt — Résolution de profil générique (« toute techno ») pour digit-ai-saas-forge
+# Prompt — Résolution de profil générique (« toute techno ») pour digit-ai-forge-development
 
-> **Destinataire** : le projet `digit-ai-saas-forge` (mainteneur ou son propre conductor en run brownfield `complement`).
+> **Destinataire** : le projet `digit-ai-forge-development` (mainteneur ou son propre conductor en run brownfield `complement`).
 > **Objet** : généraliser l'onramp brownfield pour qu'il accepte **n'importe quelle stack** via une **résolution de profil en cascade**, au lieu d'énumérer une techno de plus (fastapi, node-ts, …).
 > **Statut** : prêt à implémenter dans la prochaine version. Conventions du repo : Python ≥ 3.11, pydantic, ruff + mypy strict, pytest, français, décisions `DE-N` / portabilité `P-NN` (dernier = `P-13`).
 
@@ -165,7 +165,7 @@ Règles de validation (pydantic) : `name` requis ; au moins un rôle ; commandes
 
 - Branche `run/<slug>` ; décisions P-14…P-18 dans `docs/decisions-execution.md` ; profils/onramp/detect modifiés ; tests des §7 verts ; `ruff` + `mypy --strict` + `pytest` verts (double gate).
 - MAJ documentaire : `docs/run-playbook.md` + 5 traductions, `docs/conductor-run-playbook.*` (matrice « Externe » = stack quelconque), section « Manifeste `.forge/profile.toml` ».
-- **PR** vers `iguane39/digit-ai-saas-forge`, `auto_pr_merge=false`, revue humaine avant merge `main` (invariant du playbook).
+- **PR** vers `iguane39/digit-ai-forge-development`, `auto_pr_merge=false`, revue humaine avant merge `main` (invariant du playbook).
 - Démonstration : un `conductor run "<objectif>" --mode brownfield --repo <repo-full-stack-non-fastapi> --intent remediation` **passe désormais l'onramp** (BuilderOnramp + HITL-0), là où il levait « stack non supportée ».
 
 ---
