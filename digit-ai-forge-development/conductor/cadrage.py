@@ -7,14 +7,44 @@ imposées en `build`, quoi que demande l'appelant (décision canonique 05).
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Literal
+
+from pydantic import TypeAdapter, ValidationError
 
 from conductor.catalog import CATALOG, T0_BRICKS
 from conductor.contracts import BrickChoice, MissionConfig
 
 DEFAULT_CHARTER = Path("design/DESIGN.md")
 DEFAULT_STYLE = "digitai"
+DEFAULT_TARGET = "fastapi-saas"
+
+_SCOPE_ADAPTER = TypeAdapter(list[BrickChoice])
+
+
+def charger_scope(path: Path) -> list[BrickChoice]:
+    """Charge un scope SaaS depuis un fichier JSON (liste de BrickChoice).
+
+    Le fichier est validé par les contrats pydantic ; toute erreur (fichier absent, JSON
+    malformé, schéma non respecté) est convertie en `ValueError` lisible — le CLI n'a rien
+    à interpréter. Les noms hors catalogue restent rejetés par `cadrer()`.
+    """
+    try:
+        raw = path.read_text(encoding="utf-8")
+    except OSError as err:
+        raise ValueError(f"Fichier de scope illisible : {path} ({err.strerror})") from err
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError as err:
+        raise ValueError(f"Fichier de scope JSON invalide : {path} — {err}") from err
+    try:
+        return _SCOPE_ADAPTER.validate_python(data)
+    except ValidationError as err:
+        raise ValueError(
+            f"Scope invalide dans {path} : attendu une liste d'objets "
+            f'{{"name": ..., "decision": "build|buy|skip"}} — {err}'
+        ) from err
 
 
 def _merge_t0(scope: list[BrickChoice]) -> list[BrickChoice]:
@@ -33,7 +63,7 @@ def cadrer(
     mode: Literal["greenfield", "brownfield"] = "greenfield",
     existing_repo: Path | None = None,
     intent: Literal["remediation", "complement", "both"] = "remediation",
-    target: str = "fastapi-saas",
+    target: str = DEFAULT_TARGET,
     brand_charter: Path = DEFAULT_CHARTER,
     style_slug: str = DEFAULT_STYLE,
     budget: str | None = None,

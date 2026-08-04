@@ -19,8 +19,8 @@ from pathlib import Path
 
 from conductor import __version__
 from conductor.bmad_bridge import BmadPlanner, lancer_planification
-from conductor.cadrage import cadrer
-from conductor.contracts import MissionConfig, SprintReport
+from conductor.cadrage import DEFAULT_CHARTER, DEFAULT_STYLE, DEFAULT_TARGET, cadrer, charger_scope
+from conductor.contracts import BrickChoice, MissionConfig, SprintReport
 from conductor.governance import HitlPending, require_hitl0
 from conductor.onramp import select_onramp
 from conductor.planners import ComplementPlanner, CompositePlanner, RemediationPlanner
@@ -57,6 +57,10 @@ def run(
     mode: str = "greenfield",
     existing_repo: Path | None = None,
     intent: str = "remediation",
+    target: str = DEFAULT_TARGET,
+    brand_charter: Path = DEFAULT_CHARTER,
+    style_slug: str = DEFAULT_STYLE,
+    bricks: list[BrickChoice] | None = None,
     workdir: Path = Path("generated"),
     clock: Clock | None = None,
 ) -> SprintReport:
@@ -71,6 +75,10 @@ def run(
         mode=mode,  # type: ignore[arg-type]
         existing_repo=existing_repo,
         intent=intent,  # type: ignore[arg-type]
+        target=target,
+        brand_charter=brand_charter,
+        style_slug=style_slug,
+        bricks=bricks,
     )
     if mission.mode == "brownfield":
         # garde explicite (≠ assert, non silencé par -O) ; cadrer() garantit déjà l'invariant
@@ -117,6 +125,14 @@ def main(argv: list[str] | None = None) -> int:
     run_p.add_argument(
         "--intent", choices=["remediation", "complement", "both"], default="remediation"
     )
+    run_p.add_argument(
+        "--charter", type=Path, default=DEFAULT_CHARTER, help="chemin du DESIGN.md client"
+    )
+    run_p.add_argument("--target", default=DEFAULT_TARGET, help="slug de la cible de production")
+    run_p.add_argument("--style", default=DEFAULT_STYLE, help="slug du style design retenu")
+    run_p.add_argument(
+        "--scope", type=Path, default=None, help="fichier JSON du scope SaaS (liste de briques)"
+    )
     args = parser.parse_args(argv)
     if args.command != "run":
         return EXIT_OK
@@ -126,6 +142,10 @@ def main(argv: list[str] | None = None) -> int:
             mode=args.mode,
             existing_repo=args.repo,
             intent=args.intent,
+            target=args.target,
+            brand_charter=args.charter,
+            style_slug=args.style,
+            bricks=charger_scope(args.scope) if args.scope is not None else None,
         )
     except HitlPending as pause:
         # Pause légitime, pas un échec : on imprime la question posée à l'humain.
