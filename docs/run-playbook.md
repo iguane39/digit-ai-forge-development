@@ -252,6 +252,64 @@ d'ancrage dédié) :
   pas seulement les cas heureux.
 - migrations `-- +migrate Up/Down` exercées **aller/retour/rejeu**.
 
+## Produit livrable — disciplines de production (RV-3, RV-4)
+
+Retours de la production v0.1.0 du premier produit réel construit via la forge : trois défauts
+constatés une fois livré — fixtures de démo visibles dans l'UI de production (aucune frontière
+prod/démo n'était spécifiée), catalogues et tarifs de modèles IA codés en dur (périmés à la
+livraison), CTA repris de la maquette sans être câblés. Généralisés en trois disciplines
+vérifiables, à appliquer **dès la construction** — même logique que le contrat RV-2 : découvrir
+ça à l'audit ou en prod coûte un aller-retour évitable.
+
+- **Frontière démo/production.** Tout artefact de démonstration (fixtures, comptes, données
+  simulées, endpoints de peuplement) vit derrière un drapeau d'environnement explicite
+  (`*_MODE_DEMO` ou équivalent), absent par défaut. L'endpoint de peuplement de la qualif
+  (utilisé par l'étape MEP du steering) relève du **même régime** — ce n'est pas une exception
+  silencieuse sous prétexte qu'il sert l'outillage de mise en production.
+
+  Test : le build de production démarré sans le drapeau ne présente **aucune** donnée de
+  démonstration — grep des marqueurs de fixtures dans le build + test d'UI vérifiant l'absence.
+
+  ```bash
+  # Exemple : marqueurs de démo qui fuiraient dans un build de prod sans le drapeau
+  MODE_DEMO=0 <commande_build_prod>
+  grep -rE '(fixture|demo|fournisseur-simule|jeu-de-mails)' <dossier_build> \
+    && echo "FUITE DÉMO" || echo "OK"
+  ```
+
+- **Données volatiles en base.** Catalogues, tarifs, référentiels susceptibles de vieillir ne
+  sont **jamais** des constantes du code — table éditable, avec date et source de relevé. Une
+  donnée volatile est une donnée, pas du code (loi steering) : un catalogue codé en dur est
+  périmé dès la livraison, pas seulement à terme.
+
+  Test : grep des littéraux suspects (noms de modèles, prix) hors migrations de peuplement
+  datées.
+
+  ```bash
+  # Exemple : noms de modèles / tarifs en dur hors migration de peuplement
+  grep -rnE '"(gpt-|claude-|gemini-)[a-z0-9.-]+"|[0-9]+[.,][0-9]{2}\s*(€|\$|USD|EUR)' \
+    --include='*.py' backend/app | grep -v 'migrations/.*_seed_.*\.py'
+  ```
+
+- **Zéro affordance inerte.** Tout élément interactif présent dans les gabarits a un effet
+  observable testé — câblé — ou n'est pas repris de la maquette. Toute affordance est câblée ou
+  n'existe pas (loi steering) : un bouton qui ne fait rien n'est pas un défaut mineur, c'est une
+  promesse rompue envers l'utilisateur.
+
+  Test : le contrôle statique de forge-tests (contrôle « élément inerte ») passe à zéro finding.
+
+  ```bash
+  uv run --project "<forge-tests>" python -m forge_tests.checks.inert_elements --target "<repo>"
+  # 0 finding attendu
+  ```
+
+  Ce contrôle nommé n'existe pas encore littéralement dans `digit-ai-forge-tests` à ce jour ; le
+  pan `front` s'en approche (éléments interactifs = `data-testid` statiques inventoriés,
+  exercé = trace Playwright, seuil 90 %, cf. README « Autres pans ») sans viser explicitement le
+  cas « élément présent dans le gabarit mais sans aucun test ni handler ». À créer côté
+  forge-tests si l'écosystème veut un point d'ancrage dédié — même statut d'écart que celui déjà
+  signalé pour RV-2.
+
 ## Quand lire les détails
 - **Phases A→E, classification de pièces jointes, sections pilote** → [conductor-run-playbook](conductor-run-playbook.md).
 - **Sous-mode autonome (2 gates, merge A/B/C, notifications, reprise)** → [unattended-run-playbook](superpowers/unattended-run-playbook.md).
