@@ -296,19 +296,17 @@ vérifiables, à appliquer **dès la construction** — même logique que le con
   n'existe pas (loi steering) : un bouton qui ne fait rien n'est pas un défaut mineur, c'est une
   promesse rompue envers l'utilisateur.
 
-  Test : le contrôle statique de forge-tests (contrôle « élément inerte ») passe à zéro finding.
+  Test : le pan `interface` de forge-tests (contrôle statique des affordances inertes, ajouté
+  le 05/08/2026) passe à 100 % — chaque élément interactif des gabarits est nommé et jugé câblé.
 
   ```bash
-  uv run --project "<forge-tests>" python -m forge_tests.checks.inert_elements --target "<repo>"
-  # 0 finding attendu
+  uv run --project "<forge-tests>" python -m forge_tests "<repo>" --pans interface --json
+  # couverture interface : ratio 1.0 attendu, zéro élément inerte nommé
   ```
 
-  Ce contrôle nommé n'existe pas encore littéralement dans `digit-ai-forge-tests` à ce jour ; le
-  pan `front` s'en approche (éléments interactifs = `data-testid` statiques inventoriés,
-  exercé = trace Playwright, seuil 90 %, cf. README « Autres pans ») sans viser explicitement le
-  cas « élément présent dans le gabarit mais sans aucun test ni handler ». À créer côté
-  forge-tests si l'écosystème veut un point d'ancrage dédié — même statut d'écart que celui déjà
-  signalé pour RV-2.
+  Limites déclarées par le pan (`non_juge`) : « câblé » est une présomption par coïncidence de
+  chaîne entre le gabarit et le JS du projet ; les composants `.jsx`/`.tsx`/`.vue`/`.svelte`
+  sont hors périmètre du contrôle statique.
 
 ## Quand lire les détails
 - **Phases A→E, classification de pièces jointes, sections pilote** → [conductor-run-playbook](conductor-run-playbook.md).
