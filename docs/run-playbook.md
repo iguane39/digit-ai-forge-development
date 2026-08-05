@@ -217,6 +217,41 @@ illisible, un JSON malformé ou un schéma non respecté sort en code `1` avec u
 restent forcées en `build` quoi que contienne le fichier (décision canonique 05), et un nom hors
 catalogue est rejeté tôt.
 
+## Traçabilité des exigences (RV-1)
+
+Convention éprouvée sur le premier produit réel construit via la forge (mode dégradé, 3 tranches
+Opus, 581 tests), à présent standardisée : **chaque test cite l'identifiant de l'exigence qu'il
+vérifie**, dans sa docstring ou son nom (`E-042`, ex. `test_facture_sans_client_E-042` ou
+docstring `"""E-042 — une facture ne peut être créée sans client rattaché."""`).
+
+- **Source des identifiants** : le référentiel amont `EXIGENCES.json` (forge-conception) quand il
+  existe ; à défaut, les critères d'acceptation BMAD (`_bmad-output/planning-artifacts/epics.md`).
+- **Gate de complétude** : par grep — 100 % des exigences MVP doivent avoir **au moins un test**
+  qui les cite. Un identifiant sans test citant fait échouer le gate.
+
+```bash
+# Exemple : exigences MVP jamais citées par un test (source EXIGENCES.json)
+comm -23 <(jq -r '.[].id' EXIGENCES.json | sort -u) \
+         <(grep -rhoE 'E-[0-9]{3}' backend/tests | sort -u)
+```
+
+## Produit auditable — contrat avec l'auditeur aval (RV-2)
+
+Checklist à appliquer **dès la construction**, pas seulement à l'audit : sur le premier produit
+réel, l'auditabilité par `digit-ai-forge-tests` a été découverte trop tard (aller-retour évitable).
+C'est un **contrat d'interopérabilité** avec l'auditeur de l'écosystème — cf. digit-ai-forge-tests,
+`README.md`, section « Structure attendue du projet cible » (aucune section « Contrat du projet
+audité » n'existe littéralement à ce jour côté forge-tests ; à créer si l'écosystème veut un point
+d'ancrage dédié) :
+
+- app exposée en **instance module** `app.main.app`, exercée par la suite (pas une fabrique
+  recréée à la volée que l'auditeur ne peut pas importer).
+- couche SQL **observable** : `Engine` SQLAlchemy (pas un driver bas niveau opaque à l'auditeur).
+- contraintes nommées `<type>_<table>_<colonne>` (`ck_*`, `uq_*`).
+- déclarations `responses=` / `status_code` **exactes** — ce que l'app émet doit être déclaré,
+  pas seulement les cas heureux.
+- migrations `-- +migrate Up/Down` exercées **aller/retour/rejeu**.
+
 ## Quand lire les détails
 - **Phases A→E, classification de pièces jointes, sections pilote** → [conductor-run-playbook](conductor-run-playbook.md).
 - **Sous-mode autonome (2 gates, merge A/B/C, notifications, reprise)** → [unattended-run-playbook](superpowers/unattended-run-playbook.md).
