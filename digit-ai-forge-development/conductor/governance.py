@@ -3,10 +3,17 @@
 L'automatisation s'arrête aux points de validation humaine, volontairement. Un `HumanGate`
 modélise un point de contrôle ; en mode headless (`ManualGate`), aucune approbation n'est
 accordée automatiquement → la chaîne se met en pause via `HitlPending`.
+
+`DelegatedGate` (TF-0009, décision humaine Q-A du 08/08 : le conductor est maintenu) ouvre un
+mode déléguable pour le dogfooding headless : une politique explicite, passée en config,
+auto-approuve les checkpoints listés — tout le reste reste refusé par défaut, même posture que
+`ManualGate`. Ce n'est jamais une approbation implicite : un checkpoint absent de la politique
+est refusé, pas approuvé par erreur.
 """
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from typing import Protocol
 
 
@@ -23,6 +30,25 @@ class ManualGate:
 
     def approve(self, checkpoint: str, payload: object) -> bool:
         return False
+
+
+class DelegatedGate:
+    """Politique déléguable : auto-approuve UNIQUEMENT les checkpoints dont l'intitulé commence
+    par l'un des préfixes explicitement listés en config ; refuse tout le reste (repli identique
+    à `ManualGate`). Les intitulés de checkpoint portent parfois un suffixe dynamique (ex.
+    ``"HITL-0 — {subject}"``) : la correspondance par préfixe permet de cibler un type de
+    checkpoint sans connaître son suffixe à l'avance, sans jamais élargir l'approbation au-delà
+    des préfixes déclarés.
+
+    Une politique vide (défaut) refuse tout, comme `ManualGate` — la délégation est un
+    élargissement explicite, jamais un comportement implicite.
+    """
+
+    def __init__(self, auto_approve_prefixes: Iterable[str] = ()) -> None:
+        self._prefixes = tuple(auto_approve_prefixes)
+
+    def approve(self, checkpoint: str, payload: object) -> bool:
+        return any(checkpoint.startswith(prefix) for prefix in self._prefixes)
 
 
 def require_hitl0(subject: str, payload: object, *, gate: HumanGate | None = None) -> None:
