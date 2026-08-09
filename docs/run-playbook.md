@@ -235,6 +235,12 @@ comm -23 <(jq -r '.[].id' EXIGENCES.json | sort -u) \
          <(grep -rhoE 'E-[0-9]{3}' backend/tests | sort -u)
 ```
 
+> **Source unique des disciplines de livrable (TF-0007).** Les deux sections ci-dessous —
+> auditabilité (RV-2) et disciplines de production (RV-3/RV-4, lois 1-4) — sont la référence
+> unique de ce que doit respecter tout produit construit par cette forge. Elles ne se copient
+> pas ailleurs : le `CLAUDE.md` du pilot et celui d'un produit y renvoient (lien), ils ne
+> dupliquent pas cette prose. Toute évolution des disciplines se fait ici, une seule fois.
+
 ## Produit auditable — contrat avec l'auditeur aval (RV-2)
 
 Checklist à appliquer **dès la construction**, pas seulement à l'audit : sur le premier produit
@@ -258,8 +264,9 @@ Retours de la production v0.1.0 du premier produit réel construit via la forge 
 constatés une fois livré — fixtures de démo visibles dans l'UI de production (aucune frontière
 prod/démo n'était spécifiée), catalogues et tarifs de modèles IA codés en dur (périmés à la
 livraison), CTA repris de la maquette sans être câblés. Généralisés en trois disciplines
-vérifiables, à appliquer **dès la construction** — même logique que le contrat RV-2 : découvrir
-ça à l'audit ou en prod coûte un aller-retour évitable.
+vérifiables (rejointes ici par la loi 3, surface implicite, pour couvrir les quatre lois
+transverses du pilot), à appliquer **dès la construction** — même logique que le contrat RV-2 :
+découvrir ça à l'audit ou en prod coûte un aller-retour évitable.
 
 - **Frontière démo/production.** Tout artefact de démonstration (fixtures, comptes, données
   simulées, endpoints de peuplement) vit derrière un drapeau d'environnement explicite
@@ -307,6 +314,20 @@ vérifiables, à appliquer **dès la construction** — même logique que le con
   Limites déclarées par le pan (`non_juge`) : « câblé » est une présomption par coïncidence de
   chaîne entre le gabarit et le JS du projet ; les composants `.jsx`/`.tsx`/`.vue`/`.svelte`
   sont hors périmètre du contrôle statique.
+
+- **Surface implicite proposée d'office, jamais omise en silence (loi pilot, loi 3).** L'oubli
+  n'existe pas : la surface implicite d'un SaaS (aide, onboarding, compte, favicon, états vides
+  guidés) est proposée d'office en amont, à l'étape conception (`enumere-la-surface`), en
+  exigences candidates. Le périmètre de cette forge est de ne jamais la faire disparaître
+  silencieusement pendant la construction : ce que le PRD/BMAD reçoit en entrée doit ressortir
+  soit construit et tracé (EXIGENCES.json / epics), soit explicitement écarté avec motif — jamais
+  absent sans trace.
+
+  Test : au HITL 1 (validation PRD/architecture), le PRD statue explicitement, un par un, sur les
+  cinq éléments (aide, onboarding, compte, favicon, états vides guidés) — implémenté (tracé) ou
+  écarté (motif consigné). Pas de grep fiable ici : la surface implicite est un contenu de PRD,
+  pas un marqueur de code — la revue humaine du HITL 1 est le contrôle ; un des cinq éléments sans
+  statut consigné bloque l'approbation.
 
 ## Quand lire les détails
 - **Phases A→E, classification de pièces jointes, sections pilote** → [conductor-run-playbook](conductor-run-playbook.md).
