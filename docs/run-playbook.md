@@ -264,7 +264,7 @@ vérifiables, à appliquer **dès la construction** — même logique que le con
 - **Frontière démo/production.** Tout artefact de démonstration (fixtures, comptes, données
   simulées, endpoints de peuplement) vit derrière un drapeau d'environnement explicite
   (`*_MODE_DEMO` ou équivalent), absent par défaut. L'endpoint de peuplement de la qualif
-  (utilisé par l'étape MEP du steering) relève du **même régime** — ce n'est pas une exception
+  (utilisé par l'étape MEP du pilot) relève du **même régime** — ce n'est pas une exception
   silencieuse sous prétexte qu'il sert l'outillage de mise en production.
 
   Test : le build de production démarré sans le drapeau ne présente **aucune** donnée de
@@ -279,7 +279,7 @@ vérifiables, à appliquer **dès la construction** — même logique que le con
 
 - **Données volatiles en base.** Catalogues, tarifs, référentiels susceptibles de vieillir ne
   sont **jamais** des constantes du code — table éditable, avec date et source de relevé. Une
-  donnée volatile est une donnée, pas du code (loi steering) : un catalogue codé en dur est
+  donnée volatile est une donnée, pas du code (loi pilot) : un catalogue codé en dur est
   périmé dès la livraison, pas seulement à terme.
 
   Test : grep des littéraux suspects (noms de modèles, prix) hors migrations de peuplement
@@ -293,7 +293,7 @@ vérifiables, à appliquer **dès la construction** — même logique que le con
 
 - **Zéro affordance inerte.** Tout élément interactif présent dans les gabarits a un effet
   observable testé — câblé — ou n'est pas repris de la maquette. Toute affordance est câblée ou
-  n'existe pas (loi steering) : un bouton qui ne fait rien n'est pas un défaut mineur, c'est une
+  n'existe pas (loi pilot) : un bouton qui ne fait rien n'est pas un défaut mineur, c'est une
   promesse rompue envers l'utilisateur.
 
   Test : le pan `interface` de forge-tests (contrôle statique des affordances inertes, ajouté
