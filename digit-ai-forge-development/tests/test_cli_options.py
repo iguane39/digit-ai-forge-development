@@ -181,3 +181,97 @@ def test_charger_scope_refuse_un_objet_racine(tmp_path: Path) -> None:
     scope.write_text(json.dumps({"billing": "buy"}), encoding="utf-8")
     with pytest.raises(ValueError, match="Scope invalide"):
         charger_scope(scope)
+
+
+# --- délégation HITL (TF-0009) : --auto-approve-hitl --------------------------
+
+
+def test_flag_auto_approve_hitl_atteint_lancer_planification(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Fixture verte : le flag construit un DelegatedGate reçu par C (`gate=`) et E (`hitl=`)."""
+    from conductor.governance import DelegatedGate
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(cli, "cadrer", cadrer)
+    monkeypatch.setattr(cli, "select_onramp", lambda _m: _Onramp())
+
+    captured: dict[str, object] = {}
+
+    def spy_planification(substrate: object, **kwargs: object) -> BmadPlan:
+        captured["gate_c"] = kwargs.get("gate")
+        return BmadPlan(
+            prd_path=Path("PRD.md"),
+            architecture_path=Path("architecture.md"),
+            epics_md=Path("epics.md"),
+            hitl1_approved=True,
+        )
+
+    def spy_superviser(layout: object, **kwargs: object) -> SprintReport:
+        captured["gate_e"] = kwargs.get("hitl")
+        return SprintReport()
+
+    monkeypatch.setattr(cli, "lancer_planification", spy_planification)
+    monkeypatch.setattr(
+        cli,
+        "preparer_sprint",
+        lambda plan, root, **_k: BadSprintLayout(
+            project_root=root,
+            epics_md=root / "epics.md",
+            sprint_status_yaml=root / "s.yaml",
+            bmad_config_yaml=root / "c.yaml",
+        ),
+    )
+    monkeypatch.setattr(cli, "superviser", spy_superviser)
+
+    code = cli.main(
+        ["run", "une idee", "--auto-approve-hitl", "HITL-0", "PRD & architecture (HITL 1)"]
+    )
+
+    assert code == cli.EXIT_OK
+    for key in ("gate_c", "gate_e"):
+        gate = captured[key]
+        assert isinstance(gate, DelegatedGate)
+        assert gate.approve("HITL-0 — sujet", None) is True
+        assert gate.approve("merge final (HITL 2)", None) is False  # hors politique → refus
+
+
+def test_sans_flag_auto_approve_hitl_gate_reste_none(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Fixture rouge (non-régression) : sans le flag, C/E reçoivent `None` — défaut inchangé."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(cli, "cadrer", cadrer)
+    monkeypatch.setattr(cli, "select_onramp", lambda _m: _Onramp())
+
+    captured_gates: dict[str, object] = {}
+
+    def spy_planification(substrate: object, **kwargs: object) -> BmadPlan:
+        captured_gates["gate_c"] = kwargs.get("gate")
+        return BmadPlan(
+            prd_path=Path("PRD.md"),
+            architecture_path=Path("architecture.md"),
+            epics_md=Path("epics.md"),
+            hitl1_approved=True,
+        )
+
+    def spy_superviser(layout: object, **kwargs: object) -> SprintReport:
+        captured_gates["gate_e"] = kwargs.get("hitl")
+        return SprintReport()
+
+    monkeypatch.setattr(cli, "lancer_planification", spy_planification)
+    monkeypatch.setattr(
+        cli,
+        "preparer_sprint",
+        lambda plan, root, **_k: BadSprintLayout(
+            project_root=root,
+            epics_md=root / "epics.md",
+            sprint_status_yaml=root / "s.yaml",
+            bmad_config_yaml=root / "c.yaml",
+        ),
+    )
+    monkeypatch.setattr(cli, "superviser", spy_superviser)
+
+    assert cli.main(["run", "une idee"]) == cli.EXIT_OK
+    assert captured_gates["gate_c"] is None
+    assert captured_gates["gate_e"] is None

@@ -21,7 +21,7 @@ from conductor import __version__
 from conductor.bmad_bridge import BmadPlanner, lancer_planification
 from conductor.cadrage import DEFAULT_CHARTER, DEFAULT_STYLE, DEFAULT_TARGET, cadrer, charger_scope
 from conductor.contracts import BrickChoice, MissionConfig, SprintReport
-from conductor.governance import HitlPending, require_hitl0
+from conductor.governance import DelegatedGate, HitlPending, HumanGate, require_hitl0
 from conductor.onramp import select_onramp
 from conductor.planners import ComplementPlanner, CompositePlanner, RemediationPlanner
 from conductor.report import Clock, RunStatus, write_run_report
@@ -63,12 +63,17 @@ def run(
     bricks: list[BrickChoice] | None = None,
     workdir: Path = Path("generated"),
     clock: Clock | None = None,
+    hitl_gate: HumanGate | None = None,
 ) -> SprintReport:
     """Orchestration A → B (onramp) → C (HITL 1) → D → E (HITL 2), greenfield ou brownfield.
 
     Renvoie le `SprintReport` de l'étape E et écrit systématiquement la sortie machine
     `_forge-output/run-report.json` dans le repo cible — y compris en pause HITL ou en échec,
     où l'exception d'origine est relayée telle quelle à l'appelant.
+
+    `hitl_gate` (TF-0009) : `None` préserve le défaut prudent (`ManualGate`, refus systématique,
+    inchangé). Passer un `DelegatedGate` délègue explicitement HITL-0/1/2 selon sa politique —
+    jamais activé par défaut.
     """
     mission = cadrer(
         idea,
@@ -98,10 +103,12 @@ def run(
         # HITL-0 seulement s'il y a quelque chose à valider (normalisation/dégradation déclarée) :
         # actif en C/B, sauté en A (repo déjà conforme) — conforme à la spec.
         if mission.mode == "brownfield" and substrate.declared_degradation:
-            require_hitl0("normalisation & carte d'archi", substrate)
-        plan = lancer_planification(substrate, planner=_select_planner(mission))  # C — HITL 1
+            require_hitl0("normalisation & carte d'archi", substrate, gate=hitl_gate)
+        plan = lancer_planification(
+            substrate, planner=_select_planner(mission), gate=hitl_gate
+        )  # C — HITL 1
         layout = preparer_sprint(plan, dest, baseline=substrate.baseline)  # D
-        report = superviser(layout)  # E — HITL 2
+        report = superviser(layout, hitl=hitl_gate)  # E — HITL 2
     except HitlPending as pause:
         _emit("hitl-pending", detail=str(pause))
         raise
@@ -133,6 +140,17 @@ def main(argv: list[str] | None = None) -> int:
     run_p.add_argument(
         "--scope", type=Path, default=None, help="fichier JSON du scope SaaS (liste de briques)"
     )
+    run_p.add_argument(
+        "--auto-approve-hitl",
+        nargs="*",
+        default=None,
+        metavar="PREFIXE",
+        help=(
+            "délègue l'approbation des checkpoints HITL dont l'intitulé commence par l'un de ces "
+            'préfixes, ex. --auto-approve-hitl "HITL-0" "PRD & architecture (HITL 1)" '
+            "(TF-0009 ; absent = comportement inchangé, refus systématique par ManualGate)"
+        ),
+    )
     args = parser.parse_args(argv)
     if args.command != "run":
         return EXIT_OK
@@ -146,6 +164,7 @@ def main(argv: list[str] | None = None) -> int:
             brand_charter=args.charter,
             style_slug=args.style,
             bricks=charger_scope(args.scope) if args.scope is not None else None,
+            hitl_gate=DelegatedGate(args.auto_approve_hitl) if args.auto_approve_hitl else None,
         )
     except HitlPending as pause:
         # Pause légitime, pas un échec : on imprime la question posée à l'humain.
