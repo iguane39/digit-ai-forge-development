@@ -224,8 +224,13 @@ Opus, 581 tests), à présent standardisée : **chaque test cite l'identifiant d
 vérifie**, dans sa docstring ou son nom (`E-042`, ex. `test_facture_sans_client_E-042` ou
 docstring `"""E-042 — une facture ne peut être créée sans client rattaché."""`).
 
-- **Source des identifiants** : le référentiel amont `EXIGENCES.json` (forge-conception) quand il
-  existe ; à défaut, les critères d'acceptation BMAD (`_bmad-output/planning-artifacts/epics.md`).
+- **Source des identifiants — arbitrage D-V3 (décidé le 11/08/2026, TF-0008)** : le référentiel
+  amont **officiel** est `EXIGENCES.json` (forge-conception) — dans tout run de l'écosystème
+  forge, il fait foi et n'a pas de concurrent : la décision n'est plus re-payée à chaque produit.
+  BMAD n'est **pas un second amont** : c'est la voie de planification interne de cette forge
+  (PRD/épics **dérivés** de l'amont quand l'écosystème est là) et la seule source admise en
+  usage **standalone**, hors écosystème (`_bmad-output/planning-artifacts/epics.md`) — usage
+  alors consigné comme dégradé au ledger du run.
 - **Gate de complétude** : par grep — 100 % des exigences MVP doivent avoir **au moins un test**
   qui les cite. Un identifiant sans test citant fait échouer le gate.
 
