@@ -1,5 +1,6 @@
 name: double-gate
-# Definition of done (décision canonique 03) : aucun merge si l'un des deux jobs échoue.
+# Definition of done (décision canonique 03) : aucun merge si le job code OU design échoue.
+# Job `mutation` (TF-0103.2) : 3e métrique, INFORMATIVE pour v0 (cf. commentaire du job).
 on:
   pull_request:
   push:
@@ -51,4 +52,30 @@ jobs:
         working-directory: digit-ai-forge-development
       - name: Politique de sévérité (gate bloquant)
         run: uv run python -m conductor.gates.design_gate findings.json
+        working-directory: digit-ai-forge-development
+
+  # --- Gate mutation (TF-0103.2) : 3e métrique du double gate, mutmut ------------------
+  # INFORMATIF pour v0 : score réel mesuré sur le scope `only_mutate`
+  # (pyproject.toml [tool.mutmut]) = 61,1 % (223 killed / 142 survived / 365 total),
+  # sous le seuil 75 % documenté dans conductor/gates/mutation_gate.py — restes TF-0103.2.
+  # `continue-on-error` retiré une fois le seuil tenu sur ce scope (puis étendu à conductor/).
+  # mutmut ne tourne PAS nativement sous Windows : ce job (ubuntu-latest) est aujourd'hui le
+  # seul point d'exécution réel hors devcontainer/WSL (TF-0103.1).
+  mutation:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+      - run: uv sync --dev
+        working-directory: digit-ai-forge-development
+      - name: mutmut run (scope v0 — cf. [tool.mutmut] only_mutate)
+        run: uv run mutmut run
+        working-directory: digit-ai-forge-development
+      - name: Export des stats CI/CD mutmut
+        run: uv run mutmut export-cicd-stats
+        working-directory: digit-ai-forge-development
+      - name: Politique de seuil (score de mutation)
+        run: uv run python -m conductor.gates.mutation_gate mutants/mutmut-cicd-stats.json
         working-directory: digit-ai-forge-development
