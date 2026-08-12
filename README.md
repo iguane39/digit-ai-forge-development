@@ -7,7 +7,7 @@
 ## Catalogue de services
 
 > Section proposée par la campagne « catalogues » du pilot (2026-08-12) — générée depuis
-> la source unique `catalogues/catalogue.jsonl` du pilot (v1.1.0, challengée état de
+> la source unique `catalogues/catalogue.jsonl` du pilot (v1.2.0, challengée état de
 > l'art le 12/08/2026). **prouvé** = preuve exécutée ; *déclaré* = méthode documentée seulement.
 
 | Service | Intention (« je veux… ») | Point d'entrée | Statut |
