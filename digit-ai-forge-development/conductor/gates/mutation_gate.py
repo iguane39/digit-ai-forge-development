@@ -22,15 +22,22 @@ Séquence produisant le fichier lu par ce gate (config `[tool.mutmut]` de `pypro
 
 **v0 (TF-0103.2) — mesure réelle exécutée sur le code du conductor lui-même** : scope borné
 à `conductor/sandbox.py` + `conductor/gates/ai_antipatterns_gate.py` (le code neuf de cette
-campagne). Résultat mesuré via Docker (`python:3.11-slim`, mutmut 3.7.0), 12/08/2026 :
-**223 killed / 142 survived / 365 total → score 61,1 %**, sous le seuil. Une majorité des
-survivants sont des mutations caractère-par-caractère de littéraux regex (le style
-d'implémentation de ces deux modules) : mutmut ne distingue pas un caractère de regex qui
-change le comportement observable d'un qui ne le change pas pour les entrées testées — deux
-regex syntaxiquement différentes peuvent rester fonctionnellement équivalentes sur le jeu de
-tests, gonflant le compte de survivants sans indiquer une assertion manquante. Restes :
-renforcer les tests là où les survivants indiquent une VRAIE lacune logique (pas les
-mutants de regex équivalents), puis étendre `only_mutate` au reste de `conductor/`.
+campagne). Première mesure via Docker (`python:3.11-slim`, mutmut 3.7.0), 12/08/2026 :
+223 killed / 142 survived / 365 total → 61,1 %, sous le seuil.
+
+**TF-0120 (même jour, renforcement des tests)** — les 142 survivants ont été classés un par un
+(diff `mutmut show <id>` relu individuellement, jamais par confiance) : lacune réelle de test
+(assertion manquante, cas limite non couvert — exclusion de répertoire, `continue`/`break`,
+specs URL/`git+`, sources `dependency-groups`/`optional-dependencies`, octets non-UTF-8,
+arguments CLI…) vs mutant équivalent/non discriminant (casse d'encodage, encodage par défaut de
+la locale CI, paramètre `filename=` d'`ast.parse` jamais observé, garde redondant avec l'échec
+naturel d'une regex, `__future__` déjà couvert par `sys.stdlib_module_names`, `=`/`+=` sur une
+liste garantie vide). Nouvelle mesure après renforcement : **344 killed / 21 survived / 365
+total → score 94,25 %**, seuil dépassé — y compris sans retirer du dénominateur les 21 mutants
+équivalents documentés (registre complet, justification par mutant/classe :
+`docs/mutation-equivalents.md`). Le job CI `mutation` est bloquant depuis cette mesure (plus de
+`continue-on-error`). Reste ouvert (hors périmètre TF-0120) : étendre `only_mutate` au reste de
+`conductor/`.
 """
 
 from __future__ import annotations
