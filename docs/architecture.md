@@ -44,6 +44,8 @@ Chaque étape est un **adapter** : il traduit une structure de données interne 
 | `supervisor.py` | E | **Invoque le skill `/bad`** epic par epic ; injecte le design ; orchestre le gate design ; pose HITL 2 ; force `AUTO_PR_MERGE=false` | BAD skill (`vendor/bad/`, tag `v1.2.0`) | la boucle d'exécution & le pipeline 7 étapes (fournis par BAD) |
 | `gates/code_gate.py` | — | Lit le verdict CI (largement couvert par l'étape 6 de BAD) | CI template / GitHub Actions | les tests eux-mêmes |
 | `gates/design_gate.py` | — | Lance `lint --format json`, **parse le JSON et applique une politique de sévérité** (l'exit code seul ne bloque pas — cf. piège S-2.3) — **vraie valeur ajoutée du double gate** | `design.md@0.3.0` | le linter (9 règles) |
+| `gates/ai_antipatterns_gate.py` (TF-0103.3) | — | Contrôle STATIQUE (AST + regex) : imports fantômes hors manifeste, secrets en dur, routes HTTP sans dépendance d'auth ni marqueur public | rien (autonome) | l'exécution/compilation du code |
+| `sandbox.py` (TF-0103.1) | — | Détecte l'isolation processus et **refuse** (`IsolationRequiredError`) les flags d'effets réels (`CONDUCTOR_ENABLE_REAL_BAD`/`BMAD`) hors isolation | rien (autonome) | le sandboxing lui-même (délègue au devcontainer fourni) |
 
 > **Correction S-1** : `sprint_compiler.py` n'est PAS « la glue/le compilateur de graphe » que le dossier décrivait. BAD construit le graphe depuis le backlog. D devient un **adapter de placement & config** ; le travail réel se déplace vers C (produire des artefacts BMAD valides). Voir §5 et [`spike-S1-bad-format.md`](spike-S1-bad-format.md).
 

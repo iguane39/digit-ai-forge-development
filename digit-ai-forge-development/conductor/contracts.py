@@ -113,7 +113,8 @@ class BadSprintLayout(BaseModel):
 # --- Gates ------------------------------------------------------------------
 
 GateName = Literal[
-    "code", "design", "regression", "traceability", "demo-markers", "affordances"
+    "code", "design", "regression", "traceability", "demo-markers", "affordances",
+    "ai-antipatterns", "mutation",
 ]
 
 
