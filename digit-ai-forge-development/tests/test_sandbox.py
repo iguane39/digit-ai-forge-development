@@ -8,6 +8,7 @@ import pytest
 
 from conductor.sandbox import (
     IsolationRequiredError,
+    _cgroup_indicates_container,
     is_isolated,
     require_isolation_for_real_effects,
 )
@@ -74,3 +75,29 @@ def test_require_isolation_passe_si_isole(monkeypatch: pytest.MonkeyPatch) -> No
     """Fixture verte : isolation détectée → aucune exception."""
     monkeypatch.setattr("conductor.sandbox.is_isolated", lambda: True)
     require_isolation_for_real_effects("CONDUCTOR_ENABLE_REAL_BAD")  # ne lève pas
+
+
+def test_require_isolation_message_complet(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Fixture rouge (TF-0120) : le message d'erreur complet — chemins de doc, variable
+    d'opt-in, ponctuation — est vérifié mot pour mot. Un message d'aide tronqué ou déformé
+    est un vrai défaut (l'opérateur bloqué doit pouvoir suivre l'indication)."""
+    monkeypatch.setattr("conductor.sandbox.is_isolated", lambda: False)
+    with pytest.raises(IsolationRequiredError) as exc_info:
+        require_isolation_for_real_effects("CONDUCTOR_ENABLE_REAL_BAD")
+    assert str(exc_info.value) == (
+        "CONDUCTOR_ENABLE_REAL_BAD=1 refusé hors isolation processus détectée : lance le run "
+        "dans le devcontainer fourni (.devcontainer/devcontainer.json) ou exporte "
+        "CONDUCTOR_SANDBOXED=1 si l'isolation est assurée autrement (cf. "
+        "docs/superpowers/unattended-run-playbook.md § Isolation). Aucun mode réel "
+        "hors isolation : le seul garde-fou actuel sans elle est git (TF-0103)."
+    )
+
+
+def test_cgroup_octets_non_utf8_ignores(tmp_path: Path) -> None:
+    """Fixture rouge réelle (TF-0120) : `/proc/1/cgroup` est un pseudo-fichier noyau, pas une
+    source garantie UTF-8 stricte — `errors="ignore"` doit avaler un octet invalide plutôt
+    que de faire planter la détection d'isolation. Sans lui (comportement par défaut
+    'strict'), un octet égaré ferait échouer `is_isolated()` au lieu de simplement l'ignorer."""
+    cgroup = tmp_path / "cgroup"
+    cgroup.write_bytes(b"1:name=systemd:/docker/\xff\xfe/abcdef0123456789\n")
+    assert _cgroup_indicates_container(cgroup) is True
