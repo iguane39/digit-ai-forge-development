@@ -24,6 +24,9 @@ jobs:
       - name: Pytest
         run: uv run pytest
         working-directory: digit-ai-forge-development
+      - name: Anti-patterns IA (imports fantômes, secrets, routes sans auth) — TF-0103.3
+        run: uv run python -m conductor.gates.ai_antipatterns_gate conductor pyproject.toml
+        working-directory: digit-ai-forge-development
 
   # --- Gate design (FR-G2/G3) : design.md lint + politique de sévérité forge ---
   # BLOQUANT depuis l'Epic 2 (story 2.1).
