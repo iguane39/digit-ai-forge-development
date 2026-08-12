@@ -18,6 +18,7 @@ dev = [
     "ruff>=0.5",
     "mypy>=1.10",
     "types-pyyaml>=6.0",
+    "mutmut>=3.7.0",
 ]
 
 [build-system]
@@ -45,3 +46,18 @@ files = ["conductor", "tests"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+
+[tool.mutmut]
+# TF-0103.2 — mutmut ne tourne PAS nativement sous Windows (cf. conductor/gates/mutation_gate.py) :
+# exécuter `uv run mutmut run` en CI (ubuntu-latest), dans .devcontainer/, ou sous WSL.
+source_paths = ["conductor"]
+# v0 : scope borné au code neuf de cette campagne (sandbox + gate anti-patterns) — mesure
+# réelle documentée dans conductor/gates/mutation_gate.py. Étendre progressivement au reste
+# de conductor/ (restes TF-0103.2) en retirant `only_mutate`.
+only_mutate = ["conductor/sandbox.py", "conductor/gates/ai_antipatterns_gate.py"]
+pytest_add_cli_args_test_selection = [
+    "tests/test_sandbox.py",
+    "tests/test_ai_antipatterns_gate.py",
+    "tests/test_resolve_bad_runner.py",
+    "tests/test_resolve_bmad_planner.py",
+]
