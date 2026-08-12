@@ -1,0 +1,16 @@
+{
+  "name": "digit-ai-forge-development — conductor unattended (TF-0103.1)",
+  "//": "Isolation processus PRÉREQUISE des flags d'effets réels (CONDUCTOR_ENABLE_REAL_BAD, CONDUCTOR_ENABLE_REAL_BMAD) — cf. conductor/sandbox.py et docs/superpowers/unattended-run-playbook.md § Isolation. Ce conteneur pose CONDUCTOR_SANDBOXED=1 : ne l'utiliser QUE si le conteneur est effectivement la frontière d'exécution du run (pas de bind mount du reste du poste hôte hors du dossier projet).",
+  "image": "mcr.microsoft.com/devcontainers/python:1-3.11-bullseye",
+  "workspaceFolder": "/workspace",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+  "remoteEnv": {
+    "CONDUCTOR_SANDBOXED": "1"
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "postCreateCommand": "pip install --no-cache-dir uv && uv sync --dev",
+  "remoteUser": "vscode"
+}
