@@ -4,6 +4,23 @@
 
 > **From idea to a production-ready SaaS, in one command — under a dual code & design gate.**
 
+## Catalogue de services
+
+> Section proposée par la campagne « catalogues » du pilot (2026-08-12) — générée depuis
+> la source unique `catalogues/catalogue.jsonl` du pilot (v1.0.0, challengée état de
+> l'art le 12/08/2026). **prouvé** = preuve exécutée ; *déclaré* = méthode documentée seulement.
+
+| Service | Intention (« je veux… ») | Point d'entrée | Statut |
+|---|---|---|---|
+| **Construire le produit sous gates** | transformer mes exigences et mon design en produit qui fonctionne | `méthode du run-playbook appliquée par agent (mode degrade) ; gates rejoués : ruff check + pytest` | prouvé (experimental) |
+| **Double gate code + design** | garantir que rien ne passe sans vérification code ET design | `.github\workflows\double-gate.yml + conductor\gates\design_gate.py` | prouvé (production) |
+| **Gate spec (under/over-build)** | détecter ce que le code sous-livre ou sur-livre par rapport à la spec | `conductor (gate spec), remédiation bornée à 3` | déclaré (experimental) |
+| **Conductor bout en bout (CLI)** | lancer « idée → SaaS » en une commande | `uv run --project <forge> python -m conductor run "<idée>"` | déclaré (experimental) |
+| **Générer DESIGN.md linté** | produire le document design du produit accepté par le gate | `generer-design-md.mjs (D-V2 soldée le 07/08)` | prouvé (experimental) |
+
+Le catalogue consolidé des dix forges vit chez le pilot :
+[digit-ai-forge-pilot/catalogues/CATALOGUES.md](https://github.com/iguane39/digit-ai-forge-pilot/blob/main/catalogues/CATALOGUES.md).
+
 ## 🚀 Start with one sentence
 
 Never installed anything? Open a Claude Code session (or any coding agent) in your project folder — an empty folder for a brand-new project — and paste:
