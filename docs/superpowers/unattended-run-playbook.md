@@ -16,9 +16,38 @@ ligne à ligne).
 | Double gate (ruff/mypy/pytest + design WCAG) | Validation de design par EPIC |
 | Non-régression | « Relis la spec » par EPIC |
 | Gate spec-compliance (opt-in `CONDUCTOR_ENABLE_SPEC_REVIEW`) | — |
+| Isolation processus, prérequis des flags d'effets réels (TF-0103.1) | — |
 | 2 HITL produit (uniquement si `conductor run`) | « Démarrer l'EPIC suivante ? » |
 | Revue humaine avant merge vers `main`/cible partagée | Choix du mode d'exécution |
 | `auto_pr_merge=false` | Messages d'avancement bloquants |
+
+## Isolation processus — prérequis des flags d'effets réels (TF-0103.1)
+Les flags d'effets réels (`CONDUCTOR_ENABLE_REAL_BAD`, `CONDUCTOR_ENABLE_REAL_BMAD`) lancent
+`claude` en `--dangerously-skip-permissions` : un agent autonome écrit des fichiers, crée des
+worktrees git, appelle `gh`/`az` sans confirmation humaine. Sans isolation processus, le seul
+garde-fou est git (retour arrière possible, dégât déjà fait entre-temps sur le poste hôte —
+réseau, autres dépôts, secrets du profil). **L'isolation processus est un PRÉREQUIS, pas une
+option** : le mode réel est refusé tant qu'elle n'est pas détectée.
+
+- **Configuration fournie** : `.devcontainer/devcontainer.json` (image
+  `mcr.microsoft.com/devcontainers/python:1-3.11-bullseye`, `postCreateCommand: uv sync --dev`,
+  pose `CONDUCTOR_SANDBOXED=1`). Lancer le run unattended à effets réels **dans ce conteneur**
+  (VS Code « Reopen in Container », GitHub Codespaces, ou `devcontainer up` en CLI) — jamais en
+  process natif sur le poste hôte.
+- **Contrôle exécutable** : `conductor/sandbox.py` (`is_isolated`,
+  `require_isolation_for_real_effects`). Détection portable, sans spawn : opt-in explicite
+  `CONDUCTOR_SANDBOXED=1`, marqueurs de devcontainer usuels (`REMOTE_CONTAINERS`, `CODESPACES`),
+  ou marqueurs de conteneur Linux (`/.dockerenv`, `/proc/1/cgroup`). `resolve_bad_runner` et
+  `resolve_bmad_planner` (`conductor/harness/resolve.py`) appellent ce contrôle avant de
+  construire un runner à effets réels : hors isolation détectée, ils lèvent
+  `IsolationRequiredError` — **refus explicite, jamais un repli silencieux** vers le stub qui
+  masquerait à l'opérateur que le mode réel n'a pas démarré.
+- **Isolation non auto-détectable** (ex. Docker Sandboxes managés, microVM maison) : exporter
+  `CONDUCTOR_SANDBOXED=1` UNIQUEMENT si l'isolation est réellement assurée par cet autre
+  mécanisme — c'est un engagement déclaratif de l'opérateur, pas une preuve technique ; le poser
+  sans isolation réelle contourne le garde-fou en connaissance de cause.
+- Ce prérequis s'ajoute aux gouvernances déjà listées (double gate, HITL, revue finale) : il ne
+  les remplace pas et n'est jamais désactivable par un choix de portée d'autonomie.
 
 **Distinction de merge.** Merge LOCAL par EPIC (branche de run, gardé par double gate +
 non-régression) = mécanisme d'enchaînement réversible → **autonome**. Merge FINAL vers `main`
@@ -204,5 +233,7 @@ la validation pour merger run/<slug> sur main. NE MERGE JAMAIS main sans ce feu 
 
 INTERDITS : ne contourne aucun garde-fou ; merge automatique = LOCAL uniquement ; auto_pr_merge
 reste false ; ne tague jamais une EPIC blocked ; ne devine pas en silence sur l'irréversible ;
-ne supprime pas la traçabilité (PLAN.md + DECISIONS.md + RUN_LOG.md).
+ne supprime pas la traçabilité (PLAN.md + DECISIONS.md + RUN_LOG.md) ; n'active JAMAIS
+CONDUCTOR_ENABLE_REAL_BAD/CONDUCTOR_ENABLE_REAL_BMAD hors isolation processus détectée (§
+Isolation ci-dessus — le contrôle `conductor/sandbox.py` refuse sinon, ne pas le contourner).
 ```

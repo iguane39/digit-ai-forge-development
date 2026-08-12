@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 
 from conductor.harness.analyzer import ClaudeSubagentAnalyzer
 from conductor.onramp.analyzer import Analyzer, HeuristicAnalyzer
+from conductor.sandbox import require_isolation_for_real_effects
 
 if TYPE_CHECKING:
     from conductor.bmad_bridge import BmadPlanner
@@ -23,23 +24,33 @@ def resolve_analyzer() -> Analyzer:
 
 
 def resolve_bmad_planner() -> BmadPlanner:
-    """ClaudeCliBmadPlanner si CONDUCTOR_ENABLE_REAL_BMAD=1 ET `claude` présent ; sinon défaut."""
+    """ClaudeCliBmadPlanner si CONDUCTOR_ENABLE_REAL_BMAD=1 ET `claude` présent ; sinon défaut.
+
+    TF-0103.1 : le flag d'effets réels exige une isolation processus détectée (sinon
+    ``IsolationRequiredError`` — refus explicite, pas de repli silencieux vers le défaut).
+    """
     from conductor.bmad_bridge import DefaultBmadPlanner
     from conductor.harness.bmad_planner import ClaudeCliBmadPlanner
 
     if os.environ.get("CONDUCTOR_ENABLE_REAL_BMAD") == "1" and shutil.which("claude") is not None:
+        require_isolation_for_real_effects("CONDUCTOR_ENABLE_REAL_BMAD")
         return ClaudeCliBmadPlanner()
     return DefaultBmadPlanner()
 
 
 def resolve_bad_runner() -> BadRunner:
-    """ClaudeCliBadRunner si CONDUCTOR_ENABLE_REAL_BAD=1 ET `claude`+`gh` présents ; sinon stub."""
+    """ClaudeCliBadRunner si CONDUCTOR_ENABLE_REAL_BAD=1 ET `claude`+`gh` présents ; sinon stub.
+
+    TF-0103.1 : le flag d'effets réels exige une isolation processus détectée (sinon
+    ``IsolationRequiredError`` — refus explicite, pas de repli silencieux vers le stub).
+    """
     from conductor.harness.bad_runner import ClaudeCliBadRunner
     from conductor.supervisor import DefaultBadRunner
 
     enabled = os.environ.get("CONDUCTOR_ENABLE_REAL_BAD") == "1"
     tools = shutil.which("claude") is not None and shutil.which("gh") is not None
     if enabled and tools:
+        require_isolation_for_real_effects("CONDUCTOR_ENABLE_REAL_BAD")
         return ClaudeCliBadRunner()
     return DefaultBadRunner()
 
