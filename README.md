@@ -21,7 +21,7 @@
 | **Gate de mutation (3e métrique)** | mesurer la force réelle de mes tests, pas seulement leur couverture | `conductor\gates\mutation_gate.py + job CI mutation` | prouvé (experimental) |
 
 Le catalogue consolidé des dix forges vit chez le pilot :
-[digit-ai-forge-pilot/catalogues/CATALOGUES.md](https://github.com/iguane39/digit-ai-forge-pilot/blob/main/catalogues/CATALOGUES.md).
+[digit-ai-factory/catalogues/CATALOGUES.md](https://github.com/iguane39/digit-ai-factory/blob/main/catalogues/CATALOGUES.md).
 
 ## 🚀 Start with one sentence
 
