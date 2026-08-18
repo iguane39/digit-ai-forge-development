@@ -137,11 +137,27 @@ class SpecVerdict(BaseModel):
     passed: bool
     findings: list[dict[str, str]] = Field(default_factory=list)
     log_ref: str = ""
+    #: TF-0375 — « rendu » : un juge a confronté les critères au diff. « indecis » : personne
+    #: n'a jugé, et `passed` ne veut alors PAS dire « conforme », seulement « rien ne bloque ».
+    #: Sans ce champ, les trois chemins muets de ce gate (reviewer par défaut, erreur du CLI,
+    #: registre non écrit) rendaient exactement la même chose qu'un produit conforme.
+    juge: Literal["rendu", "indecis"] = "rendu"
+    motif: str = ""
 
     @classmethod
     def from_findings(cls, findings: list[dict[str, str]], *, log_ref: str = "") -> SpecVerdict:
         blocking = any(f.get("kind") == "under-build" for f in findings)
         return cls(passed=not blocking, findings=findings, log_ref=log_ref)
+
+    @classmethod
+    def indecis(cls, motif: str) -> SpecVerdict:
+        """Aucun jugement rendu — do-no-harm préservé (ne bloque pas), silence supprimé.
+
+        Le do-no-harm reste juste : bloquer un sprint parce que le juge est muet punirait le
+        produit pour une panne de l'outil. Mais un `passed=True` muet est ce qui fait qu'un
+        gate « n'a jamais été démontré » — on croit qu'il a jugé et il n'a rien fait.
+        """
+        return cls(passed=True, juge="indecis", motif=motif)
 
 
 # --- E : superviseur / sprint -----------------------------------------------

@@ -41,10 +41,22 @@ class SpecComplianceReviewer(Protocol):
 
 
 class DefaultSpecReviewer:
-    """Pass-through déterministe : aucune revue, aucun finding (comportement par défaut)."""
+    """Pass-through déterministe : aucune revue, aucun finding — et il le DIT (TF-0375).
+
+    C'est le reviewer du chemin par défaut (`CONDUCTOR_ENABLE_SPEC_REVIEW` absent). Il rendait
+    `passed=True`, donc un sprint entier pouvait traverser cat-dev-03 sans qu'une seule ligne du
+    cahier soit confrontée au code, avec un rapport indistinguable d'un produit conforme. La
+    mesure du 18/08 sur Approval le montre à l'envers : 24 des 49 anomalies de la recette
+    humaine étaient des écarts entre un texte disponible et un code disponible — littéralement
+    l'intention de ce gate.
+    """
 
     def review(self, story: Story, outcome: StoryOutcome, cwd: Path) -> SpecVerdict:
-        return SpecVerdict(passed=True)
+        return SpecVerdict.indecis(
+            "aucun reviewer de conformité câblé (CONDUCTOR_ENABLE_SPEC_REVIEW absent) — "
+            "cat-dev-03 n a RIEN confronté : ni critère d acceptation, ni diff. L absence de "
+            "finding ne vaut donc pas absence d écart"
+        )
 
 
 class BadRunner(Protocol):
@@ -122,6 +134,7 @@ def superviser(
     results: list[StoryResult] = []
     all_ready = True
     records: list[FindingRecord] = []
+    indecisions: list[str] = []
     next_id = 0
 
     for outcome in runner.run_sprint(layout):
@@ -146,6 +159,8 @@ def superviser(
                 pr_url=outcome.pr_url,
             )
         )
+        if first.juge == "indecis":
+            indecisions.append(f"{outcome.story_id} : {first.motif}")
         for finding in first.findings:
             next_id += 1
             kind = finding.get("kind", "")
@@ -163,8 +178,13 @@ def superviser(
                 )
             )
 
-    if records:
-        write_findings(layout.project_root / "SPEC_FINDINGS.md", records)
+    # TF-0375 — le registre s écrit MÊME VIDE dès qu un verdict a été demandé. Auparavant
+    # `if records:` : aucun fichier quand aucun finding, donc un gate muet, un gate qui n a
+    # rien trouvé et un produit conforme produisaient tous les trois le même disque — RIEN.
+    if results:
+        write_findings(
+            layout.project_root / "SPEC_FINDINGS.md", records, indecisions=indecisions
+        )
 
     hitl2 = gate.approve("merge final (HITL 2)", results) if (all_ready and results) else False
     return SprintReport(results=results, hitl2_approved=hitl2)
