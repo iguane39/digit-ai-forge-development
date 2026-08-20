@@ -32,14 +32,20 @@ def test_resolve_always_includes_t0_even_with_empty_scope() -> None:
         assert name in resolved
 
 
-def test_resolve_ignores_skip_but_keeps_t0() -> None:
+def test_resolve_honore_le_skip_t0_et_force_l_absence() -> None:
+    """TF-0406 (RF-8) : ce test affirmait « t0 indéboulonnable » — c'était le DÉFAUT mesuré.
+    Le contrat expose `decision: build|buy|skip` ; l'écraser en silence était le contournement
+    que la doctrine interdit (pour une vitrine sans espace connecté, multi-tenancy/rbac/auth-sso
+    étaient greffées sans objet). Le défaut reste protecteur : une t0 ABSENTE est greffée ;
+    seul un `skip` EXPLICITE dit quelque chose, et ce qu'il dit est respecté."""
     scope = [
-        BrickChoice(name="multi-tenancy", decision="skip"),  # t0 → ignoré, forcé quand même
+        BrickChoice(name="multi-tenancy", decision="skip"),  # t0 skip EXPLICITE → honoré
         BrickChoice(name="billing", decision="skip"),  # non-t0 skip → exclu
         BrickChoice(name="jobs-async", decision="build"),  # inclus
     ]
     resolved = [b.name for b in resolve_bricks(scope)]
-    assert "multi-tenancy" in resolved  # t0 indéboulonnable
+    assert "multi-tenancy" not in resolved  # le skip explicite est HONORÉ
+    assert "rbac" in resolved and "auth-sso" in resolved  # les t0 ABSENTES restent forcées
     assert "billing" not in resolved
     assert "jobs-async" in resolved
 

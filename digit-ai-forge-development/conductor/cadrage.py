@@ -18,6 +18,12 @@ from conductor.contracts import BrickChoice, MissionConfig
 
 DEFAULT_CHARTER = Path("design/DESIGN.md")
 DEFAULT_STYLE = "digitai"
+# TF-0406 (RF-8) — la MONO-CIBLE se déclare au contrat d'entrée, plus seulement au code : le
+# scaffold ne connaît qu'une cible (`targets/fastapi-saas`, template
+# gh:fastapi/full-stack-fastapi-template). Un produit Next.js/Strapi ne l'apprenait qu'en
+# lisant `scaffold.py` — un contrat qui tait sa seule valeur admise laisse chaque appelant la
+# découvrir au premier échec.
+CIBLES_CONNUES: tuple[str, ...] = ("fastapi-saas",)
 DEFAULT_TARGET = "fastapi-saas"
 
 _SCOPE_ADAPTER = TypeAdapter(list[BrickChoice])
@@ -82,6 +88,17 @@ def cadrer(
         raise ValueError("Le mode brownfield exige un existing_repo (repo cible existant).")
     if mode == "greenfield" and existing_repo is not None:
         raise ValueError("Le mode greenfield n'accepte pas d'existing_repo (on génère le repo).")
+
+    # TF-0406 (RF-8) — une cible inconnue se REFUSE à l'entrée, en nommant les cibles admises :
+    # un contrat qui accepte un argument sans effet coûte plus cher qu'un contrat qui le refuse,
+    # et la mono-cible ne doit plus s'apprendre en lisant scaffold.py au premier échec.
+    if target not in CIBLES_CONNUES:
+        raise ValueError(
+            f"Cible de scaffold inconnue : {target!r} — cibles admises : "
+            f"{', '.join(CIBLES_CONNUES)} (mono-cible assumée : le scaffold ne connaît que le "
+            "template FastAPI ; un produit Next.js/Strapi passe par le mode brownfield ou par "
+            "une cible à ajouter sous targets/)"
+        )
 
     requested = bricks or []
     for choice in requested:

@@ -134,21 +134,31 @@ CATALOG: dict[str, BrickSpec] = {
 def resolve_bricks(scope: list[BrickChoice]) -> list[BrickSpec]:
     """Sélection finale des briques à greffer, dans un ordre déterministe.
 
-    - Les briques de t0 sont TOUJOURS incluses en `build` (décision 05), même absentes
-      du scope ou marquées `skip`.
+    - Les briques de t0 sont incluses en `build` PAR DÉFAUT (décision 05)… mais **décidables**
+      (TF-0406 / RF-8, lot SCC-FR 20260820a) : un `skip` explicite du scope est HONORÉ. La
+      version précédente écrasait la décision — le contrat (`cadrer` accepte
+      `decision: build|buy|skip`) exposait un champ sans effet, et pour une vitrine sans espace
+      connecté (redirection simple, aucune auth côté site), `multi-tenancy`, `rbac` et
+      `auth-sso` étaient greffées sans objet. Un contrat qui accepte un argument sans effet
+      coûte plus cher qu'un contrat qui le refuse : la doctrine du parc dit de REMONTER un
+      conflit, jamais de le contourner — écraser en silence était précisément le contournement.
+      Le défaut reste protecteur : une t0 ABSENTE du scope est greffée ; seul le `skip` DIT
+      quelque chose, et ce qu'il dit est respecté.
     - Les autres briques sont incluses si choisies avec une décision != `skip`.
     Les t0 d'abord (auth/rbac/tenancy structurants), puis les autres dans l'ordre du scope.
     """
     chosen: dict[str, BrickSpec] = {}
+    skipped_t0 = {c.name for c in scope if c.name in T0_BRICKS and c.decision == "skip"}
 
-    # 1. t0 forcées
+    # 1. t0 par défaut — greffées sauf skip EXPLICITE du scope
     for name in T0_BRICKS:
-        chosen[name] = CATALOG[name]
+        if name not in skipped_t0:
+            chosen[name] = CATALOG[name]
 
     # 2. briques additionnelles non-skip
     for choice in scope:
         if choice.name in T0_BRICKS:
-            continue  # déjà forcée, non désactivable
+            continue  # traitée au pas 1 (défaut build, skip honoré)
         if choice.decision == "skip":
             continue
         spec = CATALOG.get(choice.name)
@@ -156,7 +166,7 @@ def resolve_bricks(scope: list[BrickChoice]) -> list[BrickSpec]:
             chosen[choice.name] = spec
 
     # ordre : t0 d'abord, puis l'ordre d'apparition dans le scope
-    ordered = [chosen[n] for n in T0_BRICKS]
+    ordered = [chosen[n] for n in T0_BRICKS if n in chosen]
     for choice in scope:
         if choice.name not in T0_BRICKS and choice.name in chosen:
             ordered.append(chosen[choice.name])

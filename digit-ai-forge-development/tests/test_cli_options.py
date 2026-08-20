@@ -72,7 +72,7 @@ def test_flags_charter_target_style_atteignent_cadrer(
         [
             "run", "une idee",
             "--charter", "brand/CHARTE.md",
-            "--target", "node-ts",
+            "--target", "fastapi-saas",  # TF-0406 : cible inconnue refusee en nommant les admises
             "--style", "acme",
         ]
     )
@@ -80,7 +80,7 @@ def test_flags_charter_target_style_atteignent_cadrer(
     assert code == cli.EXIT_OK
     mission = captured["mission"]
     assert mission.brand_charter == Path("brand/CHARTE.md")
-    assert mission.target == "node-ts"
+    assert mission.target == "fastapi-saas"
     assert mission.style_slug == "acme"
 
 
