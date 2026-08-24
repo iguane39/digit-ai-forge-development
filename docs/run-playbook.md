@@ -334,6 +334,46 @@ découvrir ça à l'audit ou en prod coûte un aller-retour évitable.
   pas un marqueur de code — la revue humaine du HITL 1 est le contrôle ; un des cinq éléments sans
   statut consigné bloque l'approbation.
 
+- **Cause préservée jusqu'à l'écran (TF-0569, 24/08/2026).** Toute erreur qui traverse la
+  frontière client porte une cause LISIBLE PAR LA MACHINE — type d'erreur ou clé de message — et
+  le client partagé est le seul chemin. L'appel qui ne peut pas l'emprunter se justifie et
+  **réutilise le même typage** : `throw new Error("upload failed: " + status)` dans un client qui
+  lève partout ailleurs une erreur typée fait retomber sept causes distinctes sur le message
+  générique.
+
+  Mesure qui fait naître la discipline : `frontend/src/api/demandes.ts` levait une erreur nue là
+  où tout le reste du client levait `ApiError`. Le mappeur `errorKey()` ne reconnaissant que le
+  type, SEPT causes arrivaient à l'écran sous une seule phrase — « Une erreur est survenue.
+  Réessayez. » : format non accepté, document au-delà de 100 Mo, onzième document, total au-delà
+  de 1 Go, refus antivirus, droits insuffisants, coupure réseau. **Dans six cas sur sept,
+  l'instruction affichée était FAUSSE** : elle demande de rejouer exactement le geste qui ne peut
+  pas aboutir. Cet appel était le SEUL à ne pas passer par `apiFetch`, un envoi
+  `multipart/form-data` interdisant d'imposer le `Content-Type` — l'exception technique était
+  réelle, sa conséquence sur le typage ne l'était pas.
+
+  Corollaire, et il vaut seul : **un message par défaut ne prescrit jamais un geste.** « Réessayez »
+  sur un refus définitif est une instruction fausse, et une instruction fausse coûte plus qu'une
+  absence d'instruction — l'utilisateur la suit. Le message par défaut dit ce qui est arrivé et
+  qu'on ne sait pas pourquoi ; le geste n'apparaît qu'avec une cause identifiée.
+
+  Test : aucun `throw new Error(` dans la couche client, et chaque cause de refus du serveur a sa
+  clé de message dans les catalogues de traduction — les deux nombres se comparent, ils ne se
+  supposent pas.
+
+  ```bash
+  # 1. aucune erreur nue dans la couche client (le typage partagé est le seul chemin)
+  grep -rn 'throw new Error(' frontend/src/api* && echo "ERREUR NUE" || echo "OK"
+  # 2. autant de clés de message que de causes de refus déclarées côté serveur
+  grep -rhoE '"(unsupported_type|too_large|too_many|total_too_large|antivirus)"' backend/app \
+    | sort -u | wc -l
+  grep -rhoE 'error\.(unsupported_type|too_large|too_many|total_too_large|antivirus)' frontend/src \
+    | sort -u | wc -l
+  ```
+
+  Limites déclarées : le grep voit les erreurs nues levées LITTÉRALEMENT, pas celles qu'une
+  bibliothèque tierce lève à l'intérieur d'un `fetch` ; et il compare des NOMBRES de causes, pas
+  la justesse du texte affiché — un message présent mais faux reste un défaut de relecture.
+
 ## Quand lire les détails
 - **Phases A→E, classification de pièces jointes, sections pilote** → [conductor-run-playbook](conductor-run-playbook.md).
 - **Sous-mode autonome (2 gates, merge A/B/C, notifications, reprise)** → [unattended-run-playbook](superpowers/unattended-run-playbook.md).
