@@ -273,6 +273,12 @@ vérifiables (rejointes ici par la loi 3, surface implicite, pour couvrir les qu
 transverses du pilot), à appliquer **dès la construction** — même logique que le contrat RV-2 :
 découvrir ça à l'audit ou en prod coûte un aller-retour évitable.
 
+**La liste s'allonge par MESURE, jamais par précaution**, et chaque entrée porte le fait qui l'a
+faite naître. Deux disciplines sont entrées le 24/08/2026, toutes deux nées d'une même journée de
+production sur un produit réel : *la cause préservée jusqu'à l'écran* (une instruction fausse
+affichée à l'utilisateur pour six causes sur sept) et *la vérification post-déploiement* (un run
+vert de bout en bout qui met une panne totale en service). Six disciplines à ce jour.
+
 - **Frontière démo/production.** Tout artefact de démonstration (fixtures, comptes, données
   simulées, endpoints de peuplement) vit derrière un drapeau d'environnement explicite
   (`*_MODE_DEMO` ou équivalent), absent par défaut. L'endpoint de peuplement de la qualif
@@ -373,6 +379,87 @@ découvrir ça à l'audit ou en prod coûte un aller-retour évitable.
   Limites déclarées : le grep voit les erreurs nues levées LITTÉRALEMENT, pas celles qu'une
   bibliothèque tierce lève à l'intérieur d'un `fetch` ; et il compare des NOMBRES de causes, pas
   la justesse du texte affiché — un message présent mais faux reste un défaut de relecture.
+
+  **L'AUTRE BOUT DU FIL, mesuré le même jour (TF-0575).** La même famille a frappé côté SERVEUR six
+  heures après, et la récurrence est l'argument : cette discipline s'étend plutôt que de se
+  dédoubler, parce que deux disciplines pour une même cause se lisent comme deux sujets. Le fait :
+  le filet à exceptions de dernier recours (`ServerErrorMiddleware` de Starlette) est monté à
+  l'EXTÉRIEUR de toute la pile utilisateur, donc de `CORSMiddleware`. Son `500` part sans
+  `access-control-allow-origin`, le navigateur REFUSE de lire la réponse, `fetch` rejette, et
+  l'interface affiche « Connexion perdue. Vérifiez votre réseau puis réessayez. » **Un utilisateur
+  dont le réseau allait parfaitement bien a été invité à le vérifier, pour une variable
+  d'environnement fausse.** Vérifié sur pièces : le `401` de la MÊME route porte bien les en-têtes
+  (il passe par `ExceptionMiddleware`, à l'intérieur) ; seul le `500` non géré ne les porte pas.
+
+  La règle générique tient en une phrase : **une réponse d'erreur émise hors de la pile qui pose
+  les en-têtes est illisible par le client, et le client la rapporte comme une panne de réseau.**
+  Le pire des symptômes : il accuse l'utilisateur.
+
+  Deux contrôles, tous deux mécanisables, et le second ne demande aucune exécution :
+
+  ```bash
+  # 1. TEST DE PROPRIÉTÉ DU MONTAGE — dix lignes, et il échoue si quelqu'un déplace le middleware.
+  #    Dans une application servant un client d'une AUTRE ORIGINE, une exception NON PRÉVUE doit
+  #    produire une réponse portant les en-têtes CORS.
+  <lanceur_de_tests> -k "exception_imprevue_reste_lisible_par_le_navigateur"
+
+  # 2. CONTRÔLE STATIQUE DE L'ORDRE DES MIDDLEWARES. `add_middleware` empile À L'ENVERS : le
+  #    premier ajouté est le plus INTÉRIEUR. Un filet à exceptions ajouté APRÈS le middleware CORS
+  #    est donc inopérant, et rien ne le signale.
+  grep -n 'add_middleware' backend/app/main.py
+  # attendu : le filet à exceptions AVANT la ligne CORSMiddleware (donc plus intérieur)
+  ```
+
+  Limite déclarée : le contrôle statique lit l'ordre des appels dans un fichier, il ne suit pas un
+  montage construit dynamiquement (boucle, table de configuration). Le test de propriété, lui, le
+  voit dans tous les cas — c'est pourquoi les deux existent et qu'aucun ne remplace l'autre.
+
+- **Aucun déploiement n'est réussi avant d'avoir été vérifié CONTRE L'URL SERVIE (TF-0574,
+  24/08/2026).** L'étape de déploiement ne s'arrête pas à `terraform apply` et aux migrations :
+  elle appelle, contre l'instance réellement servie, un point de PRÉPARATION qui **tente** une
+  connexion à chaque dépendance déclarée et rend leur état une par une, puis un smoke fonctionnel
+  qui traverse **chaque adaptateur d'infrastructure** — base, stockage, file de messages,
+  antivirus, coffre de secrets. Cette étape **fait échouer le run**, sinon elle rejoint la famille
+  des portes décoratives.
+
+  Un point de SANTÉ (`/healthz`) ne suffit pas et ne peut pas suffire : il prouve que le processus
+  a démarré, rien de plus. Le point de PRÉPARATION (`/readyz`) est un contrat différent — il essaie,
+  et il dit lequel a échoué.
+
+  Mesure qui fait naître la discipline : `APPROVAL_CLAMAV_HOST` valait `clamav`, le nom du service
+  dans `docker-compose.yml`, recopié tel quel dans l'infrastructure **six fois** (l'API, le worker,
+  quatre tâches planifiées). Ce nom résout sur un poste de développement et **nulle part** en
+  Container Apps : chaque téléversement levait `socket.gaierror [Errno -2] Name or service not
+  known`. **Le run qui a mis cette panne totale en service était VERT DE BOUT EN BOUT**, recette
+  bout-en-bout bloquante de 28 tests comprise. Le défaut a été signalé par un UTILISATEUR et
+  diagnostiqué en lisant les journaux du conteneur après coup.
+
+  **Le point structurel, et c'est lui qui généralise** : toutes les portes de la chaîne
+  s'exécutaient EN LOCAL, où la valeur fautive est la BONNE valeur — la recette bout-en-bout monte
+  `docker compose`, dans lequel le service s'appelle littéralement `clamav`. *Une suite verte y est
+  la preuve du contraire de ce qu'on cherche.* Aucune porte locale, si complète soit-elle, ne peut
+  voir cette classe de défaut : **une valeur de configuration juste en local et fausse en cible est
+  invisible pour tout ce qui s'exécute en local.**
+
+  Test, en trois contrôles dont deux comparent des NOMBRES plutôt que de supposer :
+
+  ```bash
+  # 1. l'étape de déploiement est SUIVIE d'une vérification, et elle est bloquante
+  grep -nA4 'terraform apply' <fichier_de_pipeline> | grep -E 'readyz|smoke|continueOnError'
+  # attendu : une vérification présente, et AUCUN continueOnError sur elle
+
+  # 2. le point de préparation connaît AUTANT de dépendances que le code déclare d'adaptateurs
+  curl -sf "$URL_SERVIE/readyz" | jq -r '.dependances | keys[]' | sort -u | wc -l
+  ls backend/app/adapters/*.py | wc -l          # les deux nombres se comparent
+
+  # 3. le pan qualif de forge-tests est joué CONTRE L'URL DÉPLOYÉE, pas à la main sur un poste
+  grep -n 'FORGE_TESTS_QUALIF_URL' <fichier_de_pipeline>
+  ```
+
+  Limites déclarées : le point de préparation dit qu'une connexion s'ouvre, pas qu'un droit est
+  suffisant — un jeton valide pour se connecter et insuffisant pour écrire passera. Et le
+  décompte des adaptateurs suppose un adaptateur par fichier ; une architecture qui en groupe
+  plusieurs par module doit publier sa liste au lieu de la faire deviner.
 
 ## Quand lire les détails
 - **Phases A→E, classification de pièces jointes, sections pilote** → [conductor-run-playbook](conductor-run-playbook.md).
