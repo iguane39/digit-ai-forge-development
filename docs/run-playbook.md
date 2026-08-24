@@ -277,7 +277,9 @@ découvrir ça à l'audit ou en prod coûte un aller-retour évitable.
 faite naître. Deux disciplines sont entrées le 24/08/2026, toutes deux nées d'une même journée de
 production sur un produit réel : *la cause préservée jusqu'à l'écran* (une instruction fausse
 affichée à l'utilisateur pour six causes sur sept) et *la vérification post-déploiement* (un run
-vert de bout en bout qui met une panne totale en service). Six disciplines à ce jour.
+vert de bout en bout qui met une panne totale en service). Une septième a suivi le même jour —
+*l'interrupteur d'authentification et son garde sur un FAIT* (un `client_id` faux survivant neuf
+jours, cinq recettes inter-profils jamais vertes). **Sept disciplines à ce jour.**
 
 - **Frontière démo/production.** Tout artefact de démonstration (fixtures, comptes, données
   simulées, endpoints de peuplement) vit derrière un drapeau d'environnement explicite
@@ -460,6 +462,66 @@ vert de bout en bout qui met une panne totale en service). Six disciplines à ce
   suffisant — un jeton valide pour se connecter et insuffisant pour écrire passera. Et le
   décompte des adaptateurs suppose un adaptateur par fichier ; une architecture qui en groupe
   plusieurs par module doit publier sa liste au lieu de la faire deviner.
+
+- **L'interrupteur d'authentification, et son garde sur un FAIT (TF-0577, 24/08/2026).** Dès que
+  le produit délègue son identité à un fournisseur d'entreprise — Entra ID, Google Workspace,
+  Okta, un IdP SAML —, il porte un **réglage d'authentification déclaré** (`AUTH_MODE` ou
+  équivalent) dont le **défaut est le mode SÛR**, et deux gardes **fail-closed** l'encadrent.
+
+  Pourquoi l'interrupteur, avant de parler du garde : *on ne peut pas tester de bout en bout ce
+  qu'on ne peut pas authentifier*, et on ne peut pas authentifier N identités distinctes sans N
+  comptes réels chez le fournisseur. Or les recettes qui comptent le plus sont celles qui
+  traversent plusieurs identités. Sans interrupteur, le produit invente son substitut — et la
+  façon la plus tentante de l'inventer, écrire la session à la main dans le stockage du
+  navigateur, saute le seul mécanisme qui aurait vu l'erreur : le contrôle d'audience de la
+  bibliothèque cliente, qu'une session désérialisée ne rejoue jamais.
+
+  **Le garde ne porte JAMAIS sur le NOM de l'environnement.** `environment == "dev"` ne
+  discrimine rien : un environnement Dev cloud porte exactement cette valeur **avec un
+  fournisseur réel**. Il porte sur un fait vérifiable au démarrage, dans les deux sens — le mode
+  local exige un **émetteur privé**, le mode cible exige une **audience unique**. Un mode
+  d'authentification simulé atteignable sur un environnement servi n'est pas une commodité, c'est
+  une faille ; le service **refuse de démarrer** plutôt que de servir dans le doute.
+
+  Mesure qui fait naître la discipline : le contournement en place a laissé survivre un
+  `client_id` FAUX pendant **neuf jours**, avec trois fichiers portant trois valeurs du même
+  identifiant dont deux fausses (`.env.development`, le générateur de configuration, le module de
+  profils). Les cinq recettes inter-profils ont échoué au **premier** passage réel en intégration
+  continue, après n'avoir **jamais** été vertes — ni à leur écriture, ni depuis. Une demi-journée
+  de diagnostic. Et le premier correctif, qui remplaçait la fabrication par une vraie connexion
+  par profil, **passait `tsc`, `eslint`, 137 tests unitaires ET le harnais de connexion** en
+  cassant quand même les cinq recettes : le choix de profil vivait dans un stockage que l'état
+  persisté de la recette ne sauvegarde pas. D'où le corollaire, qui est une règle de code et pas
+  de configuration : **la clé qui permet de RELIRE une session vit au même endroit que la
+  session** — les séparer recrée la divergence qu'on corrige, sous une forme moins visible.
+
+  Test, en quatre contrôles dont deux portent sur l'ABSENCE et se jouent donc contre un
+  démarrage réel plutôt que sur du texte :
+
+  ```bash
+  # 1. le réglage existe et son défaut est le mode SÛR (aucune valeur = fournisseur réel)
+  grep -rnE 'AUTH_MODE' <racine_backend> | grep -E 'default|fallback|or "'
+  # attendu : le repli est le mode CIBLE, jamais le mode local
+
+  # 2. le garde du mode local refuse de démarrer sans émetteur privé — on le VÉRIFIE en le jouant
+  AUTH_MODE=local OIDC_ISSUER=https://login.microsoftonline.com/... <commande_demarrage>
+  # attendu : exit non nul, message nommant l'émetteur — un démarrage réussi ici est le défaut
+
+  # 3. le garde du mode cible refuse une audience multiple (la liste n'est bornée qu'au local)
+  AUTH_MODE=cible OIDC_AUDIENCES='a,b' <commande_demarrage>
+  # attendu : exit non nul
+
+  # 4. AUCUN garde ne s'appuie sur le nom de l'environnement pour décider du mode
+  grep -rnE '(ENVIRONMENT|ENV|STAGE)\s*[=!]=\s*["\']?(dev|prod)' <racine_backend> | grep -iE 'auth|oidc|issuer|audience'
+  # attendu : aucune ligne — un nom d'environnement n'est pas un fait
+  ```
+
+  Limites déclarées : les contrôles 2 et 3 exigent de DÉMARRER le service, donc ils vivent dans la
+  recette et non dans une porte statique — un garde présent mais inefficace est indiscernable d'un
+  garde absent par simple lecture. Et le contrôle 4 lit un vocabulaire : un garde qui compare le
+  nom d'environnement via une variable intermédiaire lui échappe. Le versant CONCEPTION de la même
+  classe est tenu par la règle EA8 d'`oracle-ears` (forge-conception), qui exige les quatre
+  réponses dès que la délégation est nommée dans une exigence.
 
 ## Quand lire les détails
 - **Phases A→E, classification de pièces jointes, sections pilote** → [conductor-run-playbook](conductor-run-playbook.md).
