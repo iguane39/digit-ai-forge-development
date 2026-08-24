@@ -463,7 +463,7 @@ jours, cinq recettes inter-profils jamais vertes). **Sept disciplines à ce jour
   décompte des adaptateurs suppose un adaptateur par fichier ; une architecture qui en groupe
   plusieurs par module doit publier sa liste au lieu de la faire deviner.
 
-- **L'interrupteur d'authentification, et son garde sur un FAIT (TF-0577, 24/08/2026).** Dès que
+- **L'interrupteur d'authentification, et son garde sur un FAIT (TF-0592, 24/08/2026).** Dès que
   le produit délègue son identité à un fournisseur d'entreprise — Entra ID, Google Workspace,
   Okta, un IdP SAML —, il porte un **réglage d'authentification déclaré** (`AUTH_MODE` ou
   équivalent) dont le **défaut est le mode SÛR**, et deux gardes **fail-closed** l'encadrent.
