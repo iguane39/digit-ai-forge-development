@@ -29,6 +29,9 @@ n'installe rien dans le projet cible. Les évolutions de la forge s'appliquent *
 
 ## Matrice de contexte (Phase −1)
 
+Quatre situations seulement se présentent à l'ouverture d'un run, et le tableau ci-dessous dit
+à quel signal chacune se reconnaît, puis vers quel mode de construction elle route.
+
 | Contexte | Signal | Mode / Onramp | Intent |
 |---|---|---|---|
 | **Nouveau** | pas de repo cible (idée + pièces jointes) | greenfield · `ScaffoldOnramp` (scaffold-first) | — |
@@ -192,6 +195,9 @@ Un `2` est une pause **par conception** : en automatisation ou en CI, ne le conf
 
 ## Options de cadrage du CLI
 
+Le run s'exécute sans aucune de ces options ; elles servent à écarter un défaut quand le
+contexte l'exige. Le tableau donne, pour chacune, la valeur retenue à défaut et ce qu'elle change.
+
 | Flag | Défaut | Rôle |
 |---|---|---|
 | `--mode` | `greenfield` | `greenfield` / `brownfield` |
@@ -279,7 +285,10 @@ production sur un produit réel : *la cause préservée jusqu'à l'écran* (une 
 affichée à l'utilisateur pour six causes sur sept) et *la vérification post-déploiement* (un run
 vert de bout en bout qui met une panne totale en service). Une septième a suivi le même jour —
 *l'interrupteur d'authentification et son garde sur un FAIT* (un `client_id` faux survivant neuf
-jours, cinq recettes inter-profils jamais vertes). **Sept disciplines à ce jour.**
+jours, cinq recettes inter-profils jamais vertes). Une huitième est entrée le 05/09/2026 —
+*l'adresse d'un statique porte la version* (une feuille de style d'avant le composant rendue sur
+le poste pendant que le serveur répondait 200 sur la feuille à jour). **Huit disciplines à ce
+jour.**
 
 - **Frontière démo/production.** Tout artefact de démonstration (fixtures, comptes, données
   simulées, endpoints de peuplement) vit derrière un drapeau d'environnement explicite
@@ -443,7 +452,7 @@ jours, cinq recettes inter-profils jamais vertes). **Sept disciplines à ce jour
   voir cette classe de défaut : **une valeur de configuration juste en local et fausse en cible est
   invisible pour tout ce qui s'exécute en local.**
 
-  Test, en trois contrôles dont deux comparent des NOMBRES plutôt que de supposer :
+  Test, en quatre contrôles dont trois comparent des NOMBRES plutôt que de supposer :
 
   ```bash
   # 1. l'étape de déploiement est SUIVIE d'une vérification, et elle est bloquante
@@ -456,12 +465,27 @@ jours, cinq recettes inter-profils jamais vertes). **Sept disciplines à ce jour
 
   # 3. le pan qualif de forge-tests est joué CONTRE L'URL DÉPLOYÉE, pas à la main sur un poste
   grep -n 'FORGE_TESTS_QUALIF_URL' <fichier_de_pipeline>
+
+  # 4. APRÈS déploiement — la feuille et le script SERVIS portent la version déployée (TF-0798).
+  #    On lit la page servie, on en extrait les adresses de statiques, on compare leur version à
+  #    celle qu'on vient de mettre en service : deux nombres, aucune supposition.
+  VERSION_DEPLOYEE="$(git describe --tags --always)"   # ou la version que le pipeline publie
+  curl -sf "$URL_SERVIE/" \
+    | grep -oE '(href|src)="[^"]+\.(css|js|mjs)[^"]*"' | grep -c "$VERSION_DEPLOYEE"
+  curl -sf "$URL_SERVIE/" \
+    | grep -coE '(href|src)="/[^"]+\.(css|js|mjs)[^"]*"'   # les deux nombres se comparent
+  #    et l'en-tête du statique lui-même est explicite, jamais absent :
+  curl -sI "$URL_SERVIE/static/app.css?v=$VERSION_DEPLOYEE" | grep -i 'cache-control'
+  # attendu : une ligne Cache-Control — son ABSENCE est le défaut mesuré le 01/09/2026
   ```
 
   Limites déclarées : le point de préparation dit qu'une connexion s'ouvre, pas qu'un droit est
-  suffisant — un jeton valide pour se connecter et insuffisant pour écrire passera. Et le
+  suffisant — un jeton valide pour se connecter et insuffisant pour écrire passera. Le
   décompte des adaptateurs suppose un adaptateur par fichier ; une architecture qui en groupe
-  plusieurs par module doit publier sa liste au lieu de la faire deviner.
+  plusieurs par module doit publier sa liste au lieu de la faire deviner. Et le contrôle 4 lit la
+  page d'accueil servie : une application dont les statiques ne sont référencés que par des pages
+  authentifiées doit viser une de ces pages, sinon elle compare zéro à zéro — un « les deux
+  nombres sont égaux » sur deux zéros est le faux vert le plus facile à obtenir.
 
 - **L'interrupteur d'authentification, et son garde sur un FAIT (TF-0592, 24/08/2026).** Dès que
   le produit délègue son identité à un fournisseur d'entreprise — Entra ID, Google Workspace,
@@ -522,6 +546,67 @@ jours, cinq recettes inter-profils jamais vertes). **Sept disciplines à ce jour
   nom d'environnement via une variable intermédiaire lui échappe. Le versant CONCEPTION de la même
   classe est tenu par la règle EA8 d'`oracle-ears` (forge-conception), qui exige les quatre
   réponses dès que la délégation est nommée dans une exigence.
+
+- **L'adresse d'un fichier statique porte la version, et son en-tête de cache est explicite
+  (TF-0798, 05/09/2026).** Toute adresse de fichier statique écrite par un gabarit de rendu du
+  produit — feuille de style, script, module — porte la **version de l'application**
+  (`?v=<version_app>`) **ou une empreinte de contenu dans son nom** (`app.4f3c9a21.css`), et le
+  produit déclare un `Cache-Control` cohérent : **long pour ce qui est empreinté ou versionné,
+  court pour le HTML** qui porte ces adresses.
+
+  Mesure qui fait naître la discipline : `curl -sI` sur `app.css` d'une production, le 01/09/2026
+  — **200, feuille à jour côté serveur, AUCUN `Cache-Control`** — pendant que le poste de
+  l'utilisateur rendait une feuille d'avant le composant livré. Le correctif tenait en un global
+  de gabarits (`version_app`) et un `?v=` sur trois adresses des quatre gabarits de tête.
+
+  **Ce qui généralise, et c'est le pire des deux effets.** Sans version dans l'adresse, une mise
+  en production ne change pas ce que les postes affichent tant que l'heuristique de cache du
+  navigateur n'expire pas — et cette heuristique n'est pas la même pour deux fichiers demandés à
+  deux instants différents. Les deux moitiés du produit ne reviennent donc PAS ensemble :
+  **script neuf + feuille vieille = une fonctionnalité qui marche et s'affiche cassée**, chez
+  certains utilisateurs seulement, pendant une durée que personne ne contrôle. Aucune porte de la
+  chaîne ne voit cet état : le serveur répond 200 sur un fichier à jour, la recette bout-en-bout
+  demande la page avec un cache vide, et le défaut ne vit que dans le navigateur d'un tiers.
+
+  Et le corollaire, qui explique pourquoi l'en-tête compte autant que l'adresse : **le HTML ne se
+  met jamais en cache longtemps.** C'est lui qui porte l'adresse versionnée ; un HTML figé une
+  année ne fait pas découvrir la nouvelle adresse, il fige les deux. Long au contenu empreinté,
+  court au document qui le nomme — l'inverse annule le versionnement sans rien signaler.
+
+  **Choix du mécanisme (le lot le laissait ouvert)** : `?v=<version_app>` est le **défaut de la
+  forge**, l'empreinte de contenu est **acceptée à égalité**. Motif mesuré : le versionnement par
+  requête ne demande ni chaîne de construction, ni manifeste, ni réécriture de noms — un global
+  de gabarits suffit, et il couvre les pages rendues côté serveur, précisément celles qu'aucun
+  bundler n'empreinte. Refuser l'empreinte serait faux dans l'autre sens : la sortie d'un bundler
+  l'est déjà, et lui imposer en plus un `?v=` n'ajoute rien. La propriété exigée est la même dans
+  les deux cas — *l'adresse change quand le contenu change* — et c'est elle que le gate juge, pas
+  la forme retenue.
+
+  Test : le gate `static-cache` de cette forge, joué sur le projet **instancié** (contrôle
+  statique, aucun réseau), puis la vérification post-déploiement contre l'URL servie (contrôle 4
+  de la discipline précédente).
+
+  ```bash
+  # Recette DOUBLE SENS — un projet instancié avec des statiques nus doit être REFUSÉ,
+  # le même projet versionné doit PASSER. Un gate qui ne rend jamais de constat ne prouve rien.
+  uv run --project "<FORGE>" python -m conductor.gates.static_cache_gate "<repo>"
+  # attendu : exit 1 + « [statique-nu] … : adresse '/static/app.css' sans version ni empreinte »
+  # après correctif (`?v={{ version_app }}` posé, Cache-Control déclaré) : exit 0, « PASS »
+
+  # Le double sens est joué à chaque recette de la forge, sur des fixtures rouges ET vertes :
+  uv run --project "<FORGE>" pytest tests/test_static_cache_gate.py
+  ```
+
+  Limites déclarées : le gate lit les adresses écrites **littéralement** dans les gabarits de
+  rendu (`.html`, `.htm`, `.jinja`, `.jinja2`, `.j2`) — une adresse entièrement construite à
+  l'exécution (concaténation, aide de gabarit qui ne nomme pas le fichier) lui échappe, comme
+  elle échappe à tout contrôle statique. Une ressource d'une autre origine (CDN tiers) est hors
+  périmètre : sa fraîcheur ne se décide pas depuis le produit. Le contrôle de l'en-tête vérifie
+  qu'un `Cache-Control` est **déclaré** dans le code serveur ou la configuration d'infrastructure,
+  et qu'aucune durée longue ne vise le HTML ; il ne vérifie pas que la règle déclarée s'applique
+  bien à la route servie — seul le contrôle 4 post-déploiement le fait, contre l'URL réelle. Un
+  `<meta http-equiv="Cache-Control">` n'est délibérément PAS accepté comme déclaration : les
+  navigateurs l'ignorent, et l'accepter fabriquerait un vert sur une règle sans effet.
 
 ## Quand lire les détails
 - **Phases A→E, classification de pièces jointes, sections pilote** → [conductor-run-playbook](conductor-run-playbook.md).
