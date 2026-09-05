@@ -18,7 +18,7 @@ from conductor.contracts import BrickChoice
 
 
 def test_le_cas_vitrine_les_trois_t0_skippees_ne_sont_pas_greffees() -> None:
-    """Le cas fondateur : Produit-09.FR, vitrine sans espace connecté."""
+    """Le cas fondateur : Produit-09, vitrine sans espace connecté."""
     scope = [BrickChoice(name=n, decision="skip") for n in T0_BRICKS]
 
     assert resolve_bricks(scope) == []
