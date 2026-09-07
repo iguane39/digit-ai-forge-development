@@ -42,13 +42,17 @@ def detect_distance(repo: Path) -> Literal["A", "C"]:
     return "A" if (has_design and has_ci(repo)) else "C"
 
 
-def detect_stack(repo: Path) -> Literal["fastapi", "node-ts", "generic"]:
-    """Détecte la stack par marqueur RACINE curé : pyproject.toml → fastapi ; package.json →
-    node-ts ; sinon ``generic`` (P-15 : plus d'échec indirect — la résolution générique prend le
-    relais via ``resolve_profile`` + ``BuilderOnramp``).
+def detect_stack(repo: Path) -> Literal["fastapi", "node-ts", "data-transformation", "generic"]:
+    """Détecte la stack par marqueur RACINE curé : dbt_project.yml → data-transformation
+    (TF-0861 : un projet de transformation Silver/Gold n'a ni UI ni serveur, son marqueur prime
+    sur un pyproject.toml d'outillage) ; pyproject.toml → fastapi ; package.json → node-ts ;
+    sinon ``generic`` (P-15 : plus d'échec indirect — la résolution générique prend le relais via
+    ``resolve_profile`` + ``BuilderOnramp``).
 
-    Priorité à pyproject.toml si les deux marqueurs coexistent (cas full-stack rare).
+    Priorité à pyproject.toml si package.json coexiste (cas full-stack rare).
     """
+    if (repo / "dbt_project.yml").exists():
+        return "data-transformation"
     if (repo / "pyproject.toml").exists():
         return "fastapi"
     if (repo / "package.json").exists():

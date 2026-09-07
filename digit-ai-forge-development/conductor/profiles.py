@@ -212,7 +212,32 @@ NODE_TS = TargetProfile(
     pkg_managers={"app": "npm"},
 )
 
-_PROFILES: dict[str, TargetProfile] = {"fastapi": FASTAPI_SAAS, "node-ts": NODE_TS}
+# Profil d'un PRODUIT DATA : projet de transformation Silver/Gold (TF-0861, lot L4 de l'étude
+# d'opportunité du pilot du 07/09/2026). Pas d'interface : le gate design ne s'applique pas ;
+# le gate code joue les tests du projet de transformation (dbt par défaut — la forme est celle
+# que forge-data juge par `oracle-transformer`, l'outil reste celui du projet) et la
+# documentation se GÉNÈRE (clé `docs`), jamais écrite à part. Un projet SQL Delta ou notebooks
+# déclare ses commandes par manifeste `.forge/profile.toml` (rôle `transformations`).
+DATA_TRANSFORMATION = TargetProfile(
+    name="data-transformation",
+    code_check="dbt test",
+    has_ui=False,
+    design_md_path="design/DESIGN.md",
+    conventions=(
+        "Projet de transformation Silver/Gold ; modèles avec ref/source, description et au moins "
+        "un test (forge-data oracle-transformer TR1-TR6) ; documentation générée (dbt docs generate)"
+    ),
+    brick_catalog={},
+    roles={"transformations": "."},
+    pkg_managers={"transformations": "pip"},
+    commands={"transformations": RoleCommands(test="dbt test", build="dbt docs generate", lint="dbt parse")},
+)
+
+_PROFILES: dict[str, TargetProfile] = {
+    "fastapi": FASTAPI_SAAS,
+    "node-ts": NODE_TS,
+    "data-transformation": DATA_TRANSFORMATION,
+}
 
 
 def profile_for_stack(stack: str) -> TargetProfile | None:
