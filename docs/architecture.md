@@ -188,9 +188,38 @@ jobs:
 | Porte | Position | Bloque quoi | Implémenté dans |
 |---|---|---|---|
 | **HITL 1** | Après C (planification), avant D/E | Le démarrage du dev tant que PRD/archi non validés | `bmad_bridge.py` (flag `hitl1_approved`) |
-| **HITL 2** | Après E (double gate vert), avant merge | La livraison/merge final | `supervisor.py` + branch protection |
+| **HITL 2** | Après E (double gate vert), avant merge | La livraison/merge final | `supervisor.py` + branch protection (champs réels : §7.1) |
 
 Aucune automatisation au-delà de ces deux portes : c'est un invariant, pas une limitation technique.
+
+### 7.1 Protection réelle de `main` (vérifiée, pas déclarée — D-26 (a) / TF-0886)
+
+La « branch protection » citée en HITL 2 n'est pas un statut supposé : un mandat antérieur
+(`input/00-travaux/pilot - TRAVAUX - 20260905f.md`) l'avait décrite comme « protégée sur GitHub
+(avance rapide seule) ». Le push ordinaire du 05/09 (`053fdaf`) a pourtant été accepté avec
+« Bypassed rule violations for refs/heads/main », en nommant deux règles enfreintes. Lue chez
+l'hébergeur le **06/09/2026** (`gh api repos/iguane39/digit-ai-forge-development/branches/main
+/protection`), champs cités :
+
+| Champ | Valeur lue le 06/09/2026 |
+|---|---|
+| `required_pull_request_reviews.required_approving_review_count` | `1` |
+| `required_status_checks.contexts` | `["code", "design"]` |
+| `required_status_checks.strict` | `true` |
+| `enforce_admins.enabled` | **`false`** |
+| `allow_force_pushes.enabled` | `false` |
+
+`enforce_admins=false` signifie que le compte propriétaire/administrateur contourne la revue et
+les deux contrôles d'office — ce n'est pas « avance rapide » (qui décrirait un fast-forward sans
+règle), c'est une revue+contrôles bypassables par un seul rôle. **Reste humain (TF-0886)** :
+décider si `enforce_admins` doit passer à `true` est un geste sur le dépôt hébergé, jamais une
+écriture d'agent — non tranché ici.
+
+Outillage : `conductor/harness/branch_protection.py` (`decrire_protection`, `resume_citable`)
+lit ces champs et déclare le contournement d'office comme un constat plutôt que de le passer
+sous silence — CLI : `python -m conductor.harness.branch_protection <owner> <repo> [branch]`.
+Toute description future de cette règle (mandat, doc, retour) doit citer une lecture fraîche,
+pas recopier ce tableau : il date du 06/09/2026 et peut avoir dérivé depuis.
 
 ---
 
