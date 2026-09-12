@@ -287,8 +287,11 @@ vert de bout en bout qui met une panne totale en service). Une septième a suivi
 *l'interrupteur d'authentification et son garde sur un FAIT* (un `client_id` faux survivant neuf
 jours, cinq recettes inter-profils jamais vertes). Une huitième est entrée le 05/09/2026 —
 *l'adresse d'un statique porte la version* (une feuille de style d'avant le composant rendue sur
-le poste pendant que le serveur répondait 200 sur la feuille à jour). **Huit disciplines à ce
-jour.**
+le poste pendant que le serveur répondait 200 sur la feuille à jour). Une neuvième et une dixième
+sont entrées le 12/09/2026, sur deux mandats humains distincts du même jour : *le viewport de
+conception* (E5 — « Full HD par défaut, responsive jusqu'au 4K ») et *le plancher d'écriture du
+produit* (`references\ECRITURE.md`, décisions D-1 (a) et D-3 (a) de la synthèse 20260911j).
+**Dix disciplines à ce jour.**
 
 - **Frontière démo/production.** Tout artefact de démonstration (fixtures, comptes, données
   simulées, endpoints de peuplement) vit derrière un drapeau d'environnement explicite
@@ -607,6 +610,72 @@ jour.**
   bien à la route servie — seul le contrôle 4 post-déploiement le fait, contre l'URL réelle. Un
   `<meta http-equiv="Cache-Control">` n'est délibérément PAS accepté comme déclaration : les
   navigateurs l'ignorent, et l'accepter fabriquerait un vert sur une règle sans effet.
+
+- **Tout écran de bureau se conçoit à 1920 px, et se vérifie jusqu'au 4K (TF-1066, 12/09/2026,
+  règle E5).** Toute maquette ou tout écran de bureau part d'une largeur de 1920 px — jamais de
+  1280, jamais de 1440. Les grilles gagnent des colonnes en largeur, pas des marges. Aucun
+  conteneur de mise en page ne porte de hauteur fixe. La mesure de lecture reste portée par le
+  conteneur (même principe que E4) : une prose ne s'étire pas sur la largeur d'un écran 4K.
+
+  Mesure qui fait naître la discipline : règle humaine du 12/09/2026, posée après un constat
+  répété — un composant conçu à 1280 s'étire ou se perd une fois porté à 3840, et aucune largeur
+  de référence commune n'existait entre les maquettes et les écrans construits.
+
+  Test : le gate visuel de fin de development joue `render_page.py --widths
+  3840,2560,1920,1440,1024,768,390` (grille par défaut du socle une fois étendue) et refuse tout
+  défaut bloquant, à quelque largeur que ce soit.
+
+  ```bash
+  # gate visuel — sept largeurs, aucun défaut bloquant accepté à aucune d'elles
+  python render_page.py "<écran ou page rendue>" --widths 3840,2560,1920,1440,1024,768,390
+  # attendu : exit 0, zéro défaut bloquant listé pour CHAQUE largeur — un seul défaut à 3840 suffit à faire échouer le gate
+  ```
+
+  Limites déclarées : `render_page.py` vit dans le socle `digit-ai-page-html` de forge-design, pas
+  dans ce dépôt — cette discipline cite un contrat de sortie du development, pas un outil que
+  cette forge livre elle-même. Le rendu est statique : un composant qui ne s'affiche qu'après une
+  interaction (ouverture, focus) échappe au contrôle, au même titre que les états ouverts de la
+  section H.
+
+- **Les textes du produit suivent le plancher d'écriture, et ses textes d'application vivent dans
+  un fichier de ressources (TF-1064, 12/09/2026).** Tout produit construit par cette forge hérite
+  `forge\ECRITURE.md` du pilot — copie conforme — et son hook `ecriture`
+  (`forge\hooks\factory.mjs ecriture`), joué à l'écriture de chaque `.md`. Les textes
+  d'application (libellés, erreurs, états vides, aide) suivent la règle E-12 en trois formes : un
+  libellé nomme ce que la personne contrôle, une erreur dit ce qui s'est passé puis comment
+  réparer, un état vide invite à agir. Ces chaînes vivent dans un fichier de ressources
+  extractible (JSON, `.arb`, `.po`, `.properties`), jamais en littéraux dispersés dans le code —
+  condition pour que l'oracle T4 de forge-design puisse les lire. Un message de commit porte un
+  sujet puis un corps, en phrases de trente-cinq mots au plus ; un sujet nu « fix », « wip » ou
+  « update » n'est jamais accepté. Le gate de fin de development joue
+  `node forge\hooks\factory.mjs ecriture --fichier <chaque .md écrit par le run>` sur tout texte
+  que le PostToolUse n'a pas déjà couvert.
+
+  Mesure qui fait naître la discipline : relevé du 11/09/2026, ce playbook ne citait ni les textes
+  d'application ni les messages de commit, alors que le plancher d'écriture existait déjà chez le
+  pilot pour les documents (TF-0932, TF-0511).
+
+  Test :
+
+  ```bash
+  # 1. les chaînes d'application vivent dans un fichier de ressources, pas en littéraux
+  grep -rlE '"[A-Za-zÀ-ÿ ]{3,}"' frontend/src --include=*.tsx --include=*.ts \
+    | grep -v -E 'locales/|i18n/|messages\.(json|arb|po|properties)'
+  # attendu : aucune ligne — un résultat signale un libellé qui a échappé au fichier de ressources
+
+  # 2. le sujet d'un message de commit n'est jamais un mot nu
+  git log --format=%s -20 | grep -iE '^(fix|wip|update)\W*$'
+  # attendu : aucune ligne
+
+  # 3. le gate de fin de development rejoue le hook sur les .md que PostToolUse n'a pas couverts
+  node forge\hooks\factory.mjs ecriture --fichier docs\run-playbook.md
+  ```
+
+  Limites déclarées : le grep du contrôle 1 est une coïncidence de chaîne, pas une analyse du DOM
+  ni du bundle compilé — un libellé construit par concaténation lui échappe. Le contrôle 2 lit le
+  sujet du commit, jamais son corps : un « fix » noyé dans une phrase plus longue n'est pas visé,
+  seul le mot nu l'est. L'oracle T4 lui-même n'est pas joué ici : il est confié à forge-design
+  (revue, lot de travaux du 12/09) — cette forge garantit seulement le support qu'il lira.
 
 ## Quand lire les détails
 - **Phases A→E, classification de pièces jointes, sections pilote** → [conductor-run-playbook](conductor-run-playbook.md).
