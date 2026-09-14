@@ -14,7 +14,9 @@ from conductor.profiles import DATA_TRANSFORMATION, profile_for_stack, resolve_p
 
 
 def test_detect_stack_data_transformation(tmp_path: Path) -> None:
-    (tmp_path / "dbt_project.yml").write_text("name: ventes_silver_gold\nversion: '1.0.0'\n", encoding="utf-8")
+    (tmp_path / "dbt_project.yml").write_text(
+        "name: ventes_silver_gold\nversion: '1.0.0'\n", encoding="utf-8"
+    )
     assert detect_stack(tmp_path) == "data-transformation"
 
 

@@ -42,6 +42,22 @@ sévérité) échoue. Les **deux gates sont bloquants** depuis l'Epic 2. ⚠ Le 
 fie pas à l'exit code du linter (cf. piège S-2.3) : il parse le JSON et applique sa propre
 politique de sévérité.
 
+### Avant de pousser — rejouer le job `code` en local (TF-1072)
+Le job `code` a tourné rouge cinq jours sur la branche principale (Ruff E501, plafond 100,
+`[tool.ruff] line-length = 100`) sans qu'aucune recette locale ne le montre avant le push.
+Rejouer, dans l'ordre du job, avant tout push :
+```bash
+uv run ruff check .
+uv run mypy
+uv run python -m pytest
+uv run python -m conductor.gates.ai_antipatterns_gate conductor pyproject.toml
+```
+La première commande rouge est celle qui bloquera l'hébergeur — mêmes commande et
+configuration que [`../.github/workflows/double-gate.yml`](../.github/workflows/double-gate.yml).
+Reste ouvert (TF-1072) : cette séquence n'est pas encore un hook ni un script exécuté
+automatiquement, seulement documentée ici — automatiser son déclenchement est une
+correction distincte (nouvel objet exécutable), hors périmètre de ce lot.
+
 ## Documentation de conception
 [`../docs/`](../docs/) — analyse, PRD, architecture, plan d'implémentation, notes de spike,
 décisions d'exécution.

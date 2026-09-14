@@ -224,13 +224,18 @@ DATA_TRANSFORMATION = TargetProfile(
     has_ui=False,
     design_md_path="design/DESIGN.md",
     conventions=(
-        "Projet de transformation Silver/Gold ; modèles avec ref/source, description et au moins "
-        "un test (forge-data oracle-transformer TR1-TR6) ; documentation générée (dbt docs generate)"
+        "Projet de transformation Silver/Gold ; modèles avec ref/source, description et au "
+        "moins un test (forge-data oracle-transformer TR1-TR6) ; documentation générée "
+        "(dbt docs generate)"
     ),
     brick_catalog={},
     roles={"transformations": "."},
     pkg_managers={"transformations": "pip"},
-    commands={"transformations": RoleCommands(test="dbt test", build="dbt docs generate", lint="dbt parse")},
+    commands={
+        "transformations": RoleCommands(
+            test="dbt test", build="dbt docs generate", lint="dbt parse"
+        ),
+    },
 )
 
 _PROFILES: dict[str, TargetProfile] = {
