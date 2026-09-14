@@ -290,8 +290,10 @@ jours, cinq recettes inter-profils jamais vertes). Une huitième est entrée le 
 le poste pendant que le serveur répondait 200 sur la feuille à jour). Une neuvième et une dixième
 sont entrées le 12/09/2026, sur deux mandats humains distincts du même jour : *le viewport de
 conception* (E5 — « Full HD par défaut, responsive jusqu'au 4K ») et *le plancher d'écriture du
-produit* (`references\ECRITURE.md`, décisions D-1 (a) et D-3 (a) de la synthèse 20260911j).
-**Dix disciplines à ce jour.**
+produit* (`references\ECRITURE.md`, décisions D-1 (a) et D-3 (a) de la synthèse 20260911j). Une
+onzième est entrée le 14/09/2026, décidée par l'étude d'opportunité « socle de la chaîne »
+(20260914a, TF-1040) — *une porte prouve qu'elle sait dire non*.
+**Onze disciplines à ce jour.**
 
 - **Frontière démo/production.** Tout artefact de démonstration (fixtures, comptes, données
   simulées, endpoints de peuplement) vit derrière un drapeau d'environnement explicite
@@ -676,6 +678,40 @@ produit* (`references\ECRITURE.md`, décisions D-1 (a) et D-3 (a) de la synthès
   sujet du commit, jamais son corps : un « fix » noyé dans une phrase plus longue n'est pas visé,
   seul le mot nu l'est. L'oracle T4 lui-même n'est pas joué ici : il est confié à forge-design
   (revue, lot de travaux du 12/09) — cette forge garantit seulement le support qu'il lira.
+
+- **Une porte prouve qu'elle sait dire non — CE N'EST UNE PORTE QUE SI ELLE A ÉTÉ VUE ROUGE AU
+  MOINS UNE FOIS, preuve nommée (TF-1040, 14/09/2026, étude d'opportunité « socle de la chaîne »
+  20260914a, options O1 puis O2).** Un contrôle qualifié de porte (son échec doit bloquer un
+  déploiement ou un merge) déclare, quelque part dans le dépôt qui le porte, la preuve datée
+  qu'il a déjà échoué sur une fixture rouge — sinon rien ne distingue « ce contrôle protège »
+  de « ce contrôle est vert par construction et ne proteste jamais ». Et un contrôle dont le
+  code de sortie est NEUTRALISÉ dans la chaîne (`|| true`, `continue-on-error: true`, `|| exit
+  0` accolé à une commande de lint/test/build) n'est déjà plus une porte, quelle que soit sa
+  preuve passée : la chaîne ne peut plus l'entendre dire non.
+
+  Mesure qui fait naître la discipline (Produit-11, RT-59, 11/09/2026) : six contrôles déclarés
+  « porte » dans une chaîne de produit tiers sont VERTS PAR CONSTRUCTION — aucun n'a jamais été
+  vu rouge, aucune fixture ne le permettrait, et rien dans le socle ne l'exigeait ni ne le
+  mesurait. La présence d'un contrôle avait été prise pour sa fiabilité.
+
+  Test : `conductor/gates/porte_neutralisee_gate.py` liste, dans les fichiers de chaîne CI
+  (`.github/workflows/*.yml`), chaque ligne qui neutralise le code de sortie d'une commande de
+  contrôle (lint/test/check/gate/ruff/mypy/pytest) — un total non vide est un FAIL nommant le
+  fichier et la ligne.
+
+  ```bash
+  uv run python -m conductor.gates.porte_neutralisee_gate .
+  # attendu, dépôt sain : « porte-neutralisee gate: PASS »
+  # attendu, contrôle neutralisé : exit 1 + « [fichier:ligne] … neutralise le code de sortie
+  # d'un contrôle » — chaque occurrence nommée, jamais un total anonyme
+  ```
+
+  Limites déclarées : ce gate voit la NEUTRALISATION du code de sortie, jamais l'ABSENCE de
+  preuve « vue rouge » elle-même — cette preuve reste une déclaration humaine, datée, à côté du
+  contrôle (aucun mécanisme ne peut constater qu'un contrôle EST CAPABLE d'échouer sans le
+  faire réellement échouer une fois, ce qui sort du périmètre d'un gate statique). Le motif de
+  neutralisation reconnu est une coïncidence de chaîne (mêmes limites que `demo_markers_gate`) :
+  une neutralisation construite dynamiquement (variable, script intermédiaire) lui échappe.
 
 ## Quand lire les détails
 - **Phases A→E, classification de pièces jointes, sections pilote** → [conductor-run-playbook](conductor-run-playbook.md).

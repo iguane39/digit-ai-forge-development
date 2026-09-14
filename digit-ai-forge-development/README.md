@@ -51,6 +51,7 @@ uv run ruff check .
 uv run mypy
 uv run python -m pytest
 uv run python -m conductor.gates.ai_antipatterns_gate conductor pyproject.toml
+uv run python -m conductor.gates.porte_neutralisee_gate ..
 ```
 La première commande rouge est celle qui bloquera l'hébergeur — mêmes commande et
 configuration que [`../.github/workflows/double-gate.yml`](../.github/workflows/double-gate.yml).
