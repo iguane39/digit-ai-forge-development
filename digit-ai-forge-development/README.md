@@ -42,10 +42,28 @@ sévérité) échoue. Les **deux gates sont bloquants** depuis l'Epic 2. ⚠ Le 
 fie pas à l'exit code du linter (cf. piège S-2.3) : il parse le JSON et applique sa propre
 politique de sévérité.
 
-### Avant de pousser — rejouer le job `code` en local (TF-1072)
+### Avant de pousser — rejouer le job `code` en local (TF-1072, TF-1101)
 Le job `code` a tourné rouge cinq jours sur la branche principale (Ruff E501, plafond 100,
 `[tool.ruff] line-length = 100`) sans qu'aucune recette locale ne le montre avant le push.
-Rejouer, dans l'ordre du job, avant tout push :
+```bash
+uv run python -m conductor.recette_locale
+```
+Rejoue, dans le même ordre et avec la même configuration que
+[`../.github/workflows/double-gate.yml`](../.github/workflows/double-gate.yml), les cinq
+étapes du job `code` (ruff, mypy, pytest, ai-antipatterns, porte-neutralisee) — **chacune
+indépendamment des autres** : un échec n'arrête jamais les suivantes (TF-1101, cf.
+`conductor/recette_locale.py`). Le récapitulatif final NOMME chaque étape rouge, pas
+seulement la première rencontrée :
+```
+recette locale : 4/5 etape(s) verte(s) — echec(s) : ruff
+  [ECHEC] ruff
+  [OK   ] mypy
+  [OK   ] pytest
+  [OK   ] ai-antipatterns
+  [OK   ] porte-neutralisee
+```
+Exit 1 si au moins une étape est rouge (bloque le push), 0 si les cinq sont vertes. Les
+commandes peuvent aussi se rejouer une par une (même configuration) :
 ```bash
 uv run ruff check .
 uv run mypy
@@ -53,11 +71,6 @@ uv run python -m pytest
 uv run python -m conductor.gates.ai_antipatterns_gate conductor pyproject.toml
 uv run python -m conductor.gates.porte_neutralisee_gate ..
 ```
-La première commande rouge est celle qui bloquera l'hébergeur — mêmes commande et
-configuration que [`../.github/workflows/double-gate.yml`](../.github/workflows/double-gate.yml).
-Reste ouvert (TF-1072) : cette séquence n'est pas encore un hook ni un script exécuté
-automatiquement, seulement documentée ici — automatiser son déclenchement est une
-correction distincte (nouvel objet exécutable), hors périmètre de ce lot.
 
 ## Documentation de conception
 [`../docs/`](../docs/) — analyse, PRD, architecture, plan d'implémentation, notes de spike,

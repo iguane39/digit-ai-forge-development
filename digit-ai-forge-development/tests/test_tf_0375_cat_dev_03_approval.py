@@ -127,7 +127,7 @@ def _outcome() -> StoryOutcome:
     return StoryOutcome(story_id="APR-08", code_ok=True, pr_url="https://exemple/pr/1")
 
 
-def _json(findings: list[dict]) -> str:
+def _json(findings: list[dict[str, str]]) -> str:
     import json
 
     return json.dumps({"findings": findings}, ensure_ascii=False)
