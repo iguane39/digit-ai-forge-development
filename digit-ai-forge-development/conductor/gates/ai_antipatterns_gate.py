@@ -1,7 +1,7 @@
-"""Gate anti-patterns IA (TF-0103, sous-item 3) — trois défauts fréquents du code généré.
+"""Gate anti-patterns IA (TF-0103, sous-item 3) — quatre défauts fréquents du code généré.
 
 Contrôle STATIQUE (AST + regex, aucune exécution), même posture heuristique que
-``demo_markers_gate`` : coïncidence de motif, pas un compilateur. Trois classes de défaut,
+``demo_markers_gate`` : coïncidence de motif, pas un compilateur. Quatre classes de défaut,
 observées dans le code produit par des agents autonomes :
 
 1. **Imports fantômes** — un module importé qui n'est ni la bibliothèque standard, ni un
@@ -13,6 +13,13 @@ observées dans le code produit par des agents autonomes :
 3. **Routes sans autorisation** — une route HTTP (FastAPI ``@app.get``/``@router.post``…) sans
    dépendance d'authentification visible ni marqueur explicite de route publique : l'agent a
    ajouté un endpoint sans se poser la question de qui peut l'appeler.
+4. **Outil de qualité déclaré et jamais câblé** (TF-1041) — un script de qualité de
+   ``package.json`` (lint/typecheck), un linter configuré dans ``pyproject.toml`` ([tool.ruff],
+   [tool.mypy]…) ou un hook de ``.pre-commit-config.yaml`` qui n'apparaît dans AUCUN fichier de
+   chaîne CI (``.github/workflows/*.yml``), ou y apparaît neutralisé (``|| true``,
+   ``continue-on-error: true``) : un outil déclaré et jamais appelé est un outil qui n'existe
+   pas — la déclaration rassure d'autant plus qu'elle est longuement commentée (mesure du
+   11/09/2026, Produit-11).
 
 Hors périmètre volontaire (mêmes exclusions que ``demo_markers_gate``) : ``tests/``,
 ``migrations/``, ``vendor/`` (dépendance tierce épinglée, jamais modifiée) et ``.venv/``.
@@ -21,6 +28,7 @@ Hors périmètre volontaire (mêmes exclusions que ``demo_markers_gate``) : ``te
 from __future__ import annotations
 
 import ast
+import json
 import re
 import sys
 import tomllib
@@ -211,6 +219,131 @@ def check_routes_without_auth(source_dir: Path) -> list[dict[str, str]]:
     return findings
 
 
+# --- 4. Outil de qualité déclaré, jamais câblé (TF-1041) ----------------------
+
+_QUALITY_SCRIPT_NAME = re.compile(r"lint|typecheck|type-check|tsc", re.IGNORECASE)
+_NEUTRALIZED = re.compile(r"\|\|\s*true|continue-on-error:\s*true", re.IGNORECASE)
+_KNOWN_PYPROJECT_LINTERS = ("ruff", "mypy", "flake8", "black", "pylint")
+
+
+def _find_repo_root(start: Path, *, max_levels: int = 5) -> Path:
+    """Remonte depuis ``start`` jusqu'à un dossier portant ``.git`` (racine du dépôt), plafonné
+    à ``max_levels`` — un dépôt de forge peut loger son produit un cran sous la racine git
+    (chaîne CI en ``.github/`` un niveau au-dessus du ``pyproject.toml`` audité)."""
+    current = start.resolve()
+    for _ in range(max_levels):
+        if (current / ".git").exists():
+            return current
+        if current.parent == current:
+            break
+        current = current.parent
+    return start
+
+
+def _package_json_quality_scripts(repo_root: Path) -> dict[str, str]:
+    """Scripts de qualité déclarés par ``package.json`` (racine) : lint/typecheck/tsc."""
+    pkg = repo_root / "package.json"
+    if not pkg.exists():
+        return {}
+    try:
+        data = json.loads(pkg.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return {}
+    scripts = data.get("scripts", {})
+    if not isinstance(scripts, dict):
+        return {}
+    return {
+        name: str(cmd)
+        for name, cmd in scripts.items()
+        if isinstance(name, str) and _QUALITY_SCRIPT_NAME.search(name)
+    }
+
+
+def _pyproject_linters(pyproject_path: Path) -> list[str]:
+    """Linters configurés dans le ``pyproject.toml`` audité : présence d'une table
+    ``[tool.<linter>]`` parmi les linters Python usuels — la présence de la table vaut
+    déclaration, indépendamment de son contenu."""
+    if not pyproject_path.exists():
+        return []
+    try:
+        data = tomllib.loads(pyproject_path.read_text(encoding="utf-8"))
+    except (tomllib.TOMLDecodeError, OSError):
+        return []
+    tool = data.get("tool", {})
+    if not isinstance(tool, dict):
+        return []
+    return [name for name in _KNOWN_PYPROJECT_LINTERS if name in tool]
+
+
+def _pre_commit_hook_ids(repo_root: Path) -> list[str]:
+    """Identifiants des hooks déclarés par ``.pre-commit-config.yaml`` (racine) — lecture ligne
+    à ligne, sans dépendance YAML tierce (même posture que le reste du gate)."""
+    cfg = repo_root / ".pre-commit-config.yaml"
+    if not cfg.exists():
+        return []
+    ids: list[str] = []
+    for line in cfg.read_text(encoding="utf-8", errors="ignore").splitlines():
+        m = re.match(r"\s*-?\s*id:\s*(\S+)", line)
+        if m:
+            ids.append(m.group(1).strip("'\""))
+    return ids
+
+
+def _chain_text(repo_root: Path) -> str:
+    """Contenu concaténé des fichiers de chaîne CI connus (``.github/workflows/*.yml|yaml``)."""
+    workflows_dir = repo_root / ".github" / "workflows"
+    if not workflows_dir.exists():
+        return ""
+    files = sorted(workflows_dir.glob("*.yml")) + sorted(workflows_dir.glob("*.yaml"))
+    return "\n".join(f.read_text(encoding="utf-8", errors="ignore") for f in files)
+
+
+def _cited_and_wired(token: str, chain_text: str) -> bool:
+    """Le jeton apparaît dans la chaîne ET sa ligne n'est pas neutralisée (``|| true``,
+    ``continue-on-error: true``)."""
+    if token not in chain_text:
+        return False
+    return any(
+        token in line and not _NEUTRALIZED.search(line) for line in chain_text.splitlines()
+    )
+
+
+def check_declared_tools_not_wired(
+    pyproject_path: Path, *, repo_root: Path | None = None
+) -> list[dict[str, str]]:
+    """Un outil de qualité DÉCLARÉ (script package.json, linter pyproject.toml, hook
+    pre-commit) et absent — ou neutralisé — de la chaîne CI est un outil qui n'existe pas."""
+    root = repo_root if repo_root is not None else _find_repo_root(pyproject_path.parent)
+    chain_text = _chain_text(root)
+    findings: list[dict[str, str]] = []
+
+    for name, cmd in _package_json_quality_scripts(root).items():
+        if not (_cited_and_wired(f"run {name}", chain_text) or _cited_and_wired(name, chain_text)):
+            findings.append(
+                {
+                    "kind": "outil-non-cable",
+                    "issue": f"script package.json '{name}' ({cmd}) absent de la chaîne CI",
+                }
+            )
+    for linter in _pyproject_linters(pyproject_path):
+        if not _cited_and_wired(linter, chain_text):
+            findings.append(
+                {
+                    "kind": "outil-non-cable",
+                    "issue": f"linter pyproject.toml '[tool.{linter}]' absent de la chaîne CI",
+                }
+            )
+    for hook_id in _pre_commit_hook_ids(root):
+        if not _cited_and_wired(hook_id, chain_text):
+            findings.append(
+                {
+                    "kind": "outil-non-cable",
+                    "issue": f"hook .pre-commit-config.yaml '{hook_id}' absent de la chaîne CI",
+                }
+            )
+    return findings
+
+
 # --- Agrégation ---------------------------------------------------------------
 
 
@@ -233,6 +366,7 @@ def run_ai_antipatterns_gate(
         findings += check_missing_dependencies(
             source_dir, pyproject_path, local_packages=local_packages
         )
+        findings += check_declared_tools_not_wired(pyproject_path)
     else:
         findings.append(
             {"skipped": "pyproject.toml introuvable — imports fantômes non contrôlés"}
@@ -263,7 +397,7 @@ def main(argv: list[str] | None = None) -> int:
     blocking = [f for f in verdict.findings if "skipped" not in f]
     print(f"ai-antipatterns gate: FAIL ({len(blocking)} défaut(s))", file=sys.stderr)
     for f in blocking:
-        print(f"  - [{f['kind']}] {f['file']} : {f['issue']}", file=sys.stderr)
+        print(f"  - [{f['kind']}] {f.get('file', '(chaîne CI)')} : {f['issue']}", file=sys.stderr)
     return 1
 
 

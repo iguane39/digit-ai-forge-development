@@ -1,14 +1,21 @@
-"""Gate anti-patterns IA (TF-0103.3) : imports fantômes, secrets en dur, routes sans auth."""
+"""Gate anti-patterns IA (TF-0103.3) : imports fantômes, secrets en dur, routes sans auth,
+outil de qualité déclaré et jamais câblé (TF-1041)."""
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
 
 from conductor.gates.ai_antipatterns_gate import (
     _dep_name,
+    _find_repo_root,
     _import_names_for_dependency,
+    _package_json_quality_scripts,
+    _pre_commit_hook_ids,
+    _pyproject_linters,
+    check_declared_tools_not_wired,
     check_hardcoded_secrets,
     check_missing_dependencies,
     check_routes_without_auth,
@@ -512,6 +519,144 @@ def test_gate_agrege_les_trois_controles_et_echoue(tmp_path: Path) -> None:
     kinds = {f["kind"] for f in verdict.findings}
     assert verdict.passed is False
     assert kinds == {"import-fantome", "secret-en-dur", "route-sans-auth"}
+
+
+# --- 4. Outil de qualité déclaré, jamais câblé (TF-1041) ----------------------
+
+
+def _write_chain(repo_root: Path, content: str) -> None:
+    workflows = repo_root / ".github" / "workflows"
+    workflows.mkdir(parents=True, exist_ok=True)
+    (workflows / "ci.yml").write_text(content, encoding="utf-8")
+
+
+def test_find_repo_root_remonte_jusqu_au_marqueur_git(tmp_path: Path) -> None:
+    (tmp_path / ".git").mkdir()
+    nested = tmp_path / "produit"
+    nested.mkdir()
+    assert _find_repo_root(nested) == tmp_path
+
+
+def test_find_repo_root_sans_marqueur_rend_le_depart(tmp_path: Path) -> None:
+    """Fixture rouge : aucun ``.git`` sur le chemin → le point de départ est rendu tel quel
+    (do-no-harm), jamais une remontée jusqu'à la racine du disque."""
+    isolated = tmp_path / "sans-git"
+    isolated.mkdir()
+    assert _find_repo_root(isolated) == isolated
+
+
+def test_package_json_quality_scripts_filtre_lint_et_typecheck(tmp_path: Path) -> None:
+    (tmp_path / "package.json").write_text(
+        json.dumps({"scripts": {"lint": "eslint .", "build": "tsc -b", "test": "vitest"}}),
+        encoding="utf-8",
+    )
+    scripts = _package_json_quality_scripts(tmp_path)
+    assert scripts == {"lint": "eslint ."}
+
+
+def test_package_json_absent_rend_dict_vide(tmp_path: Path) -> None:
+    assert _package_json_quality_scripts(tmp_path) == {}
+
+
+def test_pyproject_linters_detecte_les_tables_declarees(tmp_path: Path) -> None:
+    p = tmp_path / "pyproject.toml"
+    p.write_text("[tool.ruff]\nline-length = 100\n[tool.mypy]\nstrict = true\n", encoding="utf-8")
+    assert _pyproject_linters(p) == ["ruff", "mypy"]
+
+
+def test_pyproject_linters_sans_table_tool_rend_liste_vide(tmp_path: Path) -> None:
+    p = _write_pyproject(tmp_path)
+    assert _pyproject_linters(p) == []
+
+
+def test_pre_commit_hook_ids_lit_les_id(tmp_path: Path) -> None:
+    (tmp_path / ".pre-commit-config.yaml").write_text(
+        "repos:\n  - repo: local\n    hooks:\n      - id: ruff\n      - id: eslint\n",
+        encoding="utf-8",
+    )
+    assert _pre_commit_hook_ids(tmp_path) == ["ruff", "eslint"]
+
+
+def test_declared_tool_absent_de_la_chaine_echoue(tmp_path: Path) -> None:
+    """Fixture rouge (TF-1041, mesure Produit-11) : un script de qualité déclaré et absent du
+    fichier de chaîne est signalé — la déclaration seule ne prouve rien."""
+    (tmp_path / "package.json").write_text(
+        json.dumps({"scripts": {"lint": "eslint ."}}), encoding="utf-8"
+    )
+    _write_chain(tmp_path, "jobs:\n  build:\n    steps:\n      - run: npm run build\n")
+    pyproject = _write_pyproject(tmp_path)
+    findings = check_declared_tools_not_wired(pyproject, repo_root=tmp_path)
+    assert findings == [
+        {
+            "kind": "outil-non-cable",
+            "issue": "script package.json 'lint' (eslint .) absent de la chaîne CI",
+        }
+    ]
+
+
+def test_declared_tool_cable_dans_la_chaine_passe(tmp_path: Path) -> None:
+    """Fixture verte : le même script, cette fois appelé par la chaîne, ne remonte rien."""
+    (tmp_path / "package.json").write_text(
+        json.dumps({"scripts": {"lint": "eslint ."}}), encoding="utf-8"
+    )
+    _write_chain(tmp_path, "jobs:\n  code:\n    steps:\n      - run: npm run lint\n")
+    pyproject = _write_pyproject(tmp_path)
+    assert check_declared_tools_not_wired(pyproject, repo_root=tmp_path) == []
+
+
+def test_declared_tool_neutralise_dans_la_chaine_echoue(tmp_path: Path) -> None:
+    """Fixture rouge : le linter est cité mais sa ligne est neutralisée (``|| true``) — cité
+    n'est pas câblé."""
+    pyproject = tmp_path / "pyproject.toml"
+    pyproject.write_text("[tool.ruff]\nline-length = 100\n", encoding="utf-8")
+    _write_chain(tmp_path, "jobs:\n  code:\n    steps:\n      - run: uv run ruff check . || true\n")
+    findings = check_declared_tools_not_wired(pyproject, repo_root=tmp_path)
+    assert findings == [
+        {
+            "kind": "outil-non-cable",
+            "issue": "linter pyproject.toml '[tool.ruff]' absent de la chaîne CI",
+        }
+    ]
+
+
+def test_declared_pyproject_linter_cable_passe(tmp_path: Path) -> None:
+    pyproject = tmp_path / "pyproject.toml"
+    pyproject.write_text("[tool.ruff]\nline-length = 100\n", encoding="utf-8")
+    _write_chain(tmp_path, "jobs:\n  code:\n    steps:\n      - run: uv run ruff check .\n")
+    assert check_declared_tools_not_wired(pyproject, repo_root=tmp_path) == []
+
+
+def test_declared_pre_commit_hook_absent_echoue(tmp_path: Path) -> None:
+    (tmp_path / ".pre-commit-config.yaml").write_text(
+        "repos:\n  - repo: local\n    hooks:\n      - id: eslint\n", encoding="utf-8"
+    )
+    _write_chain(tmp_path, "jobs:\n  code:\n    steps:\n      - run: npm run build\n")
+    pyproject = _write_pyproject(tmp_path)
+    findings = check_declared_tools_not_wired(pyproject, repo_root=tmp_path)
+    assert findings == [
+        {
+            "kind": "outil-non-cable",
+            "issue": "hook .pre-commit-config.yaml 'eslint' absent de la chaîne CI",
+        }
+    ]
+
+
+def test_declared_tools_sans_chaine_ni_declaration_ne_remonte_rien(tmp_path: Path) -> None:
+    pyproject = _write_pyproject(tmp_path)
+    assert check_declared_tools_not_wired(pyproject, repo_root=tmp_path) == []
+
+
+def test_run_gate_integre_le_controle_socle(tmp_path: Path) -> None:
+    """Intégration : ``run_ai_antipatterns_gate`` remonte bien le 4e contrôle (TF-1041) et le
+    dépôt reste PASS quand tout est câblé."""
+    pyproject = tmp_path / "pyproject.toml"
+    pyproject.write_text("[tool.ruff]\nline-length = 100\n", encoding="utf-8")
+    src = tmp_path / "app"
+    src.mkdir()
+    (src / "main.py").write_text("x = 1\n", encoding="utf-8")
+    _write_chain(tmp_path, "jobs:\n  code:\n    steps:\n      - run: uv run ruff check .\n")
+    verdict = run_ai_antipatterns_gate(src, pyproject)
+    assert verdict.passed is True
 
 
 def test_cli_main_pass_et_fail(
