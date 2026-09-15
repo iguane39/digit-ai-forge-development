@@ -1,7 +1,7 @@
-"""Gate anti-patterns IA (TF-0103, sous-item 3) — quatre défauts fréquents du code généré.
+"""Gate anti-patterns IA (TF-0103, sous-item 3) — six défauts fréquents du code généré.
 
 Contrôle STATIQUE (AST + regex, aucune exécution), même posture heuristique que
-``demo_markers_gate`` : coïncidence de motif, pas un compilateur. Quatre classes de défaut,
+``demo_markers_gate`` : coïncidence de motif, pas un compilateur. Six classes de défaut,
 observées dans le code produit par des agents autonomes :
 
 1. **Imports fantômes** — un module importé qui n'est ni la bibliothèque standard, ni un
@@ -20,9 +20,30 @@ observées dans le code produit par des agents autonomes :
    ``continue-on-error: true``) : un outil déclaré et jamais appelé est un outil qui n'existe
    pas — la déclaration rassure d'autant plus qu'elle est longuement commentée (mesure du
    11/09/2026, Produit-11).
+5. **Étape d'archivage de preuves sous ``continueOnError``** (TF-1112, mesure Produit-11 du
+   14/09/2026) — une étape ``PublishBuildArtifacts@`` (Azure Pipelines) ou
+   ``actions/upload-artifact@`` (GitHub Actions) protégée par ``continueOnError: true`` /
+   ``continue-on-error: true`` : le chemin qu'elle publie peut ne jamais avoir existé, l'étape
+   reste verte quand même, et le premier échec réel qu'elle devait archiver (traces, captures,
+   contexte de page) ne laisse aucune trace. Mesure fondatrice : ``resultats.json`` n'a JAMAIS
+   existé sur aucun run — l'étape échouait à chaque exécution et ``continueOnError`` la rendait
+   verte depuis sa naissance. Prolongement du §4 : archiver sous garde d'échec neutralisée
+   n'archive rien, exactement comme un outil câblé sous garde neutralisée n'est pas câblé.
+6. **Attente d'événement posée APRÈS l'action qu'elle observe** (TF-1111, mesure Produit-11 du
+   11/09/2026) — dans une spécification Playwright (``*.spec.ts``), un ``await page.waitFor*(``
+   qui suit textuellement, dans le même bloc, un ``await`` d'action (``click``/``fill``/
+   ``press``/``setInputFiles``) mesure la vitesse de la machine, pas le produit : l'aller-retour
+   peut s'achever avant que l'abonnement à l'événement ne soit en place, d'où une attente jamais
+   satisfaite alors que le produit a déjà répondu correctement. Mesure fondatrice :
+   ``page.waitForResponse(...)`` posé après ``click()`` a rendu 92/93 sur l'agent d'intégration
+   continue, deux fois, pour un écart reproduit ZÉRO fois en local (six exécutions vertes) — la
+   capture d'écran archivée par le run en échec montrait le motif serveur déjà attendu à l'écran.
+   Contrôle STATIQUE, PROPRE à ce défaut : contrairement aux contrôles 1-5, il DESCEND dans
+   ``tests/`` au lieu de l'exclure — c'est là, et seulement là, que ce motif vit.
 
-Hors périmètre volontaire (mêmes exclusions que ``demo_markers_gate``) : ``tests/``,
-``migrations/``, ``vendor/`` (dépendance tierce épinglée, jamais modifiée) et ``.venv/``.
+Hors périmètre volontaire des contrôles 1-5 (mêmes exclusions que ``demo_markers_gate``) :
+``tests/``, ``migrations/``, ``vendor/`` (dépendance tierce épinglée, jamais modifiée) et
+``.venv/``.
 """
 
 from __future__ import annotations
@@ -344,6 +365,96 @@ def check_declared_tools_not_wired(
     return findings
 
 
+# --- 5. Étape d'archivage sous continueOnError (TF-1112) ----------------------
+
+_ARCHIVE_STEP = re.compile(
+    r"^[ \t]*-\s*(?:task\s*:\s*PublishBuildArtifacts@\d+|uses\s*:\s*actions/upload-artifact@)",
+    re.IGNORECASE | re.MULTILINE,
+)
+_CONTINUE_ON_ERROR_TRUE = re.compile(
+    r"continueOnError\s*:\s*true|continue-on-error\s*:\s*true", re.IGNORECASE
+)
+_ARCHIVE_WINDOW = 400  # caractères après le déclencheur d'étape couvrant sa configuration
+
+
+def _workflow_files(repo_root: Path) -> list[Path]:
+    """Fichiers de chaîne CI connus, les deux dialectes du parc (même emplacements
+    qu'``oracle-ops`` O-8) : GitHub Actions (``.github/workflows/*.yml|yaml``) et Azure
+    Pipelines (``azure-pipelines*.yml|yaml`` à la racine, ``pipelines/*.yml|yaml``)."""
+    files: list[Path] = []
+    workflows_dir = repo_root / ".github" / "workflows"
+    if workflows_dir.exists():
+        files += sorted(workflows_dir.glob("*.yml")) + sorted(workflows_dir.glob("*.yaml"))
+    pipelines_dir = repo_root / "pipelines"
+    if pipelines_dir.exists():
+        files += sorted(pipelines_dir.glob("*.yml")) + sorted(pipelines_dir.glob("*.yaml"))
+    if repo_root.exists():
+        for pattern in ("azure-pipelines*.yml", "azure-pipelines*.yaml"):
+            files += sorted(repo_root.glob(pattern))
+    return files
+
+
+def check_archiving_step_continue_on_error(start_dir: Path) -> list[dict[str, str]]:
+    """TF-1112 (mesure Produit-11, 14/09/2026) : une étape d'archivage de preuves protégée par
+    ``continueOnError``/``continue-on-error: true`` ne peut jamais échouer, quel que soit le
+    sort du chemin qu'elle publie — c'est le contrôle STATIQUE réclamé par la mesure (motif
+    reconnaissable à la lecture), le prolongement de la vérification RUNTIME (l'étape produit
+    réellement son artefact) qui reste, elle, hors périmètre d'un contrôle sans exécution."""
+    root = _find_repo_root(start_dir)
+    findings: list[dict[str, str]] = []
+    for path in _workflow_files(root):
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        for match in _ARCHIVE_STEP.finditer(text):
+            window = text[match.start() : match.start() + _ARCHIVE_WINDOW]
+            if _CONTINUE_ON_ERROR_TRUE.search(window):
+                findings.append(
+                    {
+                        "file": str(path),
+                        "kind": "archivage-non-verifiable",
+                        "issue": "étape d'archivage sous continueOnError/continue-on-error: "
+                        "true — un chemin jamais produit reste vert, l'échec qu'elle devait "
+                        "archiver ne laisse aucune trace",
+                    }
+                )
+    return findings
+
+
+# --- 6. Attente d'événement posée après l'action (TF-1111) --------------------
+
+_PLAYWRIGHT_ACTION_AWAIT = re.compile(
+    r"await\s+page\.(?:click|fill|press|setInputFiles)\(", re.IGNORECASE
+)
+_PLAYWRIGHT_WAITFOR_AWAIT = re.compile(r"await\s+page\.waitFor\w*\(", re.IGNORECASE)
+_EVENT_WAIT_WINDOW = 200  # caractères après l'action couvrant l'instruction suivante
+_SPEC_EXCLUDED_PARTS = ("vendor", ".venv", "node_modules")
+
+
+def check_event_wait_after_action(source_dir: Path) -> list[dict[str, str]]:
+    """TF-1111 (mesure Produit-11, 11/09/2026) : contrairement aux contrôles 1-5, celui-ci
+    DESCEND délibérément dans les spécifications Playwright (``*.spec.ts``) — c'est le seul
+    endroit où ce motif vit, et l'exclusion générique de ``tests/`` le rendrait aveugle."""
+    findings: list[dict[str, str]] = []
+    for path in sorted(source_dir.rglob("*.spec.ts")):
+        if not path.is_file() or any(
+            part.lower() in _SPEC_EXCLUDED_PARTS for part in path.parts
+        ):
+            continue
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        for match in _PLAYWRIGHT_ACTION_AWAIT.finditer(text):
+            window = text[match.end() : match.end() + _EVENT_WAIT_WINDOW]
+            wf = _PLAYWRIGHT_WAITFOR_AWAIT.search(window)
+            if wf:
+                findings.append(
+                    {
+                        "file": str(path),
+                        "kind": "attente-posee-apres-action",
+                        "issue": f"« {wf.group(0)} » posé APRÈS l'action qui le déclenche — "
+                        "l'attente se déclare avant l'action, jamais après",
+                    }
+                )
+    return findings
+
+
 # --- Agrégation ---------------------------------------------------------------
 
 
@@ -373,6 +484,8 @@ def run_ai_antipatterns_gate(
         )
     findings += check_hardcoded_secrets(source_dir)
     findings += check_routes_without_auth(source_dir)
+    findings += check_archiving_step_continue_on_error(source_dir)
+    findings += check_event_wait_after_action(source_dir)
     blocking = [f for f in findings if "skipped" not in f]
     return GateVerdict(
         gate="ai-antipatterns", passed=not blocking, findings=findings, log_ref=str(source_dir)

@@ -15,7 +15,9 @@ from conductor.gates.ai_antipatterns_gate import (
     _package_json_quality_scripts,
     _pre_commit_hook_ids,
     _pyproject_linters,
+    check_archiving_step_continue_on_error,
     check_declared_tools_not_wired,
+    check_event_wait_after_action,
     check_hardcoded_secrets,
     check_missing_dependencies,
     check_routes_without_auth,
@@ -461,6 +463,198 @@ def test_routes_ignore_octets_invalides(tmp_path: Path) -> None:
     )
     findings = check_routes_without_auth(src)
     assert len(findings) == 1
+
+
+# --- 5. Étape d'archivage sous continueOnError (TF-1112) ------------------------
+
+
+def test_archivage_azure_sous_continue_on_error_echoue(tmp_path: Path) -> None:
+    """Fixture rouge réelle (TF-1112, mesure Produit-11) : PublishBuildArtifacts protégé par
+    continueOnError: true — l'étape reste verte quel que soit le sort du chemin publié."""
+    (tmp_path / ".git").mkdir()
+    (tmp_path / "azure-pipelines.yml").write_text(
+        "steps:\n"
+        "  - script: npx playwright test\n"
+        "  - task: PublishBuildArtifacts@1\n"
+        "    continueOnError: true\n"
+        "    inputs:\n"
+        "      pathToPublish: frontend/tests/e2e/resultats.json\n"
+        "      artifactName: resultats\n",
+        encoding="utf-8",
+    )
+    findings = check_archiving_step_continue_on_error(tmp_path)
+    assert findings == [
+        {
+            "file": str(tmp_path / "azure-pipelines.yml"),
+            "kind": "archivage-non-verifiable",
+            "issue": "étape d'archivage sous continueOnError/continue-on-error: true — un "
+            "chemin jamais produit reste vert, l'échec qu'elle devait archiver ne laisse "
+            "aucune trace",
+        }
+    ]
+
+
+def test_archivage_azure_sans_continue_on_error_passe(tmp_path: Path) -> None:
+    """Fixture verte : même étape d'archivage, sans neutralisation — un échec de publication
+    reste un échec de pipeline."""
+    (tmp_path / ".git").mkdir()
+    (tmp_path / "azure-pipelines.yml").write_text(
+        "steps:\n"
+        "  - task: PublishBuildArtifacts@1\n"
+        "    inputs:\n"
+        "      pathToPublish: frontend/tests/e2e/resultats.json\n"
+        "      artifactName: resultats\n",
+        encoding="utf-8",
+    )
+    assert check_archiving_step_continue_on_error(tmp_path) == []
+
+
+def test_archivage_github_actions_sous_continue_on_error_echoue(tmp_path: Path) -> None:
+    """Fixture rouge : même défaut, dialecte GitHub Actions (upload-artifact /
+    continue-on-error)."""
+    (tmp_path / ".git").mkdir()
+    workflows = tmp_path / ".github" / "workflows"
+    workflows.mkdir(parents=True)
+    (workflows / "ci.yml").write_text(
+        "jobs:\n"
+        "  test:\n"
+        "    steps:\n"
+        "      - uses: actions/upload-artifact@v4\n"
+        "        continue-on-error: true\n"
+        "        with:\n"
+        "          path: resultats.json\n",
+        encoding="utf-8",
+    )
+    findings = check_archiving_step_continue_on_error(tmp_path)
+    assert len(findings) == 1
+    assert findings[0]["file"] == str(workflows / "ci.yml")
+    assert findings[0]["kind"] == "archivage-non-verifiable"
+
+
+def test_archivage_hors_fenetre_ne_declenche_pas(tmp_path: Path) -> None:
+    """Fixture verte réelle : l'étape d'archivage elle-même n'est PAS neutralisée ; un
+    ``continueOnError: true`` porté par une étape SANS rapport, bien plus loin dans le
+    fichier, ne doit pas lui être imputé à tort — la fenêtre est bornée autour du
+    déclencheur d'archivage, pas du fichier entier."""
+    (tmp_path / ".git").mkdir()
+    (tmp_path / "azure-pipelines.yml").write_text(
+        "steps:\n"
+        "  - task: PublishBuildArtifacts@1\n"
+        "    inputs:\n"
+        "      pathToPublish: resultats.json\n"
+        + ("\n" * 600)
+        + "  - script: npm run lint\n"
+        "    continueOnError: true\n",
+        encoding="utf-8",
+    )
+    assert check_archiving_step_continue_on_error(tmp_path) == []
+
+
+def test_run_gate_integre_le_controle_archivage(tmp_path: Path) -> None:
+    """Intégration : ``run_ai_antipatterns_gate`` remonte le 5e contrôle (TF-1112) même sans
+    pyproject.toml — le défaut est indépendant du langage du produit."""
+    (tmp_path / ".git").mkdir()
+    (tmp_path / "azure-pipelines.yml").write_text(
+        "steps:\n"
+        "  - task: PublishBuildArtifacts@1\n"
+        "    continueOnError: true\n"
+        "    inputs:\n"
+        "      pathToPublish: resultats.json\n",
+        encoding="utf-8",
+    )
+    src = tmp_path / "app"
+    src.mkdir()
+    (src / "main.py").write_text("x = 1\n", encoding="utf-8")
+    verdict = run_ai_antipatterns_gate(src, tmp_path / "absent.toml")
+    assert verdict.passed is False
+    kinds = {f["kind"] for f in verdict.findings if "skipped" not in f}
+    assert "archivage-non-verifiable" in kinds
+
+
+def test_archivage_sans_faux_positif_sur_ce_depot(tmp_path: Path) -> None:
+    """Preuve d'absence de faux positif EXIGÉE par le contrat de campagne : rejouée ici sur le
+    dépôt réel (``.github/workflows/double-gate.yml``), qui n'archive rien sous
+    continueOnError — la règle neuve ne doit rien y trouver."""
+    repo_root = Path(__file__).resolve().parents[1]
+    assert (repo_root / ".git").exists() or (repo_root.parent / ".git").exists()
+    findings = check_archiving_step_continue_on_error(repo_root)
+    assert findings == []
+
+
+# --- 6. Attente d'événement posée après l'action (TF-1111) ----------------------
+
+
+def test_waitfor_apres_click_echoue(tmp_path: Path) -> None:
+    """Fixture rouge réelle (TF-1111, mesure Produit-11) : ``waitForResponse`` posé APRÈS
+    ``click`` — reproduction fidèle de ``09-import-en-masse.spec.ts``."""
+    e2e = tmp_path / "frontend" / "tests" / "e2e"
+    e2e.mkdir(parents=True)
+    (e2e / "09-import-en-masse.spec.ts").write_text(
+        "test('import invalide', async ({ page }) => {\n"
+        "  await page.click('#importer');\n"
+        "  await page.waitForResponse(r => r.url().includes('/import'));\n"
+        "});\n",
+        encoding="utf-8",
+    )
+    findings = check_event_wait_after_action(tmp_path)
+    assert len(findings) == 1
+    assert findings[0]["file"] == str(e2e / "09-import-en-masse.spec.ts")
+    assert findings[0]["kind"] == "attente-posee-apres-action"
+    assert "waitForResponse" in findings[0]["issue"]
+
+
+def test_waitfor_avant_click_passe(tmp_path: Path) -> None:
+    """Fixture verte : la promesse d'attente est capturée AVANT l'action, puis attendue —
+    même fichier corrigé, aucun ``await page.waitFor*`` ne suit textuellement une action."""
+    e2e = tmp_path / "frontend" / "tests" / "e2e"
+    e2e.mkdir(parents=True)
+    (e2e / "09-import-en-masse.spec.ts").write_text(
+        "test('import invalide', async ({ page }) => {\n"
+        "  const reponse = page.waitForResponse(r => r.url().includes('/import'));\n"
+        "  await page.click('#importer');\n"
+        "  await reponse;\n"
+        "});\n",
+        encoding="utf-8",
+    )
+    assert check_event_wait_after_action(tmp_path) == []
+
+
+def test_waitfor_sans_rapport_avec_l_action_passe(tmp_path: Path) -> None:
+    """Fixture verte réelle : un ``waitFor*`` isolé, sans action précédente, n'est jamais un
+    faux positif — la règle exige la SUCCESSION action puis attente, pas la seule présence."""
+    e2e = tmp_path / "frontend" / "tests" / "e2e"
+    e2e.mkdir(parents=True)
+    (e2e / "attente-seule.spec.ts").write_text(
+        "test('chargement', async ({ page }) => {\n"
+        "  await page.goto('/');\n"
+        "  await page.waitForSelector('#pret');\n"
+        "});\n",
+        encoding="utf-8",
+    )
+    assert check_event_wait_after_action(tmp_path) == []
+
+
+def test_run_gate_integre_le_controle_attente(tmp_path: Path) -> None:
+    """Intégration : ``run_ai_antipatterns_gate`` remonte le 6e contrôle (TF-1111)."""
+    src = tmp_path / "app"
+    e2e = src / "tests" / "e2e"
+    e2e.mkdir(parents=True)
+    (e2e / "x.spec.ts").write_text(
+        "await page.click('#go');\nawait page.waitForNavigation();\n", encoding="utf-8"
+    )
+    (src / "main.py").write_text("x = 1\n", encoding="utf-8")
+    verdict = run_ai_antipatterns_gate(src, tmp_path / "absent.toml")
+    assert verdict.passed is False
+    kinds = {f["kind"] for f in verdict.findings if "skipped" not in f}
+    assert "attente-posee-apres-action" in kinds
+
+
+def test_attente_sans_faux_positif_sur_ce_depot() -> None:
+    """Preuve d'absence de faux positif EXIGÉE par le contrat de campagne : ce dépôt ne porte
+    aucune spécification Playwright — SKIP net, jamais un faux positif par construction."""
+    repo_root = Path(__file__).resolve().parents[1]
+    assert list(repo_root.rglob("*.spec.ts")) == []
+    assert check_event_wait_after_action(repo_root) == []
 
 
 # --- Agrégation / P-06 / CLI -----------------------------------------------------
