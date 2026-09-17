@@ -292,8 +292,11 @@ sont entrées le 12/09/2026, sur deux mandats humains distincts du même jour : 
 conception* (E5 — « Full HD par défaut, responsive jusqu'au 4K ») et *le plancher d'écriture du
 produit* (`references\ECRITURE.md`, décisions D-1 (a) et D-3 (a) de la synthèse 20260911j). Une
 onzième est entrée le 14/09/2026, décidée par l'étude d'opportunité « socle de la chaîne »
-(20260914a, TF-1040) — *une porte prouve qu'elle sait dire non*.
-**Onze disciplines à ce jour.**
+(20260914a, TF-1040) — *une porte prouve qu'elle sait dire non*. Une douzième est entrée le
+17/09/2026, mesurée le 11/09/2026 chez Produit-11 (RT-61, TF-1042) — *la parité entre
+l'environnement de test et l'image servie*, jumelle de la règle O-10 d'`oracle-ops.mjs`
+(forge-ops) qui verrouille le manifeste SERVI à l'empreinte.
+**Douze disciplines à ce jour.**
 
 - **Frontière démo/production.** Tout artefact de démonstration (fixtures, comptes, données
   simulées, endpoints de peuplement) vit derrière un drapeau d'environnement explicite
@@ -712,6 +715,54 @@ onzième est entrée le 14/09/2026, décidée par l'étude d'opportunité « soc
   faire réellement échouer une fois, ce qui sort du périmètre d'un gate statique). Le motif de
   neutralisation reconnu est une coïncidence de chaîne (mêmes limites que `demo_markers_gate`) :
   une neutralisation construite dynamiquement (variable, script intermédiaire) lui échappe.
+
+- **La parité entre l'environnement de TEST et l'image SERVIE se contrôle, elle ne se suppose
+  pas (TF-1042, mesure Produit-11 du 11/09/2026).** Sur un projet conteneurisé, trois faits se
+  vérifient ensemble : la version d'interpréteur déclarée par la chaîne CI est celle de l'image
+  servie (`FROM python:...` du Dockerfile) ; le manifeste de dépendances de TEST inclut (⊇) le
+  manifeste de RUNTIME que le Dockerfile installe ; l'image finale rejoue un import Python des
+  modules qu'elle installe. Aucun des trois n'était demandé par le socle avant cette discipline.
+
+  Mesure qui fait naître la discipline : la chaîne testait en Python 3.12 (quatre tâches
+  `UsePythonVersion` d'un pipeline Azure DevOps) pendant que l'image servie partait de
+  `python:3.11-slim` — une dépendance ou une syntaxe disponible en 3.12 et absente en 3.11
+  passait la porte de tests et échouait au démarrage du conteneur, APRÈS la porte, au moment où
+  le coût est maximal. Second effet mesuré le même jour, tenu côté `digit-ai-forge-ops` (règle
+  O-10 d'`oracle-ops.mjs`, TF-1042) : le manifeste qui composait l'image SERVIE épinglait chaque
+  paquet à une VERSION mais aucun à une EMPREINTE de contenu (37 paquets, zéro hash) — une
+  version republiée sous le même numéro entrait sans être vue. Les deux disciplines sont
+  jumelles : celle-ci tient la parité de CONSTRUCTION, O-10 tient le verrou du manifeste SERVI.
+
+  Test : `conductor/gates/runtime_parity_gate.py`, joué sur le projet cible (contrôle statique,
+  aucune exécution, aucun réseau) — trois sous-contrôles indépendants, chacun SKIP tracé quand
+  son objet est absent plutôt qu'un échec fabriqué.
+
+  ```bash
+  # Recette DOUBLE SENS — le MÊME projet paritaire (CI et image sur la même version, manifeste
+  # de test couvrant le runtime, import rejoué) passe ; sa chaîne CI reposée en 3.12 pendant que
+  # l'image reste en 3.11 (le défaut mesuré chez Produit-11) est refusée.
+  uv run python -m conductor.gates.runtime_parity_gate "<repo cible>"
+  # attendu, projet paritaire : « runtime-parity gate: PASS »
+  # attendu, CI 3.12 / image 3.11 : exit 1 + « [interpreteur-disparite] <fichier>:<ligne> :
+  # CI déclare Python 3.12, l'image servie part de python:3.11 … » — une ligne par tâche CI
+  # déclarante, jamais un total anonyme
+  # attendu, projet sans Dockerfile (non conteneurisé) : PASS, constat « skipped » tracé
+  # (SANS_OBJET) — jamais un échec fabriqué faute de matière à juger
+
+  # Le double sens est joué à chaque recette de la forge, sur des fixtures rouges ET vertes :
+  uv run python -m pytest tests/test_runtime_parity_gate.py
+  ```
+
+  Limites déclarées : périmètre v0 borné comme `O-10` d'oracle-ops — un seul `Dockerfile` à la
+  racine du projet cible (pas de recherche récursive multi-Dockerfile), manifeste runtime au
+  format `requirements.txt` (pip) référencé par un `-r <fichier>.txt` littéral dans le
+  Dockerfile, image de base `python:...` officielle nommée littéralement (une image dérivée sans
+  ce nom, ou une chaîne CI sans version Python déclarée, rend le sous-contrôle 1 SKIP tracé,
+  jamais un FAIL par défaut). Les formats de verrou hors `requirements.txt` (poetry.lock,
+  uv.lock, pyproject `[project.dependencies]`) sont hors périmètre v0, comme pour O-10. Le
+  sous-contrôle 3 lit une coïncidence de chaîne (`RUN ... python -c "import ..."` ou un script
+  nommant `smoke`/`import-test`) — un test d'import exécuté par un moyen qui ne nomme aucun de
+  ces motifs littéralement lui échappe.
 
 ## Quand lire les détails
 - **Phases A→E, classification de pièces jointes, sections pilote** → [conductor-run-playbook](conductor-run-playbook.md).
