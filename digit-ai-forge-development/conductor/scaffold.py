@@ -1,7 +1,10 @@
 """Étape B — Scaffold-first SaaS.
 
-Invoque `copier` sur la cible (targets/fastapi-saas) PUIS greffe les briques SaaS
-retenues, AVANT tout agent (décision canonique 02 — premier garde-fou). Le conductor
+Invoque `copier` sur le gabarit amont (TEMPLATE_REF) avec les réponses de la cible
+targets/fastapi-saas, PUIS greffe les briques SaaS retenues, AVANT tout agent (décision
+canonique 02 — premier garde-fou). La greffe se limite aux actions de `catalog.py` (ajout de
+paquets) : la cible est déclarée NON DISPONIBLE, aucune brique n'est écrite (TF-1778,
+targets/fastapi-saas/README.md). Le conductor
 ne réimplémente ni copier ni le template : il séquence des commandes via un *runner*
 injectable (subprocess en prod, fake en test — aucune dépendance réseau pour les tests).
 """

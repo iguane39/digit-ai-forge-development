@@ -152,6 +152,32 @@ Lis aussi : l'historique git et le dernier tag `run/<slug>/epic-<n>`, `_bmad-out
   en Phase A (diagnostic en lecture seule).
 - Findings du gate spec persistés dans `SPEC_FINDINGS.md` (statut traité/non-traité).
 
+### Garde-fous de plateforme du poste de construction
+
+Un garde-fou de plateforme est une règle du poste ou de l'hébergeur qui refuse un geste de la
+chaîne. Le registre de l'écosystème est `references/GARDE-FOUS-PLATEFORME.json` du pilot ; un
+produit qui en rencontre un absent le remonte dans son lot de clôture.
+
+- **Windows, stratégie de contrôle d'application : extensions compilées de SQLAlchemy 2.1
+  bloquées (TF-1782, lot Produit-83 du 15/10/2026).** Sur un poste dont la stratégie refuse les
+  DLL non approuvées, `import sqlalchemy` lève `ImportError: DLL load failed` sur les modules
+  `*_cy.*.pyd`. Remède éprouvé chez le produit : installer SQLAlchemy en Python pur, le module
+  livrant des équivalents purs que l'import retient seuls.
+
+  ```toml
+  [tool.uv]
+  no-binary-package = ["sqlalchemy"]
+
+  [tool.uv.extra-build-variables]
+  sqlalchemy = { DISABLE_SQLALCHEMY_CEXT = "1" }
+  ```
+
+  Test : `uv run python -c "import sqlalchemy.engine._row_cy as m; print(m.__file__)"` imprime un
+  chemin en `.py`, jamais en `.pyd` (rejoué le 15/10/2026 : installation pure, `_row_cy.py`).
+  Limite déclarée : la stratégie dépend du poste. Le même jour, dans un environnement neuf d'un
+  poste du parc, la roue compilée de SQLAlchemy 2.1.4 se chargeait (`_row_cy.cp312-win_amd64.pyd`) :
+  le garde-fou s'applique où l'import échoue, et le produit le constate avant de l'appliquer.
+
 ## Sortie attendue
 RUN LOG : version de la forge, contexte détecté + preuves, intention validée, baseline (+ rouges
 signalés), EPICs planifiées / done / blocked, décisions, PR PR-ready (non mergées), findings spec,
@@ -227,8 +253,10 @@ catalogue est rejeté tôt.
 
 Convention éprouvée sur le premier produit réel construit via la forge (mode dégradé, 3 tranches
 Opus, 581 tests), à présent standardisée : **chaque test cite l'identifiant de l'exigence qu'il
-vérifie**, dans sa docstring ou son nom (`E-042`, ex. `test_facture_sans_client_E-042` ou
-docstring `"""E-042 — une facture ne peut être créée sans client rattaché."""`).
+vérifie**, dans sa docstring (`"""E-042 — une facture ne peut être créée sans client
+rattaché."""`) ou dans son nom. Un nom Python ne peut pas porter le tiret : il cite l'exigence par
+un souligné, `test_facture_sans_client_E_042`, que le gate ramène à `E-042` (TF-1780, lot
+Produit-83 du 15/10/2026 : la forme à tiret lève SyntaxError).
 
 - **Source des identifiants — arbitrage D-V3 (décidé le 11/08/2026, TF-0008)** : le référentiel
   amont **officiel** est `EXIGENCES.json` (forge-conception) — dans tout run de l'écosystème
@@ -238,13 +266,28 @@ docstring `"""E-042 — une facture ne peut être créée sans client rattaché.
   usage **standalone**, hors écosystème (`_bmad-output/planning-artifacts/epics.md`) — usage
   alors consigné comme dégradé au ledger du run.
 - **Gate de complétude** : par grep — 100 % des exigences MVP doivent avoir **au moins un test**
-  qui les cite. Un identifiant sans test citant fait échouer le gate.
+  qui les cite. Un identifiant sans test citant fait échouer le gate. Le gate exécutable est
+  `conductor.gates.traceability_gate` ; il prend un ou plusieurs dossiers de tests et ne compte,
+  côté interface, que les fichiers `*.test.*` et `*.spec.*`.
 
 ```bash
-# Exemple : exigences MVP jamais citées par un test (source EXIGENCES.json)
-comm -23 <(jq -r '.[].id' EXIGENCES.json | sort -u) \
-         <(grep -rhoE 'E-[0-9]{3}' backend/tests | sort -u)
+# Le gate (exit 0 PASS, 1 exigences MVP non citées, 2 usage)
+uv run python -m conductor.gates.traceability_gate forge/etapes/conception/EXIGENCES.json \
+  backend/tests e2e frontend/src
+
+# Le même contrôle à la main. EXIGENCES.json est un OBJET : les exigences sont sous .exigences
+# (TF-1779). tr retire le retour chariot que jq émet sous Windows, sans quoi comm ne rapproche rien.
+comm -23 <(jq -r '.exigences[] | select(.palier == "MVP") | .id' EXIGENCES.json | tr -d '\r' | sort -u) \
+         <(grep -rhoE 'E[-_][0-9]{3}' backend/tests e2e frontend/src \
+             --include='*.py' --include='*.test.ts' --include='*.test.tsx' --include='*.spec.ts' \
+           | tr _ - | sort -u)
+# attendu : aucune ligne
 ```
+
+Mesuré le 15/10/2026 sur le référentiel réel d'un produit (80 exigences, 74 MVP) : l'ancien filtre
+`.[].id` s'arrête sur « Cannot index string with string "id" » (exit 5) ; le filtre corrigé lit
+74 identifiants ; limité à `backend/tests`, il en déclare 4 non cités, que les tests d'interface et
+de parcours citent ; sur les trois dossiers, aucune ligne.
 
 > **Source unique des disciplines de livrable (TF-0007).** Les deux sections ci-dessous —
 > auditabilité (RV-2) et disciplines de production (RV-3/RV-4, lois 1-4) — sont la référence
@@ -256,13 +299,14 @@ comm -23 <(jq -r '.[].id' EXIGENCES.json | sort -u) \
 
 Checklist à appliquer **dès la construction**, pas seulement à l'audit : sur le premier produit
 réel, l'auditabilité par `digit-ai-forge-tests` a été découverte trop tard (aller-retour évitable).
-C'est un **contrat d'interopérabilité** avec l'auditeur de l'écosystème — cf. digit-ai-forge-tests,
-`README.md`, section « Structure attendue du projet cible » (aucune section « Contrat du projet
-audité » n'existe littéralement à ce jour côté forge-tests ; à créer si l'écosystème veut un point
-d'ancrage dédié) :
+C'est un **contrat d'interopérabilité** avec l'auditeur de l'écosystème. Sa source est
+digit-ai-forge-tests, `README.md`, section « Contrat du projet audité » (conventions par pan,
+effet de chacune quand elle manque), complétée par la section « Structure attendue du projet
+cible ». La liste ci-dessous en reprend les points que la construction doit tenir ; en cas
+d'écart, la section de forge-tests fait foi (TF-1781, lot Produit-83 du 15/10/2026) :
 
-- app exposée en **instance module** `app.main.app`, exercée par la suite (pas une fabrique
-  recréée à la volée que l'auditeur ne peut pas importer).
+- app exposée en **instance module** `app.main:app`, exercée par la suite. Une fabrique est
+  admise si le projet la désigne par `FORGE_TESTS_APP="module:attribut"` (pan `api` du contrat).
 - couche SQL **observable** : `Engine` SQLAlchemy (pas un driver bas niveau opaque à l'auditeur).
 - contraintes nommées `<type>_<table>_<colonne>` (`ck_*`, `uq_*`).
 - déclarations `responses=` / `status_code` **exactes** — ce que l'app émet doit être déclaré,
@@ -663,9 +707,12 @@ l'environnement de test et l'image servie*, jumelle de la règle O-10 d'`oracle-
   Test :
 
   ```bash
-  # 1. les chaînes d'application vivent dans un fichier de ressources, pas en littéraux
-  grep -rlE '"[A-Za-zÀ-ÿ ]{3,}"' frontend/src --include=*.tsx --include=*.ts \
-    | grep -v -E 'locales/|i18n/|messages\.(json|arb|po|properties)'
+  # 1. les chaînes d'application vivent dans un fichier de ressources, pas en littéraux :
+  #    texte entre deux balises JSX, puis valeur d'un attribut que la personne lit ou entend
+  grep -rnE '>[[:space:]]*[A-Za-zÀ-ÿ][^<>{}=&|_]*</' frontend/src --include=*.tsx \
+    | grep -v -E 'locales/|i18n/'
+  grep -rnE '(aria-label|title|placeholder|alt|label)="[^"{]*[A-Za-zÀ-ÿ]{2,}[^"]*"' frontend/src \
+    --include=*.tsx | grep -v -E 'locales/|i18n/'
   # attendu : aucune ligne — un résultat signale un libellé qui a échappé au fichier de ressources
 
   # 2. le sujet d'un message de commit n'est jamais un mot nu
@@ -676,8 +723,17 @@ l'environnement de test et l'image servie*, jumelle de la règle O-10 d'`oracle-
   node forge\hooks\factory.mjs ecriture --fichier docs\run-playbook.md
   ```
 
+  Mesure qui a resserré le contrôle 1 (TF-1786, lot Produit-83 du 15/10/2026) : l'ancien motif,
+  toute chaîne entre guillemets, signalait 17 fichiers d'un produit déjà internationalisé, pour
+  des valeurs d'attributs (`"col"` 30 fois, `"button"` 26 fois). Rejoué le même jour en lecture
+  seule : 0 fichier sur ce produit avec les deux motifs ci-dessus ; sur un second produit React
+  sans fichier de ressources, 51 fichiers sur 59, 358 textes entre balises et 65 attributs lus,
+  tous des libellés affichés sur l'échantillon relu.
+
   Limites déclarées : le grep du contrôle 1 est une coïncidence de chaîne, pas une analyse du DOM
-  ni du bundle compilé — un libellé construit par concaténation lui échappe. Le contrôle 2 lit le
+  ni du bundle compilé. Lui échappent un libellé construit par concaténation, un texte écrit en
+  expression (`{"Annuler"}`, `cond ? "Oui" : "Non"`) et un texte qui court sur plusieurs lignes
+  entre ses balises. Le contrôle 2 lit le
   sujet du commit, jamais son corps : un « fix » noyé dans une phrase plus longue n'est pas visé,
   seul le mot nu l'est. L'oracle T4 lui-même n'est pas joué ici : il est confié à forge-design
   (revue, lot de travaux du 12/09) — cette forge garantit seulement le support qu'il lira.

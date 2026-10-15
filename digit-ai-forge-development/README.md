@@ -26,6 +26,10 @@ double gate · style injecté au dev · multi-tenancy/RBAC/auth-SSO à t0 · dé
 Paramétrer la cible via [`targets/fastapi-saas/copier.yml`](targets/fastapi-saas/copier.yml)
 et la charte via [`design/DESIGN.md`](design/DESIGN.md) (lintable → tokens Tailwind).
 
+> **Cible NON DISPONIBLE au 15/10/2026 (TF-1778).** `targets/fastapi-saas/bricks/` est vide :
+> multi-tenancy, RBAC et SSO ne sont pas écrits, le scaffold n'ajoute que leurs paquets. Lire
+> [`targets/fastapi-saas/README.md`](targets/fastapi-saas/README.md) avant de compter sur une brique.
+
 ## Dépendances épinglées & vendorisées
 - `vendor/bad/` — skill **bmad-autonomous-development @ v1.2.0** (cf. [`vendor/bad/README.md`](vendor/bad/README.md))
 - `design/design.md.lock` — **@google/design.md @ 0.3.0**

@@ -6,6 +6,16 @@
 _envops:
   keep_trailing_newline: true
 
+# TF-1778 (lot Produit-83, 15/10/2026) : bricks/ ne porte que .gitkeep. Les questions ci-dessous
+# décrivent la cible VISÉE ; aucune brique n'est écrite. Voir README.md de ce dossier.
+_message_before_copy: |
+  CIBLE NON DISPONIBLE : targets/fastapi-saas ne porte aucune brique (bricks/ est vide).
+  Les briques multi-tenancy, rbac et auth-sso annoncées « requises t0 » ne sont pas écrites :
+  copier ce dossier ne produit ni modèle multi-locataire, ni politique RBAC Casbin, ni SSO.
+  Le scaffold du conductor copie le gabarit amont full-stack-fastapi-template et n'ajoute que
+  les paquets (uv add casbin, uv add authlib) ; l'implémentation reste à écrire par le produit.
+  Lire targets/fastapi-saas/README.md avant de poursuivre.
+
 project_name:
   type: str
   help: Nom du projet SaaS à générer

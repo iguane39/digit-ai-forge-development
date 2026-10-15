@@ -7,6 +7,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 import pytest
+import yaml
 
 from conductor.cadrage import cadrer
 from conductor.contracts import BrickChoice
@@ -91,6 +92,35 @@ def test_scaffold_skips_actions_when_role_absent(tmp_path: Path) -> None:
 def test_scaffold_raises_if_copier_fails(tmp_path: Path) -> None:
     with pytest.raises(RuntimeError, match="copier"):
         scaffold(cadrer("idée"), tmp_path / "app", runner=FakeRunner(fail=("copier copy",)))
+
+
+CIBLE = Path(__file__).resolve().parents[1] / "targets" / "fastapi-saas"
+
+
+def _briques_ecrites() -> list[str]:
+    return sorted(p.name for p in (CIBLE / "bricks").iterdir() if p.name != ".gitkeep")
+
+
+def test_tf1778_une_cible_sans_briques_se_declare_non_disponible() -> None:
+    """Lot Produit-83 du 15/10/2026 (RV-1) : `bricks/` ne porte que `.gitkeep`, et `copier.yml`
+    annonçait multi-locataire, RBAC Casbin et SSO « requis t0 » sans une ligne qui les implémente.
+
+    Tant qu'aucune brique n'est écrite, la cible le DIT là où on la lit : au README de la cible et
+    dans l'avertissement que copier affiche avant de copier. Le jour où une brique arrive, ce cas
+    rougit pour que la déclaration soit retirée en même temps : elle ne survit pas à sa vérité."""
+    readme = CIBLE / "README.md"
+    copier_yml = yaml.safe_load((CIBLE / "copier.yml").read_text(encoding="utf-8"))
+    avertissement = str(copier_yml.get("_message_before_copy", ""))
+
+    if _briques_ecrites():
+        assert "NON DISPONIBLE" not in avertissement, "des briques existent : retirer l'avis"
+        return
+    assert readme.exists(), "la cible vide se déclare dans son README"
+    texte = readme.read_text(encoding="utf-8")
+    assert "NON DISPONIBLE" in texte
+    assert "NON DISPONIBLE" in avertissement, "copier avertit avant de copier une cible vide"
+    for brique in ("multi-tenancy", "rbac", "auth-sso"):
+        assert brique in texte, f"le README nomme la brique non écrite {brique}"
 
 
 def test_scaffold_raises_if_brick_graft_fails(tmp_path: Path) -> None:
