@@ -76,6 +76,19 @@ uv run python -m conductor.gates.ai_antipatterns_gate conductor pyproject.toml
 uv run python -m conductor.gates.porte_neutralisee_gate ..
 ```
 
+## Gates de plateforme, joués sur le projet cible
+Ces gates jugent le projet produit, pas la forge. Chacun rend PASS, FAIL avec constats localisés,
+ou SKIP tracé quand son objet est absent.
+```bash
+# Worker Cloudflare : date et drapeaux de compatibilité servis = testés (TF-1998)
+uv run python -m conductor.gates.runtime_parity_gate "<repo cible>"
+# Supabase côté serveur : getSession() de confiance, auth-helpers, proxy.ts avant Next 16 (TF-2008)
+uv run python -m conductor.gates.supabase_ssr_gate "<repo cible>"
+```
+Le premier est décrit au playbook (`../docs/run-playbook.md`, parité runtime, sous-contrôle 4).
+Le second cite dans son module les pages Supabase lues le 29/10/2026 qui fondent ses trois
+constats. Sa recette double sens : `tests/test_supabase_ssr_gate.py`.
+
 ## Documentation de conception
 [`../docs/`](../docs/) — analyse, PRD, architecture, plan d'implémentation, notes de spike,
 décisions d'exécution.
