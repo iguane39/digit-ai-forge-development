@@ -61,7 +61,7 @@ import json
 import re
 import sys
 import tomllib
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import Any
 
@@ -275,51 +275,46 @@ _EXCLUS = {"node_modules", ".wrangler", "dist", ".git", ".venv"}
 Compat = tuple[str | None, frozenset[str] | None]
 
 
+def _hors_chaines(texte: str, traiter: Callable[[str, int], tuple[str, int]]) -> str:
+    """Parcourt ``texte`` : une chaîne JSON passe telle quelle, échappements compris (une chaîne
+    qui finit par ``\\\\`` se referme bien) ; le reste passe par ``traiter``, qui rend le
+    morceau à garder et la position suivante."""
+    sortie: list[str] = []
+    i, n = 0, len(texte)
+    while i < n:
+        if texte[i] == '"':
+            j = i + 1
+            while j < n and texte[j] != '"':
+                j += 2 if texte[j] == "\\" else 1
+            sortie.append(texte[i : j + 1])
+            i = j + 1
+            continue
+        morceau, i = traiter(texte, i)
+        sortie.append(morceau)
+    return "".join(sortie)
+
+
+def _sans_commentaire(texte: str, i: int) -> tuple[str, int]:
+    if texte.startswith("//", i):
+        fin = texte.find("\n", i)
+        return "", len(texte) if fin == -1 else fin
+    if texte.startswith("/*", i):
+        fin = texte.find("*/", i + 2)
+        return "", len(texte) if fin == -1 else fin + 2
+    return texte[i], i + 1
+
+
+def _sans_virgule_finale(texte: str, i: int) -> tuple[str, int]:
+    if texte[i] == "," and texte[i + 1 :].lstrip()[:1] in ("}", "]"):
+        return "", i + 1
+    return texte[i], i + 1
+
+
 def _jsonc_vers_json(texte: str) -> str:
     """Retire les commentaires (``//``, ``/* */``) puis les virgules finales, HORS des chaînes :
-    une URL ``https://…`` dans une valeur reste intacte (format JSONC de ``wrangler.jsonc``)."""
-    sans_commentaires: list[str] = []
-    i, n, dans_chaine = 0, len(texte), False
-    while i < n:
-        c = texte[i]
-        if dans_chaine:
-            sans_commentaires.append(c)
-            if c == "\\" and i + 1 < n:
-                sans_commentaires.append(texte[i + 1])
-                i += 2
-                continue
-            dans_chaine = c != '"'
-            i += 1
-            continue
-        if c == '"':
-            dans_chaine = True
-        elif texte.startswith("//", i):
-            fin = texte.find("\n", i)
-            i = n if fin == -1 else fin
-            continue
-        elif texte.startswith("/*", i):
-            fin = texte.find("*/", i + 2)
-            i = n if fin == -1 else fin + 2
-            continue
-        sans_commentaires.append(c)
-        i += 1
-    source = "".join(sans_commentaires)
-    sortie: list[str] = []
-    dans_chaine = False
-    for j, c in enumerate(source):
-        if dans_chaine:
-            sortie.append(c)
-            if c == '"' and source[j - 1] != "\\":
-                dans_chaine = False
-            continue
-        if c == '"':
-            dans_chaine = True
-        elif c == ",":
-            suite = source[j + 1 :].lstrip()
-            if suite[:1] in ("}", "]"):
-                continue
-        sortie.append(c)
-    return "".join(sortie)
+    une URL ``https://…`` dans une valeur reste intacte (format JSONC de ``wrangler.jsonc``).
+    Deux passes : une virgule suivie d'un commentaire puis d'une accolade tombe aussi."""
+    return _hors_chaines(_hors_chaines(texte, _sans_commentaire), _sans_virgule_finale)
 
 
 def _config_wrangler(project_dir: Path) -> list[Path]:

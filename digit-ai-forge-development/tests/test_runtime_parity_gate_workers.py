@@ -157,6 +157,9 @@ def test_jsonc_lu_sans_toucher_aux_chaines() -> None:
     assert donnees["compatibility_flags"] == ["nodejs_compat"]
     assert donnees["vars"]["API"] == "https://exemple.invalid//chemin"
     assert json.loads(_jsonc_vers_json('{"a": "x,}", "b": [1, 2,],}')) == {"a": "x,}", "b": [1, 2]}
+    # Une chaîne qui finit par une barre oblique inverse échappée (chemin Windows) se referme :
+    # la virgule finale qui suit tombe quand même.
+    assert json.loads(_jsonc_vers_json('{"c": "x\\\\", "d": [1,],}')) == {"c": "x\\", "d": [1]}
 
 
 # --- Sens vert --------------------------------------------------------------------------------
