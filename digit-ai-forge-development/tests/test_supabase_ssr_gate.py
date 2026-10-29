@@ -165,6 +165,21 @@ def test_getsession_dans_les_fichiers_serveur_connus(tmp_path: Path) -> None:
     assert len(constats) == 6
 
 
+def test_dossier_app_dune_application_vite_nest_pas_du_serveur(tmp_path: Path) -> None:
+    """Sans `next` déclaré, `src/app/` est du code navigateur : getSession() y est permis."""
+    deps = {"vite": "^7.0.0", "@supabase/supabase-js": "^2.0.0"}
+    racine = _projet(
+        tmp_path,
+        dependances=deps,
+        fichiers={"src/app/compte.tsx": "await supabase.auth.getSession();\n"},
+    )
+    assert _kinds(racine) == []
+    # Le même fichier dans un projet Next.js est un composant serveur : constat.
+    paquet = {"name": "app", "dependencies": {**deps, "next": "^16.0.0"}}
+    (racine / "package.json").write_text(json.dumps(paquet), encoding="utf-8")
+    assert _kinds(racine) == ["getsession-serveur"]
+
+
 def test_getsession_hors_serveur_commentaire_et_tests_ignores(tmp_path: Path) -> None:
     fichiers = {
         "app/notes.tsx": "// ne jamais appeler supabase.auth.getSession() ici\nexport {}\n",

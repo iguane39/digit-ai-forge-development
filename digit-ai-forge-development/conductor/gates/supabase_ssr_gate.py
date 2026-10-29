@@ -15,10 +15,11 @@ remplacé, et un fichier ``proxy.ts`` que Next.js ignore avant sa version 16.
    Supabase client for SSR » : « *Never* trust ``supabase.auth.getSession()`` inside server code
    such as Proxy. It reads the session out of the cookie without revalidating it. » et « Always
    use ``supabase.auth.getClaims()`` to protect pages and user data ». Code serveur, au sens de ce
-   gate : ``proxy`` et ``middleware`` (racine ou ``src/``), tout fichier sous ``app/`` qui ne
-   s'ouvre pas sur ``'use client'`` (composants serveur, gestionnaires de route, actions de
-   Next.js), ``pages/api/``, les fichiers SvelteKit ``*.server.*`` et ``+server.*``, tout fichier
-   qui s'ouvre sur ``'use server'``, et un ``server.*`` rangé dans un dossier ``supabase``.
+   gate : ``proxy`` et ``middleware`` (racine ou ``src/``), les fichiers ``*.server.*`` et
+   ``+server.*``, tout fichier qui s'ouvre sur ``'use server'``, un ``server.*`` rangé dans un
+   dossier ``supabase`` et, dans un projet qui déclare ``next`` seulement, ``pages/api/`` et tout
+   fichier sous ``app/`` qui ne s'ouvre pas sur ``'use client'`` (composants serveur,
+   gestionnaires de route, actions).
 3. **proxy-jamais-appele** — un ``proxy.ts`` (ou ``.js``) sans ``middleware`` à côté, dans un
    projet qui déclare Next.js avant 16. Même page : « On Next.js 15 and earlier, a ``proxy.ts``
    file is never called, so sessions never refresh and users get signed out. »
@@ -84,7 +85,9 @@ def _directive(texte: str) -> str | None:
     return m.group(1) if m else None
 
 
-def _est_serveur(relatif: Path, texte: str) -> bool:
+def _est_serveur(relatif: Path, texte: str, *, next_js: bool) -> bool:
+    """Les dossiers `app/` et `pages/api/` ne sont du code serveur que dans un projet Next.js :
+    une application Vite peut ranger son code navigateur sous `src/app/`."""
     parties = relatif.parts
     nom = relatif.name
     racine_ou_src = len(parties) == 1 or (len(parties) == 2 and parties[0] == "src")
@@ -97,6 +100,8 @@ def _est_serveur(relatif: Path, texte: str) -> bool:
         return True
     if relatif.stem == "server" and len(parties) >= 2 and parties[-2] == "supabase":
         return True
+    if not next_js:
+        return False
     sous_src = parties[1:] if parties[:1] == ("src",) else parties
     if sous_src[:1] == ("app",):
         return directive != "use client"
@@ -114,13 +119,13 @@ def _sources(project_dir: Path) -> list[Path]:
     return fichiers
 
 
-def check_getsession_serveur(project_dir: Path) -> list[dict[str, str]]:
+def check_getsession_serveur(project_dir: Path, deps: dict[str, str]) -> list[dict[str, str]]:
     findings: list[dict[str, str]] = []
     for chemin in _sources(project_dir):
         texte = chemin.read_text(encoding="utf-8", errors="ignore")
         if not _GETSESSION.search(texte):
             continue
-        if not _est_serveur(chemin.relative_to(project_dir), texte):
+        if not _est_serveur(chemin.relative_to(project_dir), texte, next_js="next" in deps):
             continue
         for numero, ligne in enumerate(texte.splitlines(), start=1):
             if ligne.lstrip().startswith(("//", "/*", "*")) or not _GETSESSION.search(ligne):
@@ -213,7 +218,7 @@ def run_supabase_ssr_gate(project_dir: Path) -> GateVerdict:
         )
     findings = (
         check_auth_helpers(package_json, deps)
-        + check_getsession_serveur(project_dir)
+        + check_getsession_serveur(project_dir, deps)
         + check_proxy(project_dir, deps)
     )
     blocking = [f for f in findings if "skipped" not in f]
