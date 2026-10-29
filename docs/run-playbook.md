@@ -790,8 +790,9 @@ l'environnement de test et l'image servie*, jumelle de la règle O-10 d'`oracle-
   jumelles : celle-ci tient la parité de CONSTRUCTION, O-10 tient le verrou du manifeste SERVI.
 
   Test : `conductor/gates/runtime_parity_gate.py`, joué sur le projet cible (contrôle statique,
-  aucune exécution, aucun réseau) — trois sous-contrôles indépendants, chacun SKIP tracé quand
-  son objet est absent plutôt qu'un échec fabriqué.
+  aucune exécution, aucun réseau) — quatre sous-contrôles indépendants (le quatrième, pour un
+  Worker, depuis TF-1998), chacun SKIP tracé quand son objet est absent plutôt qu'un échec
+  fabriqué.
 
   ```bash
   # Recette DOUBLE SENS — le MÊME projet paritaire (CI et image sur la même version, manifeste
@@ -802,11 +803,11 @@ l'environnement de test et l'image servie*, jumelle de la règle O-10 d'`oracle-
   # attendu, CI 3.12 / image 3.11 : exit 1 + « [interpreteur-disparite] <fichier>:<ligne> :
   # CI déclare Python 3.12, l'image servie part de python:3.11 … » — une ligne par tâche CI
   # déclarante, jamais un total anonyme
-  # attendu, projet sans Dockerfile (non conteneurisé) : PASS, constat « skipped » tracé
+  # attendu, projet sans Dockerfile ni configuration Wrangler : PASS, constat « skipped » tracé
   # (SANS_OBJET) — jamais un échec fabriqué faute de matière à juger
 
   # Le double sens est joué à chaque recette de la forge, sur des fixtures rouges ET vertes :
-  uv run python -m pytest tests/test_runtime_parity_gate.py
+  uv run python -m pytest tests/test_runtime_parity_gate.py tests/test_runtime_parity_gate_workers.py
   ```
 
   Limites déclarées : périmètre v0 borné comme `O-10` d'oracle-ops — un seul `Dockerfile` à la
@@ -819,6 +820,32 @@ l'environnement de test et l'image servie*, jumelle de la règle O-10 d'`oracle-
   sous-contrôle 3 lit une coïncidence de chaîne (`RUN ... python -c "import ..."` ou un script
   nommant `smoke`/`import-test`) — un test d'import exécuté par un moyen qui ne nomme aucun de
   ces motifs littéralement lui échappe.
+
+  **Sous-contrôle 4, un Worker Cloudflare (TF-1998, 29/10/2026).** Un Worker n'a pas d'image :
+  son runtime est fixé par la `compatibility_date` et les `compatibility_flags` de sa
+  configuration Wrangler (`wrangler.json`, `wrangler.jsonc` ou `wrangler.toml`). Le gate compare
+  ce qui sert à ce qui teste : la configuration Vitest des Workers (`cloudflareTest()` de
+  `@cloudflare/vitest-plugin`, ou l'ancien `@cloudflare/vitest-pool-workers`) et le harnais
+  `createTestHarness` de wrangler. Cinq constats, chacun avec sa fixture rouge et son remède joué
+  vert dans `tests/test_runtime_parity_gate_workers.py` :
+
+  - `compat-date-absente` : pas de `compatibility_date` à la racine. Wrangler l'exige pour
+    déployer (« At a minimum, the `name`, `main` and `compatibility_date` keys are required »).
+  - `compat-test-date-implicite` : la configuration de test ne nomme ni `wrangler.configPath` ni
+    `compatibilityDate`. Les tests prennent alors « the latest locally available date ».
+  - `compat-date-disparite` et `compat-flags-disparite` : la date ou les drapeaux du test
+    diffèrent du servi. Les options `miniflare` du test priment sur la configuration Wrangler.
+  - `compat-env-disparite` : un environnement `env.<nom>` surcharge la date ou les drapeaux, et
+    aucun test ne le sélectionne. Le harnais charge la racine par défaut.
+
+  Sources lues le 29/10/2026 sur developers.cloudflare.com : « Configuration - Wrangler » (mise à
+  jour du 29/10/2026), « Vitest integration » et sa page « Configuration » (20/08/2026),
+  « Configure the test harness » (27/07/2026), « Compatibility dates » (23/04/2026). Limites :
+  configurations à la racine seulement, valeurs littérales seulement (une date posée par une
+  variable est tracée, jamais devinée). L'option `environment` de `cloudflareTest` ne vaut pas
+  sélection d'environnement, la page ne lui prête que « bindings and variables ». Aucun
+  `wrangler` ni Miniflare n'était installé sur le poste de construction : le gate est prouvé sur
+  des configurations synthétiques, pas sur un Worker exécuté.
 
 ## Quand lire les détails
 - **Phases A→E, classification de pièces jointes, sections pilote** → [conductor-run-playbook](conductor-run-playbook.md).
