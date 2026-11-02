@@ -24,3 +24,6 @@ node_modules/
 
 # Bin généré du shim gh→az (installé au run sur Azure DevOps)
 .gh-shim-bin/
+
+# Sortie de mutmut (job mutation de double-gate) : copie du code muté + stats, jamais versionnée
+mutants/
