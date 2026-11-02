@@ -81,7 +81,10 @@ def test_sans_fichier_de_chaine_est_SKIP_trace(tmp_path: Path) -> None:
     verdict = run_porte_neutralisee_gate(tmp_path)
     assert verdict.passed is True
     assert verdict.findings == [
-        {"skipped": "aucun fichier de chaîne CI (.github/workflows/*.yml)"}
+        {
+            "skipped": "aucun fichier de chaîne CI (.github/workflows/*.yml)",
+            "non_juge": "gate entier",
+        }
     ]
 
 
@@ -110,8 +113,12 @@ def test_relever_lit_plusieurs_fichiers_de_chaine(tmp_path: Path) -> None:
 
 
 def test_cli_pass_et_fail(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    # TF-2059 : une chaîne CI présente et saine rend un vrai PASS (l'ancienne assertion
+    # « PASS » sur un dossier SANS chaîne prenait un SKIP pour un PASS : voir plus bas).
+    _ecrire_workflow(tmp_path, "jobs:\n  code:\n    steps:\n"
+                      "      - name: Lint\n        run: ruff check .\n")
     assert main([str(tmp_path)]) == 0
-    assert "PASS" in capsys.readouterr().out
+    assert capsys.readouterr().out.strip() == "porte-neutralisee gate: PASS"
 
     _ecrire_workflow(tmp_path, "jobs:\n  code:\n    steps:\n"
                       "      - name: Lint\n        run: ruff check . || true\n")
@@ -119,6 +126,41 @@ def test_cli_pass_et_fail(tmp_path: Path, capsys: pytest.CaptureFixture[str]) ->
     err = capsys.readouterr().err
     assert "FAIL" in err
     assert ":5]" in err
+
+
+# --- Verdict non jugé distinct du PASS (TF-2059, convention P-06 : cf. supabase_ssr, TF-2049) ---
+
+
+def test_rouge_cli_sans_chaine_ci_dit_skip_pas_pass(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert run_porte_neutralisee_gate(tmp_path).findings[0]["non_juge"] == "gate entier"
+    assert main([str(tmp_path)]) == 0  # P-06 : pas d'échec implicite
+    sortie = capsys.readouterr().out
+    assert sortie.startswith("porte-neutralisee gate: SKIP")
+    assert "PASS" not in sortie
+    assert "aucun fichier de chaîne CI" in sortie
+
+
+def test_rouge_cli_racine_absente_dit_skip_pas_pass(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert main([str(tmp_path / "absente")]) == 0
+    sortie = capsys.readouterr().out
+    assert sortie.startswith("porte-neutralisee gate: SKIP")
+    assert "PASS" not in sortie
+
+
+def test_remede_chaine_ajoutee_fait_juger_la_racine(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Le remède du SKIP — poser la chaîne CI — fait juger la racine : le `|| true` est refusé."""
+    assert main([str(tmp_path)]) == 0
+    capsys.readouterr()
+    _ecrire_workflow(tmp_path, "jobs:\n  code:\n    steps:\n"
+                      "      - name: Lint\n        run: ruff check . || true\n")
+    assert main([str(tmp_path)]) == 1
+    assert "neutralise" in capsys.readouterr().err
 
 
 def test_cli_nombre_arguments_invalide(capsys: pytest.CaptureFixture[str]) -> None:

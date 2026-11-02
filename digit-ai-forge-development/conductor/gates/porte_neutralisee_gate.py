@@ -38,6 +38,9 @@ _NEUTRALISATION = re.compile(
 )
 
 _WORKFLOWS_GLOBS = ("*.yml", "*.yaml")
+# Marque d'un constat « skipped » qui couvre le gate ENTIER (aucun contrôle n'a jugé) : le CLI
+# rend alors SKIP, distinct de PASS (TF-2059, comme supabase_ssr_gate, TF-2049).
+_GATE_ENTIER = "gate entier"
 
 
 def _fichiers_de_chaine(racine: Path) -> list[Path]:
@@ -80,13 +83,18 @@ def run_porte_neutralisee_gate(racine: Path) -> GateVerdict:
         return GateVerdict(
             gate="porte-neutralisee",
             passed=True,
-            findings=[{"skipped": f"racine absente : {racine}"}],
+            findings=[{"skipped": f"racine absente : {racine}", "non_juge": _GATE_ENTIER}],
         )
     if not _fichiers_de_chaine(racine):
         return GateVerdict(
             gate="porte-neutralisee",
             passed=True,
-            findings=[{"skipped": "aucun fichier de chaîne CI (.github/workflows/*.yml)"}],
+            findings=[
+                {
+                    "skipped": "aucun fichier de chaîne CI (.github/workflows/*.yml)",
+                    "non_juge": _GATE_ENTIER,
+                }
+            ],
         )
     findings = relever_controles_neutralises(racine)
     return GateVerdict(
@@ -102,7 +110,12 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     verdict = run_porte_neutralisee_gate(Path(args[0]))
     if verdict.passed:
-        print("porte-neutralisee gate: PASS")
+        non_juges = [f["skipped"] for f in verdict.findings if f.get("non_juge") == _GATE_ENTIER]
+        if non_juges:
+            # P-06 : SKIP tracé, exit 0 (jamais un échec implicite) — mais jamais écrit « PASS ».
+            print(f"porte-neutralisee gate: SKIP (non jugé) — {' ; '.join(non_juges)}")
+        else:
+            print("porte-neutralisee gate: PASS")
         return 0
     blocking = [f for f in verdict.findings if "skipped" not in f]
     print(f"porte-neutralisee gate: FAIL ({len(blocking)} contrôle(s) neutralisé(s))",

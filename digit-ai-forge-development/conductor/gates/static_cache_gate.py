@@ -55,6 +55,9 @@ _CONFIG_FILENAMES = ("_headers", "web.config", "Caddyfile", ".htaccess")
 
 # Hors périmètre : suites de tests, dépendances tierces, environnements virtuels.
 _EXCLUDED_PARTS = ("test", "tests", "node_modules", ".venv", "venv", "vendor", ".git")
+# Marque d'un constat « skipped » qui couvre le gate ENTIER (aucun contrôle n'a jugé) : le CLI
+# rend alors SKIP, distinct de PASS (TF-2059, comme supabase_ssr_gate, TF-2049).
+_GATE_ENTIER = "gate entier"
 
 # Une adresse d'attribut pointant un fichier statique. Le lookahead évite d'attraper `.json`
 # (« .js » suivi d'un caractère alphanumérique n'est pas une extension de script).
@@ -183,14 +186,24 @@ def run_static_cache_gate(project_dir: Path) -> GateVerdict:
         return GateVerdict(
             gate="static-cache",
             passed=True,
-            findings=[{"skipped": f"arborescence projet absente : {project_dir}"}],
+            findings=[
+                {
+                    "skipped": f"arborescence projet absente : {project_dir}",
+                    "non_juge": _GATE_ENTIER,
+                }
+            ],
         )
     findings, total = check_adresses_statiques(project_dir)
     if total == 0:
         return GateVerdict(
             gate="static-cache",
             passed=True,
-            findings=[{"skipped": "aucune adresse de statique locale dans les gabarits de rendu"}],
+            findings=[
+                {
+                    "skipped": "aucune adresse de statique locale dans les gabarits de rendu",
+                    "non_juge": _GATE_ENTIER,
+                }
+            ],
             log_ref=str(project_dir),
         )
     findings += check_cache_control(project_dir, statiques_presents=True)
@@ -208,7 +221,12 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     verdict = run_static_cache_gate(Path(args[0]))
     if verdict.passed:
-        print("static-cache gate: PASS")
+        non_juges = [f["skipped"] for f in verdict.findings if f.get("non_juge") == _GATE_ENTIER]
+        if non_juges:
+            # P-06 : SKIP tracé, exit 0 (jamais un échec implicite) — mais jamais écrit « PASS ».
+            print(f"static-cache gate: SKIP (non jugé) — {' ; '.join(non_juges)}")
+        else:
+            print("static-cache gate: PASS")
         return 0
     blocking = [f for f in verdict.findings if "skipped" not in f]
     print(f"static-cache gate: FAIL ({len(blocking)} constat(s))", file=sys.stderr)

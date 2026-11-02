@@ -10,6 +10,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from conductor.gates.static_cache_gate import est_versionnee, main, run_static_cache_gate
 
 _GABARIT_NU = """<!doctype html>
@@ -177,6 +179,49 @@ def test_suite_de_tests_du_projet_hors_perimetre(tmp_path: Path) -> None:
     (racine / "tests").mkdir()
     (racine / "tests" / "fixture.html").write_text(_GABARIT_NU, encoding="utf-8")
     assert run_static_cache_gate(racine).passed is True
+
+
+# --- Verdict non jugé distinct du PASS (TF-2059, convention P-06 : cf. supabase_ssr, TF-2049) ---
+# Le défaut : le SKIP était tracé dans les constats, mais le CLI imprimait « PASS » et rien d'autre.
+
+
+def test_rouge_cli_sans_statique_dit_skip_pas_pass(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    racine = _projet(tmp_path, "<html><body>rien à servir</body></html>\n")
+    assert run_static_cache_gate(racine).findings[0]["non_juge"] == "gate entier"
+    assert main([str(racine)]) == 0  # P-06 : pas d'échec implicite
+    sortie = capsys.readouterr().out
+    assert sortie.startswith("static-cache gate: SKIP")
+    assert "PASS" not in sortie
+    assert "aucune adresse de statique locale" in sortie
+
+
+def test_rouge_cli_arborescence_absente_dit_skip_pas_pass(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert main([str(tmp_path / "absent")]) == 0
+    sortie = capsys.readouterr().out
+    assert sortie.startswith("static-cache gate: SKIP")
+    assert "PASS" not in sortie
+
+
+def test_remede_statique_ajoute_fait_juger_le_projet(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Le remède du SKIP — poser une adresse statique locale — fait juger le projet : refusé nu."""
+    racine = _projet(tmp_path, "<html><body>rien à servir</body></html>\n")
+    assert main([str(racine)]) == 0
+    capsys.readouterr()
+    (racine / "app" / "templates" / "base.html").write_text(_GABARIT_NU, encoding="utf-8")
+    assert main([str(racine)]) == 1
+    assert "statique-nu" in capsys.readouterr().err
+
+
+def test_cli_sens_vert_dit_pass(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    racine = _projet(tmp_path, _GABARIT_VERSIONNE)
+    assert main([str(racine)]) == 0
+    assert capsys.readouterr().out.strip() == "static-cache gate: PASS"
 
 
 def test_cli_usage_rend_2(tmp_path: Path) -> None:

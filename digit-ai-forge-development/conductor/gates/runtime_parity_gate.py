@@ -73,6 +73,10 @@ _FROM_PYTHON = re.compile(r"^FROM\s+python:(?P<version>\d+\.\d+)", re.IGNORECASE
 _GH_PYTHON_VERSION = re.compile(r"python-version:\s*[\"']?(?P<version>\d+\.\d+)", re.IGNORECASE)
 _AZURE_TASK = re.compile(r"UsePythonVersion", re.IGNORECASE)
 _AZURE_VERSION_SPEC = re.compile(r"versionSpec:\s*[\"']?(?P<version>\d+\.\d+)", re.IGNORECASE)
+# Marque d'un constat « skipped » qui couvre le gate ENTIER (aucun contrôle n'a jugé) : le CLI
+# rend alors SKIP, distinct de PASS. Un « skipped » sans cette marque est partiel (TF-2059, comme
+# supabase_ssr_gate, TF-2049).
+_GATE_ENTIER = "gate entier"
 
 
 def _version_image(dockerfile_text: str) -> str | None:
@@ -519,7 +523,12 @@ def run_runtime_parity_gate(project_dir: Path) -> GateVerdict:
         return GateVerdict(
             gate="runtime-parity",
             passed=True,
-            findings=[{"skipped": f"arborescence projet absente : {project_dir}"}],
+            findings=[
+                {
+                    "skipped": f"arborescence projet absente : {project_dir}",
+                    "non_juge": _GATE_ENTIER,
+                }
+            ],
         )
     dockerfile_path = project_dir / "Dockerfile"
     worker = bool(_config_wrangler(project_dir))
@@ -530,7 +539,8 @@ def run_runtime_parity_gate(project_dir: Path) -> GateVerdict:
             findings=[
                 {
                     "skipped": "aucun Dockerfile ni configuration Wrangler à la racine du projet "
-                    "— non conteneurisé et sans Worker, hors périmètre (SANS_OBJET)"
+                    "— non conteneurisé et sans Worker, hors périmètre (SANS_OBJET)",
+                    "non_juge": _GATE_ENTIER,
                 }
             ],
             log_ref=str(project_dir),
@@ -563,7 +573,15 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     verdict = run_runtime_parity_gate(Path(args[0]))
     if verdict.passed:
-        print("runtime-parity gate: PASS")
+        non_juges = [f["skipped"] for f in verdict.findings if "skipped" in f]
+        if any(f.get("non_juge") == _GATE_ENTIER for f in verdict.findings):
+            # P-06 : SKIP tracé, exit 0 (jamais un échec implicite) — mais jamais écrit « PASS ».
+            print(f"runtime-parity gate: SKIP (non jugé) — {' ; '.join(non_juges)}")
+        elif non_juges:
+            détail = " ; ".join(non_juges)
+            print(f"runtime-parity gate: PASS (contrôle partiel, non jugé : {détail})")
+        else:
+            print("runtime-parity gate: PASS")
         return 0
     blocking = [f for f in verdict.findings if "skipped" not in f]
     print(f"runtime-parity gate: FAIL ({len(blocking)} constat(s))", file=sys.stderr)

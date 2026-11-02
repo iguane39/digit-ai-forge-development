@@ -11,6 +11,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from conductor.gates.runtime_parity_gate import main, run_runtime_parity_gate
 
 _DOCKERFILE_PARITAIRE = """FROM python:3.11-slim
@@ -236,6 +238,63 @@ def test_dockerfile_sans_reference_pip_r_hors_perimetre(tmp_path: Path) -> None:
     verdict = run_runtime_parity_gate(racine)
     manifeste = [f for f in verdict.findings if f.get("kind", "").startswith("manifeste-test")]
     assert manifeste == []
+
+
+# --- Verdict non jugé distinct du PASS (TF-2059, convention P-06 : cf. supabase_ssr, TF-2049) ---
+
+
+def test_rouge_cli_sans_dockerfile_ni_wrangler_dit_skip_pas_pass(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    racine = _projet(tmp_path, dockerfile=None)
+    assert run_runtime_parity_gate(racine).findings[0]["non_juge"] == "gate entier"
+    assert main([str(racine)]) == 0  # P-06 : pas d'échec implicite
+    sortie = capsys.readouterr().out
+    assert sortie.startswith("runtime-parity gate: SKIP")
+    assert "PASS" not in sortie
+    assert "SANS_OBJET" in sortie
+
+
+def test_rouge_cli_arborescence_absente_dit_skip_pas_pass(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert main([str(tmp_path / "absent")]) == 0
+    sortie = capsys.readouterr().out
+    assert sortie.startswith("runtime-parity gate: SKIP")
+    assert "PASS" not in sortie
+
+
+def test_remede_dockerfile_ajoute_fait_juger_le_projet(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Le remède du SKIP — poser le Dockerfile — fait juger le projet : la disparité est refusée."""
+    racine = _projet(tmp_path, dockerfile=None, workflow=_WORKFLOW_GH_312)
+    assert main([str(racine)]) == 0
+    capsys.readouterr()
+    (racine / "Dockerfile").write_text(_DOCKERFILE_PARITAIRE, encoding="utf-8")
+    assert main([str(racine)]) == 1
+    assert "interpreteur-disparite" in capsys.readouterr().err
+
+
+def test_cli_sens_vert_dit_pass(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    assert main([str(_projet(tmp_path))]) == 0
+    assert capsys.readouterr().out.strip() == "runtime-parity gate: PASS"
+
+
+def test_cli_controle_partiel_reste_pass_et_dit_ce_qui_manque(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Chaîne CI sans version Python : le sous-contrôle 1 n'a pas jugé, les autres si — PASS qui
+    le dit."""
+    racine = _projet(
+        tmp_path,
+        workflow="name: ci\non: [push]\njobs:\n  test:\n    runs-on: ubuntu-latest\n"
+        "    steps:\n      - run: pytest\n",
+    )
+    assert main([str(racine)]) == 0
+    sortie = capsys.readouterr().out
+    assert sortie.startswith("runtime-parity gate: PASS")
+    assert "non jugé" in sortie
 
 
 def test_cli_usage_rend_2(tmp_path: Path) -> None:
