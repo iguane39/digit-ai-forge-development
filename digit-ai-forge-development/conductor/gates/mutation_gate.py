@@ -32,12 +32,20 @@ specs URL/`git+`, sources `dependency-groups`/`optional-dependencies`, octets no
 arguments CLI…) vs mutant équivalent/non discriminant (casse d'encodage, encodage par défaut de
 la locale CI, paramètre `filename=` d'`ast.parse` jamais observé, garde redondant avec l'échec
 naturel d'une regex, `__future__` déjà couvert par `sys.stdlib_module_names`, `=`/`+=` sur une
-liste garantie vide). Nouvelle mesure après renforcement : **344 killed / 21 survived / 365
-total → score 94,25 %**, seuil dépassé — y compris sans retirer du dénominateur les 21 mutants
-équivalents documentés (registre complet, justification par mutant/classe :
+liste garantie vide). Nouvelle mesure après renforcement, **du 12/08/2026** : **344 killed / 21
+survived / 365 total → score 94,25 %**, seuil dépassé — y compris sans retirer du dénominateur
+les 21 mutants équivalents documentés (registre complet, justification par mutant/classe :
 `docs/mutation-equivalents.md`). Le job CI `mutation` est bloquant depuis cette mesure (plus de
 `continue-on-error`). Reste ouvert (hors périmètre TF-0120) : étendre `only_mutate` au reste de
 `conductor/`.
+
+**Mesure du 02/11/2026 (TF-2059)** : le même scope `only_mutate`, rejoué sous Docker
+(`python:3.11-slim`, mutmut 3.7.0, `uv run mutmut run` puis `export-cicd-stats`, soit les
+commandes du job CI) sur le main courant : **560 killed / 93 survived / 653 total → 85,76 %**,
+au-dessus du seuil de 75 %. Le 94,25 % ci-dessus est donc une mesure datée, pas l'état courant :
+le score a baissé de 8,5 points et le scope compte 288 mutants de plus (cause non établie ; le
+code du scope a été modifié depuis le 12/08, notamment `ai_antipatterns_gate.py` les 14 et
+15/09/2026). Le seuil ne change pas.
 """
 
 from __future__ import annotations
