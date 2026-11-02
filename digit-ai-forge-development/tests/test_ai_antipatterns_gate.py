@@ -571,12 +571,33 @@ def test_run_gate_integre_le_controle_archivage(tmp_path: Path) -> None:
     assert "archivage-non-verifiable" in kinds
 
 
+def _racine_git(depart: Path) -> Path | None:
+    """Premier dossier, en remontant depuis ``depart``, qui porte ``.git`` (TF-2052)."""
+    return next((d for d in (depart, *depart.parents) if (d / ".git").exists()), None)
+
+
+def test_racine_git_se_trouve_a_plusieurs_niveaux(tmp_path: Path) -> None:
+    """TF-2052, double sens : l'ancien contrôle (``.git`` à la racine ou au parent seulement)
+    échoue depuis ``mutants/`` — trois niveaux sous le ``.git`` ; la remontée le trouve."""
+    (tmp_path / "depot" / ".git").mkdir(parents=True)
+    profond = tmp_path / "depot" / "produit" / "mutants"
+    profond.mkdir(parents=True)
+    ancien = (profond / ".git").exists() or (profond.parent / ".git").exists()
+    assert ancien is False  # fixture rouge : ce que le test d'origine ne voyait pas
+    assert _racine_git(profond) == tmp_path / "depot"  # remède joué : trouvé
+    assert _racine_git(tmp_path / "depot") == tmp_path / "depot"  # le .git lui-même, niveau 0
+
+
 def test_archivage_sans_faux_positif_sur_ce_depot(tmp_path: Path) -> None:
     """Preuve d'absence de faux positif EXIGÉE par le contrat de campagne : rejouée ici sur le
     dépôt réel (``.github/workflows/double-gate.yml``), qui n'archive rien sous
     continueOnError — la règle neuve ne doit rien y trouver."""
     repo_root = Path(__file__).resolve().parents[1]
-    assert (repo_root / ".git").exists() or (repo_root.parent / ".git").exists()
+    # TF-2052 : sous mutmut, les tests jouent depuis ``mutants/`` (un cran plus bas que le
+    # produit) — on remonte donc jusqu'au ``.git`` au lieu de ne regarder que deux niveaux, et
+    # on saute hors d'un dépôt (archive sans ``.git``) : la preuve porte sur le dépôt réel.
+    if _racine_git(repo_root) is None:
+        pytest.skip("hors d'un dépôt git : aucune chaîne CI réelle à juger")
     findings = check_archiving_step_continue_on_error(repo_root)
     assert findings == []
 
