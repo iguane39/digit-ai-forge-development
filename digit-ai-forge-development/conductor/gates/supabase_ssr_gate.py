@@ -28,7 +28,8 @@ Contrôle STATIQUE, même posture que ``static_cache_gate`` et ``runtime_parity_
 de chaîne, aucune exécution, aucun réseau. SANS_OBJET tracé sans ``package.json`` ou sans
 dépendance ``@supabase/``. Limites v0 : un appel construit autrement que ``.auth.getSession(``
 (alias, déstructuration de ``auth``) échappe au contrôle 2 ; une ligne de commentaire est ignorée,
-un commentaire en fin de ligne de code ne l'est pas ; une version de Next.js écrite en intervalle
+un commentaire en fin de ligne de code ne l'est pas ; un fichier de test rangé sous ``app/``, hors
+``*.test.*`` et ``__tests__``, est lu comme du code ; une version de Next.js écrite en intervalle
 (``>=15 <17``) ou en étiquette (``latest``) n'est pas lue, le contrôle 3 le trace. La page « Server-
 Side Rendering » dit ``@supabase/ssr`` « currently in beta » : le gate prescrit le remplaçant que
 Supabase désigne, sans juger sa maturité.
@@ -45,10 +46,10 @@ from typing import Any
 from conductor.contracts import GateVerdict
 
 _EXTENSIONS = {".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"}
-_EXCLUS = {
-    "node_modules", ".next", ".svelte-kit", "dist", "build", "out", "coverage", ".git",
-    ".venv", "tests", "test", "__tests__", "e2e",
-}
+_EXCLUS = {"node_modules", ".next", ".svelte-kit", ".git", ".venv", "__tests__"}
+# Sous un dossier de routes, ces noms sont des segments d'URL : `app/test/page.tsx` sert /test.
+_EXCLUS_HORS_ROUTES = {"dist", "build", "out", "coverage", "tests", "test", "e2e"}
+_RACINES_DE_ROUTES = {"app", "pages", "routes"}
 _FICHIER_TEST = re.compile(r"\.(?:test|spec)\.[cm]?[jt]sx?$")
 _GETSESSION = re.compile(r"\.auth\s*\.\s*getSession\s*\(")
 _DIRECTIVE = re.compile(
@@ -108,11 +109,21 @@ def _est_serveur(relatif: Path, texte: str, *, next_js: bool) -> bool:
     return sous_src[:2] == ("pages", "api")
 
 
+def _exclu(relatif: Path) -> bool:
+    parties = relatif.parts
+    if _EXCLUS.intersection(parties):
+        return True
+    sous_src = parties[1:] if parties[:1] == ("src",) else parties
+    if _RACINES_DE_ROUTES.intersection(sous_src[:1]):
+        return False
+    return bool(_EXCLUS_HORS_ROUTES.intersection(parties))
+
+
 def _sources(project_dir: Path) -> list[Path]:
     fichiers: list[Path] = []
     for chemin in sorted(project_dir.rglob("*")):
         relatif = chemin.relative_to(project_dir)
-        if _EXCLUS.intersection(relatif.parts) or chemin.suffix not in _EXTENSIONS:
+        if _exclu(relatif) or chemin.suffix not in _EXTENSIONS:
             continue
         if chemin.is_file() and not _FICHIER_TEST.search(chemin.name):
             fichiers.append(chemin)
@@ -127,9 +138,13 @@ def check_getsession_serveur(project_dir: Path, deps: dict[str, str]) -> list[di
             continue
         if not _est_serveur(chemin.relative_to(project_dir), texte, next_js="next" in deps):
             continue
-        for numero, ligne in enumerate(texte.splitlines(), start=1):
-            if ligne.lstrip().startswith(("//", "/*", "*")) or not _GETSESSION.search(ligne):
-                continue
+        # Le constat se cherche sur tout le texte : un appel chaîné s'écrit sur plusieurs lignes.
+        lignes: set[int] = set()
+        for appel in _GETSESSION.finditer(texte):
+            debut = texte.rfind("\n", 0, appel.start()) + 1
+            if not texte[debut : appel.start()].lstrip().startswith(("//", "/*", "*")):
+                lignes.add(texte.count("\n", 0, appel.start()) + 1)
+        for numero in sorted(lignes):
             findings.append(
                 {
                     "kind": "getsession-serveur",

@@ -191,6 +191,56 @@ def test_getsession_hors_serveur_commentaire_et_tests_ignores(tmp_path: Path) ->
     assert _kinds(racine) == []
 
 
+def test_rouge_route_nommee_comme_un_dossier_ecarte(tmp_path: Path) -> None:
+    """`app/test/page.tsx` est la route /test, pas un dossier de tests (revue du 29/10/2026)."""
+    routes = ("test", "tests", "e2e", "build", "dist", "out", "coverage")
+    fichiers = {f"app/{r}/page.tsx": "await supabase.auth.getSession();\n" for r in routes}
+    fichiers["src/routes/test/+page.server.ts"] = "await supabase.auth.getSession();\n"
+    racine = _projet(tmp_path, dependances=_DEPS_SSR, fichiers=fichiers)
+    assert _kinds(racine) == ["getsession-serveur"] * 8
+
+
+def test_dossiers_de_tests_et_de_build_restent_ecartes(tmp_path: Path) -> None:
+    appel = "await supabase.auth.getSession();\n"
+    fichiers = {
+        "test/app/page.tsx": appel,
+        "e2e/middleware.server.ts": appel,
+        "src/tests/a.server.ts": appel,
+        "dist/app/page.js": appel,
+        "app/__tests__/page.tsx": appel,
+        "app/test/page.test.tsx": appel,
+        "app/node_modules/x/page.js": appel,
+        "app/.next/page.js": appel,
+    }
+    racine = _projet(tmp_path, dependances=_DEPS_SSR, fichiers=fichiers)
+    assert _kinds(racine) == []
+
+
+def test_rouge_appel_ecrit_sur_plusieurs_lignes_puis_remede(tmp_path: Path) -> None:
+    """Le fichier était retenu sur tout son texte, le constat cherché ligne par ligne : rien."""
+    fichiers = {"app/page.tsx": "const s = await supabase\n  .auth\n  .getSession();\n"}
+    racine = _projet(tmp_path, dependances=_DEPS_SSR, fichiers=fichiers)
+    verdict = run_supabase_ssr_gate(racine)
+    assert not verdict.passed
+    assert [f["ligne"] for f in verdict.findings] == ["2"]
+    (racine / "app/page.tsx").write_text(
+        "const s = await supabase\n  .auth\n  .getClaims();\n", encoding="utf-8"
+    )
+    assert run_supabase_ssr_gate(racine).passed
+
+
+def test_appel_multiligne_lignes_et_commentaires(tmp_path: Path) -> None:
+    fichiers = {
+        "app/a.tsx": "// await supabase\n//   .auth\n//   .getSession();\nexport {}\n",
+        "app/b.tsx": "/*\n * await supabase.auth\n *   .getSession();\n */\nexport {}\n",
+        "app/c.tsx": "a.auth.getSession(); b.auth.getSession();\n\nc\n.auth.getSession();\n",
+    }
+    racine = _projet(tmp_path, dependances=_DEPS_SSR, fichiers=fichiers)
+    verdict = run_supabase_ssr_gate(racine)
+    lignes = sorted((Path(f["file"]).name, f["ligne"]) for f in verdict.findings)
+    assert lignes == [("c.tsx", "1"), ("c.tsx", "4")]
+
+
 # --- 3. proxy.ts jamais appelé avant Next.js 16 -------------------------------------------------
 
 
