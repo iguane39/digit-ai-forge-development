@@ -19,6 +19,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from conductor.gates.supabase_ssr_gate import main, run_supabase_ssr_gate
 
 
@@ -269,6 +271,70 @@ def test_version_next_non_lisible_est_tracee(tmp_path: Path) -> None:
     verdict = run_supabase_ssr_gate(racine)
     assert [f for f in verdict.findings if "kind" in f] == []
     assert any("next" in f.get("skipped", "") for f in verdict.findings)
+
+
+# --- Verdict non jugé distinct du PASS (TF-2049, convention P-06) --------------------------------
+# P-06 : matière illisible ou absente → SKIP tracé, jamais un échec implicite (README du conductor,
+# « PASS, FAIL avec constats localisés, ou SKIP tracé » ; mutation_gate : stats illisibles → SKIP).
+# Le défaut : le SKIP était tracé dans les constats, mais le CLI imprimait « PASS » et rien d'autre.
+
+
+def _projet_package_json_invalide(tmp_path: Path) -> Path:
+    racine = _projet(tmp_path, fichiers={"app/page.tsx": _PAGE_SERVEUR_GETSESSION})
+    (racine / "package.json").write_text('{"dependencies": {"next": ', encoding="utf-8")
+    return racine
+
+
+def test_rouge_package_json_invalide_est_non_juge_pas_pass(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    racine = _projet_package_json_invalide(tmp_path)
+    verdict = run_supabase_ssr_gate(racine)
+    assert verdict.passed is True  # P-06 : pas d'échec implicite
+    assert "illisible" in verdict.findings[0]["skipped"]
+    assert verdict.findings[0]["non_juge"] == "gate entier"
+    assert main([str(racine)]) == 0
+    sortie = capsys.readouterr().out
+    assert sortie.startswith("supabase-ssr gate: SKIP")
+    assert "PASS" not in sortie
+    assert "illisible" in sortie
+
+
+def test_remede_package_json_valide_rend_le_constat_getsession(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Le remède du SKIP — réparer le JSON — fait juger le même code, qui est refusé."""
+    racine = _projet_package_json_invalide(tmp_path)
+    paquet = {"dependencies": {"next": "^16.0.0", "@supabase/ssr": "^0.7.0"}}
+    (racine / "package.json").write_text(json.dumps(paquet), encoding="utf-8")
+    assert main([str(racine)]) == 1
+    assert "getsession-serveur" in capsys.readouterr().err
+
+
+def test_cli_sens_vert_dit_pass(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    racine = _projet(tmp_path, dependances=_DEPS_SSR, fichiers={"proxy.ts": _PROXY_GETCLAIMS})
+    assert main([str(racine)]) == 0
+    assert capsys.readouterr().out.strip() == "supabase-ssr gate: PASS"
+
+
+def test_cli_sans_objet_dit_skip(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    assert main([str(_projet(tmp_path, dependances={"next": "^16.0.0"}))]) == 0
+    sortie = capsys.readouterr().out
+    assert sortie.startswith("supabase-ssr gate: SKIP")
+    assert "SANS_OBJET" in sortie
+
+
+def test_cli_controle_partiel_reste_pass_et_dit_ce_qui_manque(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Version de next illisible : les contrôles 1 et 2 ont jugé, le 3 non — PASS qui le dit."""
+    deps = {"next": "latest", "@supabase/ssr": "^0.7.0"}
+    racine = _projet(tmp_path, dependances=deps, fichiers={"proxy.ts": _PROXY_GETCLAIMS})
+    assert main([str(racine)]) == 0
+    sortie = capsys.readouterr().out
+    assert sortie.startswith("supabase-ssr gate: PASS")
+    assert "non jugé" in sortie
+    assert "next" in sortie
 
 
 def test_cli_usage_rend_2(tmp_path: Path) -> None:

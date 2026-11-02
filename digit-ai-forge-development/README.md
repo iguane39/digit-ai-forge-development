@@ -78,7 +78,8 @@ uv run python -m conductor.gates.porte_neutralisee_gate ..
 
 ## Gates de plateforme, joués sur le projet cible
 Ces gates jugent le projet produit, pas la forge. Chacun rend PASS, FAIL avec constats localisés,
-ou SKIP tracé quand son objet est absent.
+ou SKIP tracé quand son objet est absent ou illisible (la ligne imprimée dit alors SKIP,
+jamais PASS ; exit 0, P-06).
 ```bash
 # Worker Cloudflare : date et drapeaux de compatibilité servis = testés (TF-1998)
 uv run python -m conductor.gates.runtime_parity_gate "<repo cible>"

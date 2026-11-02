@@ -56,6 +56,9 @@ _DIRECTIVE = re.compile(
     r"""^\s*(?:(?://[^\n]*|/\*.*?\*/)\s*)*["'](use client|use server)["']""", re.S
 )
 _MAJEURE = re.compile(r"^[\^~=v]?\s*(\d+)(?:\.[\dx*]+)*(?:-[\w.]+)?$")
+# Marque d'un constat « skipped » qui couvre le gate ENTIER (aucun contrôle n'a jugé) : le CLI
+# rend alors SKIP, distinct de PASS. Un « skipped » sans cette marque est partiel (TF-2049).
+_GATE_ENTIER = "gate entier"
 
 
 def _dependances(paquet: dict[str, Any]) -> dict[str, str]:
@@ -211,7 +214,12 @@ def run_supabase_ssr_gate(project_dir: Path) -> GateVerdict:
         return GateVerdict(
             gate="supabase-ssr",
             passed=True,
-            findings=[{"skipped": "aucun package.json à la racine du projet (SANS_OBJET)"}],
+            findings=[
+                {
+                    "skipped": "aucun package.json à la racine du projet (SANS_OBJET)",
+                    "non_juge": _GATE_ENTIER,
+                }
+            ],
             log_ref=str(project_dir),
         )
     try:
@@ -220,7 +228,13 @@ def run_supabase_ssr_gate(project_dir: Path) -> GateVerdict:
         return GateVerdict(
             gate="supabase-ssr",
             passed=True,
-            findings=[{"skipped": f"package.json illisible : {exc}"}],
+            findings=[
+                {
+                    "skipped": f"package.json illisible : {exc} — les trois contrôles ne sont "
+                    "pas jugés (SKIP tracé, jamais un échec implicite : P-06)",
+                    "non_juge": _GATE_ENTIER,
+                }
+            ],
             log_ref=str(project_dir),
         )
     deps = _dependances(paquet) if isinstance(paquet, dict) else {}
@@ -228,7 +242,12 @@ def run_supabase_ssr_gate(project_dir: Path) -> GateVerdict:
         return GateVerdict(
             gate="supabase-ssr",
             passed=True,
-            findings=[{"skipped": "aucune dépendance @supabase/ dans package.json (SANS_OBJET)"}],
+            findings=[
+                {
+                    "skipped": "aucune dépendance @supabase/ dans package.json (SANS_OBJET)",
+                    "non_juge": _GATE_ENTIER,
+                }
+            ],
             log_ref=str(project_dir),
         )
     findings = (
@@ -250,7 +269,14 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     verdict = run_supabase_ssr_gate(Path(args[0]))
     if verdict.passed:
-        print("supabase-ssr gate: PASS")
+        non_juges = [f["skipped"] for f in verdict.findings if "skipped" in f]
+        if any(f.get("non_juge") == _GATE_ENTIER for f in verdict.findings):
+            # P-06 : SKIP tracé, exit 0 (jamais un échec implicite) — mais jamais écrit « PASS ».
+            print(f"supabase-ssr gate: SKIP (non jugé) — {' ; '.join(non_juges)}")
+        elif non_juges:
+            print(f"supabase-ssr gate: PASS (contrôle partiel, non jugé : {' ; '.join(non_juges)})")
+        else:
+            print("supabase-ssr gate: PASS")
         return 0
     blocking = [f for f in verdict.findings if "skipped" not in f]
     print(f"supabase-ssr gate: FAIL ({len(blocking)} constat(s))", file=sys.stderr)
