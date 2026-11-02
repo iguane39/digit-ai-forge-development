@@ -337,6 +337,54 @@ def test_cli_controle_partiel_reste_pass_et_dit_ce_qui_manque(
     assert "next" in sortie
 
 
+# --- package.json valide mais non objet : verdict exact (TF-2059) ---------------------------
+# Un `[]`, un `"x"`, un `42` ou `null` sont du JSON valide, pas un package.json. Le gate disait
+# « aucune dépendance @supabase/ » : un motif approximatif, qui laissait croire qu'un objet
+# avait été lu et trouvé sans dépendance. Le verdict exact nomme la forme reçue.
+
+
+@pytest.mark.parametrize(
+    ("contenu", "nom_type"),
+    [("[]", "liste"), ('"x"', "chaîne"), ("42", "nombre"), ("null", "null"), ("true", "booléen")],
+)
+def test_rouge_package_json_non_objet_est_non_juge_et_le_dit(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], contenu: str, nom_type: str
+) -> None:
+    racine = _projet(tmp_path, fichiers={"app/page.tsx": _PAGE_SERVEUR_GETSESSION})
+    (racine / "package.json").write_text(contenu, encoding="utf-8")
+    verdict = run_supabase_ssr_gate(racine)
+    assert verdict.passed is True  # P-06 : pas d'échec implicite
+    constat = verdict.findings[0]
+    assert constat["non_juge"] == "gate entier"
+    assert "n'est pas un objet JSON" in constat["skipped"]
+    assert nom_type in constat["skipped"]
+    assert "@supabase/" not in constat["skipped"]  # plus le motif « aucune dépendance »
+    assert main([str(racine)]) == 0
+    sortie = capsys.readouterr().out
+    assert sortie.startswith("supabase-ssr gate: SKIP")
+    assert "n'est pas un objet JSON" in sortie
+
+
+def test_remede_package_json_objet_rend_le_constat_getsession(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Le remède du SKIP — un vrai objet — fait juger le même code, qui est refusé."""
+    racine = _projet(tmp_path, fichiers={"app/page.tsx": _PAGE_SERVEUR_GETSESSION})
+    (racine / "package.json").write_text("[]", encoding="utf-8")
+    assert main([str(racine)]) == 0
+    capsys.readouterr()
+    paquet = {"dependencies": {"next": "^16.0.0", "@supabase/ssr": "^0.7.0"}}
+    (racine / "package.json").write_text(json.dumps(paquet), encoding="utf-8")
+    assert main([str(racine)]) == 1
+    assert "getsession-serveur" in capsys.readouterr().err
+
+
+def test_objet_sans_dependance_supabase_garde_son_motif(tmp_path: Path) -> None:
+    """Un objet réel sans @supabase/ reste SANS_OBJET avec son motif d'origine."""
+    verdict = run_supabase_ssr_gate(_projet(tmp_path, dependances={"next": "^16.0.0"}))
+    assert "aucune dépendance @supabase/" in verdict.findings[0]["skipped"]
+
+
 def test_cli_usage_rend_2(tmp_path: Path) -> None:
     assert main([]) == 2
     assert main([str(tmp_path), "de trop"]) == 2

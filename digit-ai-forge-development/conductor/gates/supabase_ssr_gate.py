@@ -59,6 +59,15 @@ _MAJEURE = re.compile(r"^[\^~=v]?\s*(\d+)(?:\.[\dx*]+)*(?:-[\w.]+)?$")
 # Marque d'un constat « skipped » qui couvre le gate ENTIER (aucun contrôle n'a jugé) : le CLI
 # rend alors SKIP, distinct de PASS. Un « skipped » sans cette marque est partiel (TF-2049).
 _GATE_ENTIER = "gate entier"
+# Forme d'un JSON valide qui n'est pas un objet, nommée pour le motif du SKIP.
+_NOMS_TYPES_JSON: dict[type, str] = {
+    list: "une liste",
+    str: "une chaîne",
+    int: "un nombre",
+    float: "un nombre",
+    bool: "un booléen",
+    type(None): "null",
+}
 
 
 def _dependances(paquet: dict[str, Any]) -> dict[str, str]:
@@ -237,7 +246,21 @@ def run_supabase_ssr_gate(project_dir: Path) -> GateVerdict:
             ],
             log_ref=str(project_dir),
         )
-    deps = _dependances(paquet) if isinstance(paquet, dict) else {}
+    if not isinstance(paquet, dict):
+        return GateVerdict(
+            gate="supabase-ssr",
+            passed=True,
+            findings=[
+                {
+                    "skipped": "package.json valide mais n'est pas un objet JSON "
+                    f"(reçu : {_NOMS_TYPES_JSON[type(paquet)]}) — les trois contrôles ne sont pas "
+                    "jugés (SKIP tracé, jamais un échec implicite : P-06)",
+                    "non_juge": _GATE_ENTIER,
+                }
+            ],
+            log_ref=str(project_dir),
+        )
+    deps = _dependances(paquet)
     if not any(nom.startswith("@supabase/") for nom in deps):
         return GateVerdict(
             gate="supabase-ssr",
