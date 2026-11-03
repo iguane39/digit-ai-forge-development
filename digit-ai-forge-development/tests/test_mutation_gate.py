@@ -10,6 +10,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from conductor.gates.mutation_gate import DEFAULT_THRESHOLD, main, run_mutation_gate
 
 
@@ -86,3 +88,31 @@ def test_cli_main_pass_et_fail(tmp_path: Path) -> None:
     assert main([str(ok)]) == 0
     ko = _write_stats(tmp_path, killed=10, survived=90)
     assert main([str(ko)]) == 1
+
+
+# --- Verdict non jugé distinct du PASS (TF-2068, convention P-06 : cf. static_cache, TF-2059) ---
+# Le défaut : sans stats, le CLI imprimait « mutation gate: PASS (stats mutmut absentes …) ».
+
+
+def test_rouge_cli_stats_absentes_dit_skip_pas_pass(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert main([str(tmp_path / "absent.json")]) == 0  # P-06 : pas d'échec implicite
+    sortie = capsys.readouterr().out
+    assert sortie.startswith("mutation gate: SKIP (non jugé)")
+    assert "PASS" not in sortie
+    assert "stats mutmut absentes" in sortie
+
+
+def test_rouge_cli_aucun_mutant_juge_dit_skip_pas_pass(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert main([str(_write_stats(tmp_path, killed=0, survived=0))]) == 0
+    sortie = capsys.readouterr().out
+    assert sortie.startswith("mutation gate: SKIP (non jugé)")
+    assert "PASS" not in sortie
+
+
+def test_vert_cli_score_mesure_dit_pass(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    assert main([str(_write_stats(tmp_path, killed=80, survived=20))]) == 0
+    assert capsys.readouterr().out.startswith("mutation gate: PASS")

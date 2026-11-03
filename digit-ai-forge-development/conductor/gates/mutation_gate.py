@@ -139,7 +139,8 @@ def main(argv: list[str] | None = None) -> int:
     verdict = run_mutation_gate(Path(args[0]), threshold=threshold)
     if verdict.passed:
         skip = verdict.findings[0].get("skipped", "") if verdict.findings else ""
-        print("mutation gate: PASS" + (f" ({skip})" if skip else ""))
+        # TF-2068 : rien de jugé ne s'imprime pas « PASS » (convention P-06, cf. static_cache_gate).
+        print(f"mutation gate: SKIP (non jugé) — {skip}" if skip else "mutation gate: PASS")
         return 0
     f = verdict.findings[0]
     print(
