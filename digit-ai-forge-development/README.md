@@ -90,6 +90,16 @@ Le premier est décrit au playbook (`../docs/run-playbook.md`, parité runtime, 
 Le second cite dans son module les pages Supabase lues le 29/10/2026 qui fondent ses trois
 constats. Sa recette double sens : `tests/test_supabase_ssr_gate.py`.
 
+## Skill de référence : intégrer OpenAI ou Gemini (TF-2108)
+Un produit qui appelle OpenAI ou Gemini s'appuie sur le skill
+[`integre-openai-gemini`](../.claude/skills/integre-openai-gemini/SKILL.md) : choix de l'API et de la
+bibliothèque, table des modèles datée (aucun identifiant ni prix dans le code), tests sans appel
+payant, clés et données personnelles, migrations datées. Son contrôle se joue ainsi :
+```bash
+node ../.claude/skills/integre-openai-gemini/scripts/self-test.mjs
+```
+La recette Python le rejoue : `tests/test_skill_integre_openai_gemini.py`.
+
 ## Documentation de conception
 [`../docs/`](../docs/) — analyse, PRD, architecture, plan d'implémentation, notes de spike,
 décisions d'exécution.

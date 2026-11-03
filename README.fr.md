@@ -58,6 +58,7 @@ Deux points de validation humaine (HITL) : approbation du PRD & de l'architectur
 | [`digit-ai-forge-development/`](digit-ai-forge-development/) | Le code : `conductor/` (framework maître), cible paramétrable, gates, CI |
 | [`docs/`](docs/) | Corpus de conception : analyse, PRD (format BMAD), architecture, plan d'implémentation, notes de spike, décisions d'exécution |
 | [`input/`](input/) | Le dossier fondateur d'origine |
+| [`.claude/skills/`](.claude/skills/) | Skills de référence : `integre-openai-gemini` aide un produit à intégrer OpenAI ou Gemini (choix de l'API, table des modèles datée, tests sans dépense, secrets, migrations) |
 
 ## Démarrage rapide
 

@@ -372,6 +372,13 @@ l'environnement de test et l'image servie*, jumelle de la règle O-10 d'`oracle-
     --include='*.py' backend/app | grep -v 'migrations/.*_seed_.*\.py'
   ```
 
+  Produit qui appelle OpenAI ou Gemini : le skill `integre-openai-gemini` de cette forge
+  (`.claude/skills/integre-openai-gemini/`) fournit la forme de la table des modèles, le référentiel
+  daté du pilot où lire les identifiants (`references\MODELES-TIERS.json`), les arrêts datés connus
+  (`references/modeles-et-dates.md`, `references/migrations.md`) et un contrôle plus large que le grep
+  ci-dessus, qui couvre aussi les plongements, l'audio, l'image et les prix :
+  `node .claude/skills/integre-openai-gemini/scripts/controle-modeles.mjs <dossier du code> --autorise <fichier de peuplement>`.
+
 - **Zéro affordance inerte.** Tout élément interactif présent dans les gabarits a un effet
   observable testé — câblé — ou n'est pas repris de la maquette. Toute affordance est câblée ou
   n'existe pas (loi pilot) : un bouton qui ne fait rien n'est pas un défaut mineur, c'est une

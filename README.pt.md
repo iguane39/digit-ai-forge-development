@@ -59,6 +59,7 @@ merge final. O merge automático está desativado por concepção.
 | [`digit-ai-forge-development/`](digit-ai-forge-development/) | O código: `conductor/` (framework mestre), alvo parametrizável, gates, CI |
 | [`docs/`](docs/) | Corpus de design: análise, PRD (formato BMAD), arquitetura, plano de implementação, notas de spike, decisões de execução |
 | [`input/`](input/) | O dossiê fundador original |
+| [`.claude/skills/`](.claude/skills/) | Skills de referência: `integre-openai-gemini` ajuda um produto a integrar OpenAI ou Gemini (escolha da API, tabela de modelos datada, testes sem custo, segredos, migrações) |
 
 ## Início rápido
 

@@ -76,6 +76,7 @@ Autonomous merging is disabled by design.
 | [`digit-ai-forge-development/`](digit-ai-forge-development/) | The code: `conductor/` (master framework), parameterizable target, gates, CI |
 | [`docs/`](docs/) | Design corpus: analysis, PRD (BMAD format), architecture, implementation plan, spike notes, execution decisions |
 | [`input/`](input/) | The original founder dossier |
+| [`.claude/skills/`](.claude/skills/) | Reference skills: `integre-openai-gemini` helps a product integrate OpenAI or Gemini (choice of API, dated model table, tests without spend, secrets, migrations) |
 
 ## Quickstart
 

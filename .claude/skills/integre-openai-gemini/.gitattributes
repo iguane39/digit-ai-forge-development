@@ -1,0 +1,6 @@
+# Fins de ligne (TF-0021) : le frontmatter d'un SKILL.md lu ligne à ligne se casse sur un \r résiduel,
+# et la copie de travail de ce dépôt est en CRLF sous Windows (core.autocrlf=true). LF des deux côtés.
+*.md   text eol=lf
+*.mjs  text eol=lf
+*.json text eol=lf
+.gitattributes text eol=lf
