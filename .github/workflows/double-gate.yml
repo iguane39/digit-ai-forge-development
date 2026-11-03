@@ -1,7 +1,8 @@
 name: double-gate
 # Definition of done (décision canonique 03) : aucun merge si le job code, design OU mutation
 # échoue. Job `mutation` (TF-0103.2/TF-0120) : 3e métrique, BLOQUANTE depuis le 12/08/2026
-# (score mesuré 94,25 % le 12/08/2026, 85,76 % le 02/11/2026, seuil 75 % : cf. commentaire du job).
+# (score mesuré 94,25 % le 12/08/2026, 85,76 % le 02/11/2026, 97,09 % le 03/11/2026, seuil 75 % :
+# cf. commentaire du job).
 on:
   pull_request:
   push:
@@ -65,9 +66,12 @@ jobs:
   # compris sans retirer du dénominateur les 21 mutants équivalents documentés
   # (docs/mutation-equivalents.md). Mesure du 02/11/2026 (TF-2059) : 85,76 % (560 killed / 93
   # survived / 653 total), obtenue en rejouant ce job sous Docker python:3.11-slim (mutmut 3.7.0,
-  # mêmes commandes que ci-dessous) sur le main courant ; seuil 75 % toujours dépassé. Le score
-  # a baissé de 8,5 points et le scope compte 288 mutants de plus que le 12/08 : cette citation
-  # ne vaut qu'à sa date, la valeur qui compte est celle que le job calcule à chaque run.
+  # mêmes commandes que ci-dessous) sur le main courant : le scope compte 288 mutants de plus que
+  # le 12/08, issus des contrôles ajoutés à ai_antipatterns_gate.py les 14 et 15/09/2026.
+  # Mesure du 03/11/2026 (TF-2068), mêmes commandes, après les tests qui tuent 74 de ces 93
+  # survivants : 97,09 % (634 killed / 19 survived / 653 total), les 19 survivants étant les
+  # mutants équivalents du registre. Seuil 75 % dépassé ; ces citations ne valent qu'à leur
+  # date, la valeur qui compte est celle que le job calcule à chaque run.
   # Restes : étendre `only_mutate` au reste de `conductor/`.
   # mutmut ne tourne PAS nativement sous Windows : ce job (ubuntu-latest) est aujourd'hui le
   # seul point d'exécution réel hors devcontainer/WSL (TF-0103.1).

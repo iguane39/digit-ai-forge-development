@@ -43,9 +43,18 @@ les 21 mutants équivalents documentés (registre complet, justification par mut
 (`python:3.11-slim`, mutmut 3.7.0, `uv run mutmut run` puis `export-cicd-stats`, soit les
 commandes du job CI) sur le main courant : **560 killed / 93 survived / 653 total → 85,76 %**,
 au-dessus du seuil de 75 %. Le 94,25 % ci-dessus est donc une mesure datée, pas l'état courant :
-le score a baissé de 8,5 points et le scope compte 288 mutants de plus (cause non établie ; le
-code du scope a été modifié depuis le 12/08, notamment `ai_antipatterns_gate.py` les 14 et
-15/09/2026). Le seuil ne change pas.
+le score a baissé de 8,5 points et le scope compte 288 mutants de plus. Cause établie le
+03/11/2026 (TF-2068) : ces 288 mutants viennent des contrôles ajoutés à `ai_antipatterns_gate.py`
+les 14 et 15/09/2026 (commits 25e29a4 et 79eef0b), 272 dans dix fonctions nouvelles et 16 dans
+`run_ai_antipatterns_gate` et `main` ; `sandbox.py` n'a pas changé depuis le 12/08. Le seuil ne
+change pas.
+
+**Mesure du 03/11/2026 (TF-2068)** : mêmes commandes, même scope, après les tests qui tuent 74 des
+93 survivants du 02/11 : **634 killed / 19 survived / 653 total → 97,09 %**. Les 19 survivants sont
+les mutants équivalents de `docs/mutation-equivalents.md`, qui redonne la méthode, la définition
+de l'équivalence et la raison de chaque classe. Trois classes du 12/08 (encodage par défaut de la
+locale, `filename=` d'`ast.parse`, `__future__`) ont été levées : des tests les tuent. Ni
+`only_mutate` ni le seuil n'ont bougé.
 """
 
 from __future__ import annotations

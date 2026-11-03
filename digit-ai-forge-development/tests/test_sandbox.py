@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -12,6 +13,7 @@ from conductor.sandbox import (
     is_isolated,
     require_isolation_for_real_effects,
 )
+from tests._locale_ascii import evaluer_sous_locale_ascii
 
 
 def _clear_markers(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -101,3 +103,22 @@ def test_cgroup_octets_non_utf8_ignores(tmp_path: Path) -> None:
     cgroup = tmp_path / "cgroup"
     cgroup.write_bytes(b"1:name=systemd:/docker/\xff\xfe/abcdef0123456789\n")
     assert _cgroup_indicates_container(cgroup) is True
+
+
+def test_cgroup_lu_en_utf8_quelle_que_soit_la_locale(tmp_path: Path) -> None:
+    """Fixture rouge réelle (TF-2068) : la lecture déclare ``encoding="utf-8"`` pour ne pas
+    dépendre de la locale. Sous une locale ASCII, un octet UTF-8 multi-octets est avalé par
+    ``errors="ignore"`` : ``dock`` + ``é`` + ``er`` se lirait ``docker`` et ferait croire à un
+    conteneur. Lu en UTF-8, ``dockéer`` n'est pas un marqueur de runtime."""
+    cgroup = tmp_path / "cgroup"
+    cgroup.write_bytes("1:name=systemd:/dockéer\n".encode())
+    local = _cgroup_indicates_container(cgroup)
+    assert local is False
+    # Appel dans le processus du test ci-dessus : mutmut relie un test à une fonction par les
+    # appels qu'il observe dans son propre processus, pas par ceux du fils.
+    assert (
+        evaluer_sous_locale_ascii(
+            f"sandbox._cgroup_indicates_container(Path({json.dumps(str(cgroup))}))"
+        )
+        is local
+    )

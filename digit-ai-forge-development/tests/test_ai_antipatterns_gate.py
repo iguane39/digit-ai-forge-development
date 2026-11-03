@@ -4,17 +4,21 @@ outil de qualité déclaré et jamais câblé (TF-1041)."""
 from __future__ import annotations
 
 import json
+import sys
+import warnings
 from pathlib import Path
 
 import pytest
 
 from conductor.gates.ai_antipatterns_gate import (
+    _chain_text,
     _dep_name,
     _find_repo_root,
     _import_names_for_dependency,
     _package_json_quality_scripts,
     _pre_commit_hook_ids,
     _pyproject_linters,
+    _workflow_files,
     check_archiving_step_continue_on_error,
     check_declared_tools_not_wired,
     check_event_wait_after_action,
@@ -25,6 +29,7 @@ from conductor.gates.ai_antipatterns_gate import (
     manifest_import_names,
     run_ai_antipatterns_gate,
 )
+from tests._locale_ascii import evaluer_sous_locale_ascii
 
 _PYPROJECT = """
 [project]
@@ -972,4 +977,328 @@ def test_cli_les_findings_skip_ne_comptent_pas_comme_defauts(
     assert err == (
         "ai-antipatterns gate: FAIL (1 défaut(s))\n"
         f"  - [secret-en-dur] {src / 'main.py'} : valeur en dur affectée à 'PASSWORD'\n"
+    )
+
+
+# --- TF-2068 : survivants du rejeu mutmut du 03/11/2026 -------------------------------
+#
+# Chaque test ci-dessous tue un mutant vivant ; la correspondance est dans
+# docs/mutation-equivalents.md. Les fixtures rouges sont les entrées que la suite ne
+# fournissait pas : locale non UTF-8, octets invalides, dialectes de chaîne CI, motifs hors
+# fenêtre.
+
+
+def _json(chemin: Path) -> str:
+    return json.dumps(str(chemin))
+
+
+# Lecture en UTF-8 indépendante de la locale : le fils tourne en locale ASCII et les octets
+# multi-octets y sont avalés (errors="ignore") ou refusés (strict) si ``encoding`` saute. Chaque
+# test appelle aussi la fonction DANS le processus du test : mutmut ne relie un test à une
+# fonction que par les appels qu'il observe dans son propre processus, et le fils lui est
+# invisible. Le résultat du fils doit égaler celui du processus du test.
+
+
+def test_manifest_lu_en_utf8_quelle_que_soit_la_locale(tmp_path: Path) -> None:
+    p = tmp_path / "pyproject.toml"
+    p.write_text(
+        '# dépendances déclarées\n[project]\nname = "demo"\ndependencies = ["pydantic>=2.7"]\n',
+        encoding="utf-8",
+    )
+    local = sorted(manifest_import_names(p))
+    assert local == ["pydantic"]
+    assert evaluer_sous_locale_ascii(f"sorted(g.manifest_import_names(Path({_json(p)})))") == local
+
+
+def test_imports_fantomes_lus_en_utf8_quelle_que_soit_la_locale(tmp_path: Path) -> None:
+    src = tmp_path / "app"
+    src.mkdir()
+    (src / "main.py").write_text("import requésts\n", encoding="utf-8")
+    pyproject = _write_pyproject(tmp_path)
+    local = [f["issue"] for f in check_missing_dependencies(src, pyproject)]
+    assert local == ["import 'requésts' absent du manifeste de dépendances"]
+    assert evaluer_sous_locale_ascii(
+        "[f['issue'] for f in "
+        f"g.check_missing_dependencies(Path({_json(src)}), Path({_json(pyproject)}))]"
+    ) == local
+
+
+def test_secrets_lus_en_utf8_quelle_que_soit_la_locale(tmp_path: Path) -> None:
+    src = tmp_path / "app"
+    src.mkdir()
+    (src / "main.py").write_text('secret_é = "motdepasse01"\n', encoding="utf-8")
+    local = [f["issue"] for f in check_hardcoded_secrets(src)]
+    assert local == ["valeur en dur affectée à 'secret_é'"]
+    assert evaluer_sous_locale_ascii(
+        f"[f['issue'] for f in g.check_hardcoded_secrets(Path({_json(src)}))]"
+    ) == local
+
+
+def test_routes_lues_en_utf8_quelle_que_soit_la_locale(tmp_path: Path) -> None:
+    src = tmp_path / "app"
+    src.mkdir()
+    (src / "main.py").write_text('@appé.get("/x")\ndef f():\n    return 1\n', encoding="utf-8")
+    local = [f["issue"] for f in check_routes_without_auth(src)]
+    assert local == ["route '@appé.get(' sans dépendance d'auth ni marqueur public"]
+    assert evaluer_sous_locale_ascii(
+        f"[f['issue'] for f in g.check_routes_without_auth(Path({_json(src)}))]"
+    ) == local
+
+
+def test_package_json_lu_en_utf8_quelle_que_soit_la_locale(tmp_path: Path) -> None:
+    (tmp_path / "package.json").write_text(
+        json.dumps({"scripts": {"lint": "eslint --format=é"}}, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    local = _package_json_quality_scripts(tmp_path)
+    assert local == {"lint": "eslint --format=é"}
+    assert (
+        evaluer_sous_locale_ascii(f"g._package_json_quality_scripts(Path({_json(tmp_path)}))")
+        == local
+    )
+
+
+def test_pyproject_linters_lu_en_utf8_quelle_que_soit_la_locale(tmp_path: Path) -> None:
+    p = tmp_path / "pyproject.toml"
+    p.write_text("# lecture à froid\n[tool.ruff]\nline-length = 100\n", encoding="utf-8")
+    local = _pyproject_linters(p)
+    assert local == ["ruff"]
+    assert evaluer_sous_locale_ascii(f"g._pyproject_linters(Path({_json(p)}))") == local
+
+
+def test_pre_commit_lu_en_utf8_quelle_que_soit_la_locale(tmp_path: Path) -> None:
+    (tmp_path / ".pre-commit-config.yaml").write_text(
+        "repos:\n  - repo: local\n    hooks:\n      - id: lintér\n", encoding="utf-8"
+    )
+    local = _pre_commit_hook_ids(tmp_path)
+    assert local == ["lintér"]
+    assert evaluer_sous_locale_ascii(f"g._pre_commit_hook_ids(Path({_json(tmp_path)}))") == local
+
+
+def test_chaine_ci_lue_en_utf8_quelle_que_soit_la_locale(tmp_path: Path) -> None:
+    workflows = tmp_path / ".github" / "workflows"
+    workflows.mkdir(parents=True)
+    (workflows / "ci.yml").write_text("name: déploiement\n", encoding="utf-8")
+    local = _chain_text(tmp_path)
+    assert local == "name: déploiement\n"
+    assert evaluer_sous_locale_ascii(f"g._chain_text(Path({_json(tmp_path)}))") == local
+
+
+def test_archivage_lu_en_utf8_quelle_que_soit_la_locale(tmp_path: Path) -> None:
+    """Le motif ``continueOnError`` est à plus de 400 caractères de l'étape : hors fenêtre, donc
+    aucun constat. Si la locale avale les 450 ``é`` du commentaire, le motif entre dans la
+    fenêtre et un constat apparaît."""
+    (tmp_path / "azure-pipelines.yml").write_text(
+        "steps:\n"
+        "  - task: PublishBuildArtifacts@1\n"
+        "    inputs:\n"
+        "      pathToPublish: resultats.json\n"
+        f"    # {'é' * 450}\n"
+        "    continueOnError: true\n",
+        encoding="utf-8",
+    )
+    local = len(check_archiving_step_continue_on_error(tmp_path))
+    assert local == 0
+    assert (
+        evaluer_sous_locale_ascii(
+            f"len(g.check_archiving_step_continue_on_error(Path({_json(tmp_path)})))"
+        )
+        == local
+    )
+
+
+def test_attente_lue_en_utf8_quelle_que_soit_la_locale(tmp_path: Path) -> None:
+    """Même ressort que l'archivage, pour la fenêtre de 200 caractères après l'action."""
+    (tmp_path / "x.spec.ts").write_text(
+        f"await page.click('#go');\n// {'é' * 250}\nawait page.waitForResponse(r => r);\n",
+        encoding="utf-8",
+    )
+    local = len(check_event_wait_after_action(tmp_path))
+    assert local == 0
+    assert (
+        evaluer_sous_locale_ascii(f"len(g.check_event_wait_after_action(Path({_json(tmp_path)})))")
+        == local
+    )
+
+
+# Octets invalides : errors="ignore" les avale, un mode strict ou un nom de gestionnaire altéré
+# lève dès le premier octet invalide.
+
+
+def test_pre_commit_ignore_octets_invalides(tmp_path: Path) -> None:
+    (tmp_path / ".pre-commit-config.yaml").write_bytes(
+        b"repos:\n  - repo: local\n    hooks:\n      - id: ruff\n\xff\xfe\n      - id: eslint\n"
+    )
+    assert _pre_commit_hook_ids(tmp_path) == ["ruff", "eslint"]
+
+
+def test_chaine_ci_ignore_octets_invalides(tmp_path: Path) -> None:
+    workflows = tmp_path / ".github" / "workflows"
+    workflows.mkdir(parents=True)
+    (workflows / "ci.yml").write_bytes(b"run: ruff\xff\xfe\n")
+    assert _chain_text(tmp_path) == "run: ruff\n"
+
+
+def test_archivage_ignore_octets_invalides(tmp_path: Path) -> None:
+    (tmp_path / "azure-pipelines.yml").write_bytes(
+        b"# \xff\xfe\n"
+        b"steps:\n"
+        b"  - task: PublishBuildArtifacts@1\n"
+        b"    continueOnError: true\n"
+    )
+    assert len(check_archiving_step_continue_on_error(tmp_path)) == 1
+
+
+def test_attente_ignore_octets_invalides(tmp_path: Path) -> None:
+    (tmp_path / "x.spec.ts").write_bytes(
+        b"// \xff\xfe\nawait page.click('#go');\nawait page.waitForNavigation();\n"
+    )
+    assert len(check_event_wait_after_action(tmp_path)) == 1
+
+
+# Autres entrées jamais fournies.
+
+
+def test_find_repo_root_est_plafonne_a_cinq_niveaux(tmp_path: Path) -> None:
+    """Le ``.git`` à 4 niveaux au-dessus du départ est le dernier inspecté (5 dossiers : le
+    départ et ses 4 parents) ; à 5 niveaux il est hors plafond et le départ est rendu tel quel."""
+    (tmp_path / ".git").mkdir()
+    quatre = tmp_path / "a" / "b" / "c" / "d"
+    quatre.mkdir(parents=True)
+    cinq = quatre / "e"
+    cinq.mkdir()
+    assert _find_repo_root(quatre) == tmp_path
+    assert _find_repo_root(cinq) == cinq
+
+
+def test_chain_text_sans_dossier_workflows_rend_la_chaine_vide(tmp_path: Path) -> None:
+    assert _chain_text(tmp_path) == ""
+
+
+def test_chain_text_joint_yml_et_yaml_par_un_saut_de_ligne(tmp_path: Path) -> None:
+    workflows = tmp_path / ".github" / "workflows"
+    workflows.mkdir(parents=True)
+    (workflows / "ci.yml").write_text("a: 1", encoding="utf-8")
+    (workflows / "deploy.yaml").write_text("b: 2", encoding="utf-8")
+    assert _chain_text(tmp_path) == "a: 1\nb: 2"
+
+
+def test_workflow_files_liste_les_trois_emplacements_dans_l_ordre(tmp_path: Path) -> None:
+    """Fixture verte à double sens : un fichier par emplacement et par extension, liste exacte.
+    Un emplacement ou une extension oubliés, un ordre écrasé ou une soustraction à la place de
+    l'addition font diverger la liste."""
+    workflows = tmp_path / ".github" / "workflows"
+    pipelines = tmp_path / "pipelines"
+    workflows.mkdir(parents=True)
+    pipelines.mkdir()
+    attendus = [
+        workflows / "a.yml",
+        workflows / "b.yaml",
+        pipelines / "p.yml",
+        pipelines / "q.yaml",
+        tmp_path / "azure-pipelines.yml",
+        tmp_path / "azure-pipelines-ci.yaml",
+    ]
+    for fichier in attendus:
+        fichier.write_text("x: 1\n", encoding="utf-8")
+    assert _workflow_files(tmp_path) == attendus
+
+
+def test_declared_tool_cite_sans_le_mot_run_est_cable(tmp_path: Path) -> None:
+    """``pnpm lint`` câble le script ``lint`` sans écrire ``run lint`` : l'une OU l'autre
+    citation suffit."""
+    (tmp_path / "package.json").write_text(
+        json.dumps({"scripts": {"lint": "eslint ."}}), encoding="utf-8"
+    )
+    _write_chain(tmp_path, "jobs:\n  code:\n    steps:\n      - run: pnpm lint\n")
+    pyproject = _write_pyproject(tmp_path)
+    assert check_declared_tools_not_wired(pyproject, repo_root=tmp_path) == []
+
+
+def test_pre_commit_hook_ids_retire_les_guillemets_et_seulement_eux(tmp_path: Path) -> None:
+    (tmp_path / ".pre-commit-config.yaml").write_text(
+        "repos:\n  - repo: local\n    hooks:\n"
+        "      - id: 'ruff'\n"
+        '      - id: "mypy"\n'
+        "      - id: XeslintX\n",
+        encoding="utf-8",
+    )
+    assert _pre_commit_hook_ids(tmp_path) == ["ruff", "mypy", "XeslintX"]
+
+
+def test_missing_dependencies_nomme_le_fichier_dans_les_avertissements_de_syntaxe(
+    tmp_path: Path,
+) -> None:
+    """``filename=`` d'``ast.parse`` n'est pas muet : l'avertissement du compilateur sur une
+    séquence d'échappement invalide nomme le fichier fautif ; sans lui, ``<unknown>``."""
+    src = tmp_path / "app"
+    src.mkdir()
+    fautif = src / "ancien.py"
+    fautif.write_text('PATRON = "\\d+"\n', encoding="utf-8")
+    with warnings.catch_warnings(record=True) as alertes:
+        warnings.simplefilter("always")
+        check_missing_dependencies(src, _write_pyproject(tmp_path))
+    assert [a.filename for a in alertes if "escape" in str(a.message)] == [str(fautif)]
+
+
+def test_missing_dependencies_autorise_future_meme_hors_liste_stdlib(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """``__future__`` est autorisé explicitement, sans dépendre de la liste de l'interpréteur :
+    avec une liste qui l'omet, ``from __future__ import annotations`` ne fait pas un import
+    fantôme."""
+    monkeypatch.setattr(sys, "stdlib_module_names", frozenset({"os"}))
+    src = tmp_path / "app"
+    src.mkdir()
+    (src / "main.py").write_text(
+        "from __future__ import annotations\nimport os\n", encoding="utf-8"
+    )
+    assert check_missing_dependencies(src, _write_pyproject(tmp_path)) == []
+
+
+def test_attente_exclut_node_modules_vendor_venv_et_les_dossiers_homonymes(
+    tmp_path: Path,
+) -> None:
+    """Les spécifications de ``node_modules``/``vendor``/``.venv`` ne sont pas jugées, un
+    dossier nommé ``*.spec.ts`` n'est pas un fichier, et l'exclusion ne coupe pas la suite :
+    la spécification fautive, triée après les exclues, est bien rendue."""
+    motif = "await page.click('#go');\nawait page.waitForNavigation();\n"
+    for exclu in ("node_modules/pkg", "Vendor", ".venv/lib"):
+        dossier = tmp_path / exclu
+        dossier.mkdir(parents=True)
+        (dossier / "x.spec.ts").write_text(motif, encoding="utf-8")
+    (tmp_path / "carton.spec.ts").mkdir()
+    reel = tmp_path / "tests" / "e2e"
+    reel.mkdir(parents=True)
+    (reel / "z.spec.ts").write_text(motif, encoding="utf-8")
+    findings = check_event_wait_after_action(tmp_path)
+    assert [f["file"] for f in findings] == [str(reel / "z.spec.ts")]
+
+
+def test_attente_message_complet(tmp_path: Path) -> None:
+    (tmp_path / "x.spec.ts").write_text(
+        "await page.click('#go');\nawait page.waitForResponse(r => r);\n", encoding="utf-8"
+    )
+    findings = check_event_wait_after_action(tmp_path)
+    assert [f["issue"] for f in findings] == [
+        "« await page.waitForResponse( » posé APRÈS l'action qui le déclenche — "
+        "l'attente se déclare avant l'action, jamais après"
+    ]
+
+
+def test_cli_constat_sans_fichier_est_attribue_a_la_chaine_ci(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Un constat d'outil non câblé n'a pas de fichier : la ligne imprimée le dit mot pour mot."""
+    (tmp_path / ".git").mkdir()
+    pyproject = tmp_path / "pyproject.toml"
+    pyproject.write_text("[tool.ruff]\nline-length = 100\n", encoding="utf-8")
+    src = tmp_path / "app"
+    src.mkdir()
+    (src / "main.py").write_text("x = 1\n", encoding="utf-8")
+    assert main([str(src), str(pyproject)]) == 1
+    assert capsys.readouterr().err == (
+        "ai-antipatterns gate: FAIL (1 défaut(s))\n"
+        "  - [outil-non-cable] (chaîne CI) : "
+        "linter pyproject.toml '[tool.ruff]' absent de la chaîne CI\n"
     )
