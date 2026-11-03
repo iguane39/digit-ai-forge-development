@@ -7,6 +7,13 @@ absent par défaut. Contrôle STATIQUE, même posture heuristique que le pan ``i
 forge-tests (coïncidence de chaîne, pas d'exécution d'un build réel) : un marqueur de démo
 présent dans un fichier source sans référence au drapeau dans ce même fichier est un finding —
 le fichier promet une frontière qu'il ne pose nulle part.
+
+Deuxième frontière admise (TF-2093) : le marqueur ``SYNTHETIC`` (majuscules, mot isolé ou suivi
+de ``_ONLY``/``-ONLY``). Les fixtures synthétiques du laboratoire — données fabriquées, jamais
+issues d'une production — sont l'objet même du Gate A, pas une fuite de démo : le fichier qui les
+porte le DÉCLARE, comme il référencerait ``*_MODE_DEMO``. La déclaration est locale au fichier
+(aucune exclusion de dossier, qui exempterait en silence un vrai marqueur de démo qui s'y glisse)
+et sensible à la casse (« synthetic » en prose minuscule n'est pas une déclaration).
 """
 
 from __future__ import annotations
@@ -21,6 +28,9 @@ DEMO_MARKER = re.compile(
     r"fixture|d[ée]mo|jeu[_-]de[_-]|donn[ée]es?[_-]simul|fournisseur[_-]simul", re.IGNORECASE
 )
 GUARD_MARKER = re.compile(r"[A-Za-z][A-Za-z0-9]*_MODE_DEMO|MODE_DEMO", re.IGNORECASE)
+# Frontière « fixtures synthétiques » (TF-2093) : sans IGNORECASE, mot isolé
+# (SYNTHETICS ne compte pas).
+SYNTHETIC_MARKER = re.compile(r"(?<![A-Za-z0-9])SYNTHETIC(?![A-Za-z0-9])")
 
 # Hors périmètre : suites de tests (fixtures de test légitimes) et migrations de peuplement
 # datées (loi 4 — une donnée volatile documentée n'est pas un défaut démo).
@@ -44,9 +54,16 @@ def run_demo_markers_gate(source_dir: Path) -> GateVerdict:
         if not path.is_file() or _is_excluded(path):
             continue
         text = path.read_text(encoding="utf-8", errors="ignore")
-        if DEMO_MARKER.search(text) and not GUARD_MARKER.search(text):
+        if (
+            DEMO_MARKER.search(text)
+            and not GUARD_MARKER.search(text)
+            and not SYNTHETIC_MARKER.search(text)
+        ):
             findings.append(
-                {"file": str(path), "issue": "marqueur de démo sans drapeau *_MODE_DEMO associé"}
+                {
+                    "file": str(path),
+                    "issue": "marqueur de démo sans drapeau *_MODE_DEMO ni déclaration SYNTHETIC",
+                }
             )
     return GateVerdict(
         gate="demo-markers", passed=not findings, findings=findings, log_ref=str(source_dir)

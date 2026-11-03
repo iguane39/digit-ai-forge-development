@@ -60,3 +60,41 @@ def test_cli_main_pass_et_fail(tmp_path: Path) -> None:
         'if os.environ.get("MODE_DEMO"):\n    creer_client_demo()\n', encoding="utf-8"
     )
     assert main([str(src)]) == 0
+
+
+def test_fixtures_synthetiques_declarees_ne_sont_pas_signalees(tmp_path: Path) -> None:
+    """TF-2093, fixture rouge : des fixtures synthétiques déclarées (marqueur SYNTHETIC) sont
+    l'objet même du Gate A du laboratoire, pas une fuite de démo (frontière posée dans le fichier).
+    """
+    src = tmp_path / "lab"
+    src.mkdir()
+    (src / "corpus.py").write_text(
+        '"""Fixtures SYNTHETIC : jeu de données fabriqué, jamais issu de la production."""\n'
+        "FIXTURE_CLIENTS = [{'nom': 'Client A'}]\n",
+        encoding="utf-8",
+    )
+    (src / "autre.py").write_text(
+        "# SYNTHETIC_ONLY\ndef fixture_commandes():\n    return []\n", encoding="utf-8"
+    )
+    verdict = run_demo_markers_gate(src)
+    assert verdict.passed is True
+    assert verdict.findings == []
+
+
+def test_vrai_marqueur_de_demo_reste_signale_malgre_synthetic_ailleurs(tmp_path: Path) -> None:
+    """TF-2093, double sens : la déclaration est locale au fichier ; un fichier voisin non
+    déclaré, ou qui n'évoque « synthetic » qu'en prose minuscule, reste signalé."""
+    src = tmp_path / "lab"
+    src.mkdir()
+    (src / "corpus.py").write_text("# SYNTHETIC\nFIXTURE = []\n", encoding="utf-8")
+    (src / "seed.py").write_text(
+        "def creer_client_demo():\n    return Client(nom='Client Démo')\n", encoding="utf-8"
+    )
+    (src / "prose.py").write_text(
+        "# données synthetic maison\ndef creer_client_demo():\n    pass\n", encoding="utf-8"
+    )
+    (src / "mot.py").write_text("SYNTHETICS = 1\ndef fixture():\n    pass\n", encoding="utf-8")
+    verdict = run_demo_markers_gate(src)
+    assert verdict.passed is False
+    signales = sorted(Path(f["file"]).name for f in verdict.findings)
+    assert signales == ["mot.py", "prose.py", "seed.py"]
