@@ -25,11 +25,13 @@ Le catalogue consolidé des dix forges vit chez le pilot :
 
 ## 🚀 Start with one sentence
 
-Never installed anything? Open a Claude Code session (or any coding agent) in your project folder — an empty folder for a brand-new project — and paste:
+Never installed anything? Open a Claude Code session (or any coding agent) in your project folder — an empty folder for a brand-new project — and paste this sentence, as is, in French. It is the same sentence for every use case of the Digit-AI Factory:
 
-> **Use the Digit-AI Forge Development (https://github.com/iguane39/digit-ai-forge-development) on my current folder to build, continue, or remediate this project — follow its run-playbook `docs/run-playbook.md`.**
+```
+Utilise https://github.com/iguane39/digit-ai-factory pour ce projet
+```
 
-That's it. The playbook clones/updates the forge itself, then **auto-detects** the context (new · continuation · external repo) and the Git provider (GitHub or Azure DevOps) with **zero variables to fill**, and proposes what to do before executing. Append *"unattended end to end"* to run the whole backlog without stops (except the human review gate, HITL 2).
+That's it. The [Digit-AI Factory](https://github.com/iguane39/digit-ai-factory) installs what is missing, this forge included, then asks what you want: build, continue or remediate this project. It runs this forge through its run-playbook `docs/run-playbook.md`, which **auto-detects** the context (new · continuation · external repo) and the Git provider (GitHub or Azure DevOps), and proposes what to do before executing. Say *"unattended end to end"* in your request to run the whole backlog without stops (except the human review gate, HITL 2).
 
 Digit-AI Forge Development is an agentic SaaS accelerator. A **thin orchestration layer**
 (`conductor/`) sequences and constrains battle-tested third-party engines to carry a

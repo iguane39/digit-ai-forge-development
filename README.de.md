@@ -6,11 +6,13 @@
 
 ## 🚀 Mit einem Satz starten
 
-Noch nichts installiert? Öffne eine Claude-Code-Sitzung (oder einen beliebigen Coding-Agenten) im Ordner deines Projekts — ein leerer Ordner für ein brandneues Projekt — und füge ein:
+Noch nichts installiert? Öffne eine Claude-Code-Sitzung (oder einen beliebigen Coding-Agenten) im Ordner deines Projekts — ein leerer Ordner für ein brandneues Projekt — und füge diesen Satz unverändert auf Französisch ein. Es ist derselbe Satz für alle Anwendungsfälle der Digit-AI Factory:
 
-> **Nutze die Digit-AI Forge Development (https://github.com/iguane39/digit-ai-forge-development) auf meinem aktuellen Ordner, um dieses Projekt zu erstellen, fortzuführen oder zu sanieren — folge ihrem Run-Playbook `docs/run-playbook.md`.**
+```
+Utilise https://github.com/iguane39/digit-ai-factory pour ce projet
+```
 
-Das war's. Das Playbook klont/aktualisiert die Forge selbst, **erkennt dann automatisch** den Kontext (neu · Fortführung · externes Repo) und den Git-Provider (GitHub oder Azure DevOps) **ohne auszufüllende Variablen** und schlägt vor, was zu tun ist, bevor es ausführt. Füge *„unattended von Anfang bis Ende"* hinzu, um das gesamte Backlog ohne Stopps abzuarbeiten (außer der menschlichen Review, HITL 2).
+Das war's. Die [Digit-AI Factory](https://github.com/iguane39/digit-ai-factory) installiert, was fehlt, diese Forge eingeschlossen, und fragt dann, was du erreichen willst: dieses Projekt erstellen, fortführen oder sanieren. Sie führt diese Forge über ihr Run-Playbook `docs/run-playbook.md` aus, das den Kontext (neu · Fortführung · externes Repo) und den Git-Provider (GitHub oder Azure DevOps) **automatisch erkennt**, und schlägt vor, was zu tun ist, bevor sie ausführt. Sag *„unattended von Anfang bis Ende"* in deiner Anfrage, um das gesamte Backlog ohne Stopps abzuarbeiten (außer der menschlichen Review, HITL 2).
 
 Digit-AI Forge Development ist ein agentischer SaaS-Beschleuniger. Eine **schlanke
 Orchestrierungsschicht** (`conductor/`) sequenziert und beschränkt bewährte Drittanbieter-

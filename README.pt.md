@@ -6,11 +6,13 @@
 
 ## 🚀 Comece com uma única frase
 
-Nunca instalou nada? Abra uma sessão do Claude Code (ou qualquer agente de código) na pasta do seu projeto — uma pasta vazia para um projeto novo — e cole:
+Nunca instalou nada? Abra uma sessão do Claude Code (ou qualquer agente de código) na pasta do seu projeto — uma pasta vazia para um projeto novo — e cole esta frase, tal como está, em francês. É a mesma frase para todos os casos de uso da Factory Digit-AI:
 
-> **Use a Digit-AI Forge Development (https://github.com/iguane39/digit-ai-forge-development) na minha pasta atual para construir, continuar ou remediar este projeto — siga o run-playbook `docs/run-playbook.md`.**
+```
+Utilise https://github.com/iguane39/digit-ai-factory pour ce projet
+```
 
-É isso. O playbook clona/atualiza a forge por conta própria, depois **detecta automaticamente** o contexto (novo · continuação · repo externo) e o provedor Git (GitHub ou Azure DevOps), **sem nenhuma variável a preencher**, e propõe o que fazer antes de executar. Acrescente *«em unattended de ponta a ponta»* para processar todo o backlog sem paradas (exceto a revisão humana, HITL 2).
+É isso. A [Factory Digit-AI](https://github.com/iguane39/digit-ai-factory) instala o que falta, esta forge incluída, e depois pergunta o que você quer obter: construir, continuar ou remediar este projeto. Ela executa esta forge pelo run-playbook `docs/run-playbook.md`, que **detecta automaticamente** o contexto (novo · continuação · repo externo) e o provedor Git (GitHub ou Azure DevOps), e propõe o que fazer antes de executar. Diga *«em unattended de ponta a ponta»* no seu pedido para processar todo o backlog sem paradas (exceto a revisão humana, HITL 2).
 
 Digit-AI Forge Development é um acelerador de SaaS agêntico. Uma **camada de orquestração enxuta**
 (`conductor/`) sequencia e restringe motores de terceiros consolidados para levar uma intenção
