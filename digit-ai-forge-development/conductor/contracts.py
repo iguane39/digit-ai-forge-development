@@ -115,7 +115,7 @@ class BadSprintLayout(BaseModel):
 GateName = Literal[
     "code", "design", "regression", "traceability", "demo-markers", "affordances",
     "ai-antipatterns", "mutation", "static-cache", "porte-neutralisee", "runtime-parity",
-    "supabase-ssr",
+    "supabase-ssr", "formulaire-erreurs",
 ]
 
 

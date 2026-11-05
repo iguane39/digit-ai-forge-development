@@ -339,8 +339,9 @@ onzième est entrée le 14/09/2026, décidée par l'étude d'opportunité « soc
 (20260914a, TF-1040) — *une porte prouve qu'elle sait dire non*. Une douzième est entrée le
 17/09/2026, mesurée le 11/09/2026 chez Produit-11 (RT-61, TF-1042) — *la parité entre
 l'environnement de test et l'image servie*, jumelle de la règle O-10 d'`oracle-ops.mjs`
-(forge-ops) qui verrouille le manifeste SERVI à l'empreinte.
-**Douze disciplines à ce jour.**
+(forge-ops) qui verrouille le manifeste SERVI à l'empreinte. Une treizième est entrée le
+05/11/2026, mesurée chez Produit-86 (TF-2172) — *une saisie refusée se dit sous son champ*.
+**Treize disciplines à ce jour.**
 
 - **Frontière démo/production.** Tout artefact de démonstration (fixtures, comptes, données
   simulées, endpoints de peuplement) vit derrière un drapeau d'environnement explicite
@@ -853,6 +854,78 @@ l'environnement de test et l'image servie*, jumelle de la règle O-10 d'`oracle-
   sélection d'environnement, la page ne lui prête que « bindings and variables ». Aucun
   `wrangler` ni Miniflare n'était installé sur le poste de construction : le gate est prouvé sur
   des configurations synthétiques, pas sur un Worker exécuté.
+
+- **Une saisie refusée se dit sous son champ, avec la saisie reprise et la forme attendue
+  (TF-2172, 05/11/2026, règle E-19 du plancher d'écriture).** Quand un sprint construit ou
+  modifie un formulaire d'application, la consigne de construction exige le motif : le
+  composant `corpus/composants/saisie-erreurs.js` et `.css` de forge-design, ou un équivalent
+  qui tient les cinq règles que son juge, `oracle-erreurs-formulaire`, vérifie. Le motif vaut
+  pour les trois sources de refus, rendues par la même voie : la règle du navigateur (`required`,
+  `type`, `pattern`, `min`, `max`, `minlength`), la règle du produit et le refus du serveur.
+
+  - **EF1, champ désigné.** Le champ porte `aria-invalid="true"` et un message neuf, visible, relié
+    par `aria-describedby` ou `aria-errormessage`. Un refus affiché ailleurs, en bandeau ou en
+    alerte, sans champ désigné, est bloquant.
+  - **EF2, message près du champ.** À 120 px au plus du champ et dans la fenêtre, jamais en tête
+    de page.
+  - **EF3, saisie reprise et forme attendue.** « « costcontrol » n'est pas un domaine complet.
+    Écris-le ainsi : costcontrol.domaine-du-client.fr. » Un code interne (`CIBLE_INVALIDE`) ne
+    s'affiche jamais seul.
+  - **EF4, envoi retenu.** Aucune requête d'écriture ni navigation ne part tant qu'un champ est
+    invalide.
+  - **EF5, vérification à la sortie du champ.** L'erreur apparaît quand la personne quitte le
+    champ, et s'efface dès que la valeur est corrigée.
+
+  Le refus du serveur se rend lui aussi sous son champ (`SaisieErreurs.refuser(form, { nom:
+  message })` du composant). L'API renvoie donc la cause PAR CHAMP, le nom du champ et une cause
+  lisible, comme l'exige la discipline « cause préservée jusqu'à l'écran » : un code seul force le
+  client à l'afficher en bandeau. Les messages vivent dans le fichier de ressources de la
+  discipline des textes d'application.
+
+  Mesure qui fait naître la discipline : le 05/11/2026, un formulaire de Produit-86 répondait
+  « Refusé : CIBLE_INVALIDE » en bandeau en tête de page, sans champ désigné, avec un exemple
+  générique et seulement à l'envoi. Les 15 juges de `run-oracles-design` avaient rendu PASS le
+  04/11 sur ces écrans : aucun n'envoie une valeur fausse, aucun ne regarde où tombe l'erreur.
+
+  Test : le gate de sprint `conductor/gates/formulaire_erreurs_gate.py` lance
+  `oracle-erreurs-formulaire` de forge-design sur l'instance SERVIE, quand l'application porte
+  au moins un formulaire. L'oracle saisit une valeur fausse par champ, quitte le champ, tente l'envoi, et
+  mesure où le refus se dit. Le gate refuse sur FAIL en nommant la règle et le remède.
+
+  ```bash
+  # servir l'application (instance locale ou de qualification), puis donner l'adresse de CHAQUE
+  # écran qui porte un formulaire ; <FORGE-DESIGN> est le dépôt digit-ai-forge-design
+  uv run --project "<FORGE>" python -m conductor.gates.formulaire_erreurs_gate \
+    "<repo cible>" "<FORGE-DESIGN>" "<adresse d'un écran>" ["<autre adresse>" …]
+  # attendu, formulaire au composant : « formulaire-erreurs gate: PASS — N champ(s) éprouvé(s) »
+  # attendu, refus en bandeau : exit 1 + « [EF1] <écran> : … » et la ligne « remède : … »,
+  # une paire de lignes par constat
+  # attendu, application sans formulaire, ou formulaire sans instance servie : exit 0 +
+  # « formulaire-erreurs gate: SKIP (non jugé) — <motif> », jamais « PASS »
+  # instance locale en TLS auto-signé : --accepter-certificat-local ; écran derrière une
+  # connexion : --etat-connexion <fichier>
+  ```
+
+  La recette joue le double sens sur une vraie instance servie en local : le même formulaire est
+  refusé avec son erreur en bandeau, accepté une fois bâti avec le composant.
+
+  ```bash
+  uv run python -m pytest tests/test_formulaire_erreurs_gate.py
+  ```
+
+  Un SKIP alors que l'application porte un formulaire (aucune adresse fournie) est un point
+  ouvert : le sprint ne se clôt pas dessus sans le consigner à son rapport. Le même oracle est
+  enrôlé chez forge-design dans `run-oracles-design --instance`.
+
+  Limites déclarées : l'oracle intercepte et refuse toute requête d'écriture, pour ne rien créer
+  chez l'instance. Il n'observe donc jamais un refus venu du serveur, et un PASS ne dit rien du
+  rendu de ce refus, qui se juge à la main ou par le composant. La valeur fausse vient des
+  contraintes natives du champ ou de `data-valeur-fausse` : un champ sans contrainte ni
+  déclaration n'est pas éprouvé, et une règle qui n'existe que côté serveur doit être déclarée par
+  `data-valeur-fausse` pour être jouée. L'oracle éprouve un champ à la fois, douze champs par
+  écran au plus, et ne juge ni la justesse de l'exemple ni le ton du message. Le gate repère un
+  formulaire par la balise `<form` dans les gabarits et les composants : un formulaire construit
+  sans cette balise lui échappe et rend un SKIP « aucun formulaire ».
 
 ## Quand lire les détails
 - **Phases A→E, classification de pièces jointes, sections pilote** → [conductor-run-playbook](conductor-run-playbook.md).
