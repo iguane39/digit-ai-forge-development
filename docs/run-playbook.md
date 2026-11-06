@@ -121,6 +121,14 @@ Lis aussi : l'historique git et le dernier tag `run/<slug>/epic-<n>`, `_bmad-out
 - **Codes de retour** : `0` run complet · `2` **pause HITL** (légitime, la question est imprimée en
   clair — ne la traite JAMAIS comme un échec) · `1` erreur. Sortie machine systématique dans
   `<repo cible>/_forge-output/run-report.json`.
+- **Réglages de plateforme à la création (D-178, TF-2228)** : un projet qui crée ou configure
+  Supabase, GitHub ou Cloudflare joue `uv run --project "<FORGE>" python -m conductor.reglages_surs
+  --projet "$(pwd)"` (secrets lus dans l'environnement, jamais dans un `.env`). Le script lit
+  `references/REGLAGES-SURS-PAR-DEFAUT.json` du pilot, lit puis écrit puis relit chaque réglage
+  classé `defaut`, n'écrit un réglage classé `decision` qu'avec un choix consigné
+  (`--decisions <fichier.json>`), et applique les migrations de `supabase/migrations/` par l'API
+  de gestion en HTTPS. `0` tout vert · `1` manque nommé (écart, variable absente, condition non
+  tenue) · `2` registre ou décisions refusés. `--simulation` ne lance aucune commande.
 - Flux : onramp → BMAD → **HITL 1** (valide PRD/archi) → sprint `/bad` sous double gate + gate
   spec-compliance + non-régression → **HITL 2** (PR-ready). À chaque HITL : récap, STOP, attends mon « go ».
 - Si j'ai choisi le mode unattended : suis `<FORGE>/docs/superpowers/unattended-run-playbook.md`
